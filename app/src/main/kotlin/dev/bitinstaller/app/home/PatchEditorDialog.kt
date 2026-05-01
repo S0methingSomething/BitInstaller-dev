@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,9 +20,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,28 +33,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
-import dev.bitinstaller.app.crypto.MonetizationValue
 import kotlinx.coroutines.launch
 
 private const val EDITOR_CONTENT_RISE_DP: Float = 42f
-private const val EDITOR_ROW_ALPHA: Float = 0.58f
 
 data class PatchEditorSceneConfig(
     val initialData: MonetizationData = buildPreviewData(),
-    val sourceBadge: String = "File",
     val saveData: suspend (MonetizationData) -> String = { data ->
         "Saved and re-encrypted file (${MonetizationCodec.encrypt(data).length} chars)."
     },
 )
 
 private data class PatchEditorContentChrome(
-    val target: PatchTargetUiState,
     val contentAlpha: Float,
-    val sourceBadge: String,
 )
 
 @Composable
@@ -103,9 +93,7 @@ fun PatchEditorScene(
 
     PatchEditorContent(
         chrome = PatchEditorContentChrome(
-            target = target,
             contentAlpha = contentAlpha,
-            sourceBadge = config.sourceBadge,
         ),
         uiState = uiState,
         actions = rememberPatchEditorActions(
@@ -173,53 +161,11 @@ private fun PatchEditorContent(
                 },
         ) {
             Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
-                EditorHeader(target = chrome.target, sourceBadge = chrome.sourceBadge)
-                Spacer(modifier = Modifier.height(14.dp))
                 EditorModeRow(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
                 Spacer(modifier = Modifier.height(14.dp))
                 PatchEditorBody(uiState = uiState, actions = actions)
             }
         }
-    }
-}
-
-@Composable
-private fun EditorHeader(
-    target: PatchTargetUiState,
-    sourceBadge: String,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = target.name, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = "MonetizationVars editor",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                shape = RoundedCornerShape(999.dp),
-            ) {
-                Text(
-                    text = sourceBadge,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                )
-            }
-        }
-        Text(
-            text = "Edit values, then export JSON or save the encrypted file.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -351,96 +297,6 @@ private fun EditorModeRow(
                 modifier = Modifier.weight(1f),
             ) {
                 Text(text = "Raw JSON")
-            }
-        }
-    }
-}
-
-@Composable
-private fun SimplifiedEditor(
-    draftValues: Map<String, String>,
-    originalData: MonetizationData,
-    onBooleanChanged: (String, Boolean) -> Unit,
-    onTextChanged: (String, String) -> Unit,
-) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.sizeIn(maxHeight = 460.dp),
-    ) {
-        items(originalData.entries.toList(), key = { it.key }) { entry ->
-            SimplifiedEditorRow(
-                keyName = entry.key,
-                value = entry.value,
-                draftValue = draftValues[entry.key].orEmpty(),
-                onBooleanChanged = onBooleanChanged,
-                onTextChanged = onTextChanged,
-            )
-        }
-    }
-}
-
-@Composable
-private fun SimplifiedEditorRow(
-    keyName: String,
-    value: MonetizationValue,
-    draftValue: String,
-    onBooleanChanged: (String, Boolean) -> Unit,
-    onTextChanged: (String, String) -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = EDITOR_ROW_ALPHA),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-        ) {
-            when (value) {
-                is Boolean -> {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                text = keyName,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = if (value) "Enabled" else "Disabled",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Switch(
-                            checked = value,
-                            onCheckedChange = { checked -> onBooleanChanged(keyName, checked) },
-                        )
-                    }
-                }
-
-                else -> {
-                    Text(
-                        text = keyName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium,
-                    )
-                    Text(
-                        text = if (value is Int) "Int32 value" else "String value",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedTextField(
-                        value = draftValue,
-                        onValueChange = { updated -> onTextChanged(keyName, updated) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
             }
         }
     }

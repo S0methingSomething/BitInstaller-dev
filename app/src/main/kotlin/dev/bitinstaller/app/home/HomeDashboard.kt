@@ -97,18 +97,13 @@ private fun DashboardTextBlock(card: DashboardCardState) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
             )
-            StateBadge(label = card.badge, accent = card.accent)
         }
         Text(
             text = card.headline,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Normal,
         )
-        Text(
-            text = card.supporting,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        StatusLine(label = card.supporting, accent = card.accent)
     }
 }
 
@@ -136,7 +131,6 @@ private fun ShizukuMark(accent: Color) {
 
 private data class DashboardCardState(
     val headline: String,
-    val badge: String,
     val supporting: String,
     val action: String,
     val accent: Color,
@@ -147,62 +141,48 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
     when (status) {
         BackendStatus.ShizukuUnavailable -> DashboardCardState(
             headline = "Shizuku offline",
-            badge = "Offline",
-            supporting = "Start Shizuku to continue",
+            supporting = "Status: not running",
             action = "Start",
             accent = MaterialTheme.colorScheme.secondary,
         )
 
         BackendStatus.PermissionRequired -> DashboardCardState(
             headline = "Permission needed",
-            badge = "Setup",
-            supporting = "Grant Shizuku access to start patching",
+            supporting = "Status: permission required",
             action = "Grant",
             accent = MaterialTheme.colorScheme.primary,
         )
 
         BackendStatus.Ready -> DashboardCardState(
-            headline = "Connected and ready",
-            badge = "Active",
-            supporting = "Shizuku access is ready for patching",
+            headline = "Ready",
+            supporting = "Status: connected",
             action = "Check",
             accent = MaterialTheme.colorScheme.primary,
         )
 
         is BackendStatus.Degraded -> DashboardCardState(
             headline = "Needs attention",
-            badge = "Issue",
-            supporting = status.message,
+            supporting = "Status: ${status.message}",
             action = "Start",
             accent = MaterialTheme.colorScheme.secondary,
         )
     }
 
 @Composable
-private fun StateBadge(
-    label: String,
-    accent: Color,
-) {
-    Surface(
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = RoundedCornerShape(999.dp),
+private fun StatusLine(label: String, accent: Color) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-        ) {
-            Surface(
-                color = accent,
-                shape = CircleShape,
-                modifier = Modifier.size(6.dp),
-            ) {}
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = accent,
-            )
-        }
+        Surface(
+            color = accent,
+            shape = CircleShape,
+            modifier = Modifier.size(6.dp),
+        ) {}
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

@@ -53,7 +53,6 @@ fun HomeRoute(
                     onDismissRequest = callbacks.onDismissSession,
                     config = PatchEditorSceneConfig(
                         initialData = session.initialData,
-                        sourceBadge = "Live file",
                         saveData = { data -> callbacks.onSaveSession(session, data) },
                     ),
                 )
