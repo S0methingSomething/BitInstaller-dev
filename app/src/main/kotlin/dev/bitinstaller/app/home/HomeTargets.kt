@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-private val TargetCardShape = RoundedCornerShape(16.dp)
-private val TargetButtonShape = RoundedCornerShape(12.dp)
+private val TargetCardShape = RoundedCornerShape(12.dp)
+private val TargetButtonShape = RoundedCornerShape(6.dp)
 private val TargetButtonInset = 112.dp
 private val TargetMinHeight = 132.dp
 
@@ -60,7 +60,7 @@ private fun PatchTargetCard(
 
     Surface(
         shape = TargetCardShape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -85,7 +85,10 @@ private fun PatchTargetCard(
             Button(
                 enabled = target.patchEnabled,
                 onClick = { onPatchClick(target) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
                 shape = TargetButtonShape,
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
@@ -104,7 +107,7 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
         Text(
             text = target.name,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Normal,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -141,13 +144,13 @@ private fun AppGlyph(
             .size(56.dp)
             .background(
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(12.dp),
             ),
     ) {
         Surface(
             color = accent.copy(alpha = 0.14f),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(8.dp),
             modifier = Modifier.size(32.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -172,7 +175,7 @@ private fun PatchStateChip(
     Surface(
         color = containerColor,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(999.dp),
     ) {
         Text(
             text = label,
@@ -202,7 +205,7 @@ private fun patchPresenceColor(patchPresenceState: PatchPresenceState): Color =
 @Composable
 private fun patchPresenceContainerColor(patchPresenceState: PatchPresenceState): Color =
     when (patchPresenceState) {
-        PatchPresenceState.NOT_PATCHED -> MaterialTheme.colorScheme.surfaceVariant
+        PatchPresenceState.NOT_PATCHED -> Color.Transparent
         PatchPresenceState.PATCHED -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.14f)
-        PatchPresenceState.UNKNOWN -> MaterialTheme.colorScheme.surfaceVariant
+        PatchPresenceState.UNKNOWN -> Color.Transparent
     }

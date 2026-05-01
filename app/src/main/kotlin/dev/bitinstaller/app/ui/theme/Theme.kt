@@ -15,13 +15,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF7170FF),
+    primary = Color(0xFF5E6AD2),
     onPrimary = Color(0xFFF7F8F8),
-    primaryContainer = Color(0xFF1D1F39),
+    primaryContainer = Color(0xFF191A1B),
     onPrimaryContainer = Color(0xFFDCDDFF),
     secondary = Color(0xFF7A7FAD),
     onSecondary = Color(0xFFF7F8F8),
-    secondaryContainer = Color(0xFF171924),
+    secondaryContainer = Color(0xFF0F1011),
     onSecondaryContainer = Color(0xFFD0D6E0),
     tertiary = Color(0xFF10B981),
     onTertiary = Color(0xFFF7F8F8),
@@ -58,22 +58,22 @@ private val BaseTypography = Typography()
 
 private val BitInstallerTypography = Typography(
     displayLarge = BaseTypography.displayLarge.copy(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Black,
-        fontSize = 50.sp,
-        lineHeight = 52.sp,
-        letterSpacing = (-1.3).sp,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 48.sp,
+        lineHeight = 48.sp,
+        letterSpacing = (-1.05).sp,
     ),
     titleLarge = BaseTypography.titleLarge.copy(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Normal,
         lineHeight = 28.sp,
-        letterSpacing = (-0.2).sp,
+        letterSpacing = (-0.3).sp,
     ),
     titleMedium = BaseTypography.titleMedium.copy(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = (-0.1).sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = (-0.2).sp,
     ),
     titleSmall = BaseTypography.titleSmall.copy(
         fontFamily = FontFamily.SansSerif,
@@ -94,7 +94,7 @@ private val BitInstallerTypography = Typography(
     ),
     labelLarge = BaseTypography.labelLarge.copy(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Medium,
         letterSpacing = 0.sp,
     ),
     labelMedium = TextStyle(

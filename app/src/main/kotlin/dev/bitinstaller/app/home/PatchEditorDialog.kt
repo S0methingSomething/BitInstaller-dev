@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -159,10 +160,10 @@ private fun PatchEditorContent(
             .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Surface(
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
+            shape = RoundedCornerShape(12.dp),
             tonalElevation = 0.dp,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            color = MaterialTheme.colorScheme.surface,
+            color = MaterialTheme.colorScheme.surfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
                 .sizeIn(maxHeight = 760.dp)
@@ -194,11 +195,7 @@ private fun EditorHeader(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = target.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Text(text = target.name, style = MaterialTheme.typography.titleLarge)
                 Text(
                     text = "MonetizationVars editor",
                     style = MaterialTheme.typography.bodySmall,
@@ -208,7 +205,7 @@ private fun EditorHeader(
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp),
+                shape = RoundedCornerShape(999.dp),
             ) {
                 Text(
                     text = sourceBadge,
@@ -393,7 +390,7 @@ private fun SimplifiedEditorRow(
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = EDITOR_ROW_ALPHA),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -411,7 +408,7 @@ private fun SimplifiedEditorRow(
                             Text(
                                 text = keyName,
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Medium,
                             )
                             Text(
                                 text = if (value) "Enabled" else "Disabled",
@@ -430,7 +427,7 @@ private fun SimplifiedEditorRow(
                     Text(
                         text = keyName,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                     )
                     Text(
                         text = if (value is Int) "Int32 value" else "String value",

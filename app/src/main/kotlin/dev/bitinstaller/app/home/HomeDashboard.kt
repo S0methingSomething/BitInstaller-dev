@@ -23,8 +23,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-private val DashboardShape = RoundedCornerShape(16.dp)
-private val DashboardActionShape = RoundedCornerShape(12.dp)
+private val DashboardShape = RoundedCornerShape(12.dp)
+private val DashboardActionShape = RoundedCornerShape(6.dp)
 private val DashboardButtonInset = 96.dp
 private val DashboardMinHeight = 144.dp
 
@@ -37,7 +37,7 @@ internal fun DashboardSection(
 
     Surface(
         shape = DashboardShape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -70,7 +70,10 @@ private fun DashboardCardBody(
 
         Button(
             onClick = onActionClick,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ),
             shape = DashboardActionShape,
             modifier = Modifier.align(Alignment.BottomEnd),
         ) {
@@ -92,14 +95,14 @@ private fun DashboardTextBlock(card: DashboardCardState) {
             Text(
                 text = "Shizuku",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight.Medium,
             )
             StateBadge(label = card.badge, accent = card.accent)
         }
         Text(
             text = card.headline,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Normal,
         )
         Text(
             text = card.supporting,
@@ -113,13 +116,13 @@ private fun DashboardTextBlock(card: DashboardCardState) {
 private fun ShizukuMark(accent: Color) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(48.dp)) {
         Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f),
             shape = CircleShape,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             modifier = Modifier.size(48.dp),
         ) {}
         Surface(
-            color = accent.copy(alpha = 0.22f),
+            color = accent.copy(alpha = 0.16f),
             shape = CircleShape,
             modifier = Modifier.size(28.dp),
         ) {}
@@ -181,7 +184,7 @@ private fun StateBadge(
     accent: Color,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = Color.Transparent,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = RoundedCornerShape(999.dp),
     ) {
