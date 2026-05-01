@@ -1,0 +1,55 @@
+[versions]
+agp = "9.2.0"
+compileSdk = "37"
+minSdk = "33"
+targetSdk = "37"
+kotlin = "2.3.21"
+androidxCore = "1.18.0"
+lifecycle = "2.10.0"
+activityCompose = "1.13.0"
+composeBom = "2026.04.01"
+detekt = "1.23.8"
+ktlint = "14.2.0"
+versionsPlugin = "0.54.0"
+catalogUpdate = "1.1.0"
+dependencyAnalysis = "3.10.0"
+junit4 = "4.13.2"
+coroutines = "1.10.2"
+shizuku = "13.1.5"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-activity = { module = "androidx.activity:activity", version.ref = "activityCompose" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-animation = { module = "androidx.compose.animation:animation" }
+androidx-compose-animation-core = { module = "androidx.compose.animation:animation-core" }
+androidx-compose-foundation = { module = "androidx.compose.foundation:foundation" }
+androidx-compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
+androidx-compose-runtime = { module = "androidx.compose.runtime:runtime" }
+androidx-compose-runtime-annotation = { module = "androidx.compose.runtime:runtime-annotation" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-geometry = { module = "androidx.compose.ui:ui-geometry" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-text = { module = "androidx.compose.ui:ui-text" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
+shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
+shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
+version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version.ref = "catalogUpdate" }
+dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }
