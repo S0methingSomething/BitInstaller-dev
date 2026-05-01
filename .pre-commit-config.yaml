@@ -1,0 +1,18 @@
+repos:
+  - repo: local
+    hooks:
+      - id: bitinstaller-quality-check
+        name: BitInstaller local quality gate
+        entry: >-
+          bash -c 'if [ -d "/data/data/com.termux/files/usr/lib/jvm/java-17-openjdk" ]; then
+          export JAVA_HOME="${JAVA_HOME:-/data/data/com.termux/files/usr/lib/jvm/java-17-openjdk}";
+          fi;
+          ./gradlew qualityCheck
+          -Dorg.gradle.parallel=false
+          -Dorg.gradle.workers.max=1
+          -Dorg.gradle.jvmargs="-Xmx1536m -XX:MaxMetaspaceSize=512m -Dfile.encoding=UTF-8"
+          -Dkotlin.daemon.jvmargs="-Xmx768m"
+          --no-daemon'
+        language: system
+        pass_filenames: false
+        always_run: true

@@ -70,14 +70,22 @@ dependencyAnalysis {
 
 tasks.register("qualityCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the full local quality gate."
+    description = "Runs the local quality gate without packaging an APK."
     dependsOn(
         "ktlintCheck",
         ":app:detekt",
         ":app:testDebugUnitTest",
         ":app:lintDebug",
-        ":app:assembleDebug",
         "buildHealth",
+    )
+}
+
+tasks.register("fullBuildCheck") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs quality checks and builds the debug APK. Intended for CI."
+    dependsOn(
+        "qualityCheck",
+        ":app:assembleDebug",
     )
 }
 
