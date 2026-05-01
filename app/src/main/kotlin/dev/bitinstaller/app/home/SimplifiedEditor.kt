@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.crypto.MonetizationData
 import dev.bitinstaller.app.crypto.MonetizationValue
@@ -93,7 +94,13 @@ private fun BooleanEditorRow(
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
-        SimplifiedKeyText(keyName = keyName, supportingText = if (value) "Enabled" else "Disabled")
+        SimplifiedKeyText(
+            keyName = keyName,
+            supportingText = if (value) "Enabled" else "Disabled",
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 12.dp),
+        )
         Switch(
             checked = value,
             onCheckedChange = { checked -> onBooleanChanged(keyName, checked) },
@@ -123,17 +130,25 @@ private fun ValueEditorRow(
 }
 
 @Composable
-private fun SimplifiedKeyText(keyName: String, supportingText: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+private fun SimplifiedKeyText(
+    keyName: String,
+    supportingText: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
         Text(
             text = monetizationDisplayName(keyName),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = keyName,
             style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = supportingText,

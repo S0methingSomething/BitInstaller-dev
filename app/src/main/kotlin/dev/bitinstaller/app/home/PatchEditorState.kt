@@ -23,6 +23,7 @@ data class PatchEditorUiState(
 data class PatchEditorActions(
     val onDismissRequest: () -> Unit,
     val onModeSelected: (EditorMode) -> Unit,
+    val onUnlockAll: () -> Unit,
     val onBooleanChanged: (String, Boolean) -> Unit,
     val onTextChanged: (String, String) -> Unit,
     val onRawJsonChanged: (String) -> Unit,
@@ -71,6 +72,9 @@ fun buildPatchEditorActions(
         onModeSelected = { mode ->
             mutations.onEditorModeChanged(mode)
             mutations.onErrorMessageChanged(null)
+        },
+        onUnlockAll = {
+            applyUnlockAllPatch(uiState = uiState, mutations = mutations)
         },
         onBooleanChanged = { key, value ->
             val updatedData = uiState.currentData.updated(key = key, value = value)

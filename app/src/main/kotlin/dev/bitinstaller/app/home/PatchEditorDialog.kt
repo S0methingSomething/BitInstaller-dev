@@ -162,10 +162,19 @@ private fun PatchEditorContent(
         ) {
             Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
                 EditorModeRow(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+                UnlockAllButton(onUnlockAll = actions.onUnlockAll)
+                Spacer(modifier = Modifier.height(12.dp))
                 PatchEditorBody(uiState = uiState, actions = actions)
             }
         }
+    }
+}
+
+@Composable
+private fun UnlockAllButton(onUnlockAll: () -> Unit) {
+    OutlinedButton(onClick = onUnlockAll, modifier = Modifier.fillMaxWidth()) {
+        Text(text = "Unlock all")
     }
 }
 

@@ -3,6 +3,7 @@ package dev.bitinstaller.app.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,6 +70,24 @@ private fun DashboardCardBody(
             DashboardTextBlock(card = card)
         }
 
+        DashboardActionButton(card = card, onActionClick = onActionClick)
+    }
+}
+
+@Composable
+private fun BoxScope.DashboardActionButton(
+    card: DashboardCardState,
+    onActionClick: () -> Unit,
+) {
+    if (card.isQuietAction) {
+        OutlinedButton(
+            onClick = onActionClick,
+            shape = DashboardActionShape,
+            modifier = Modifier.align(Alignment.BottomEnd),
+        ) {
+            Text(text = card.action)
+        }
+    } else {
         Button(
             onClick = onActionClick,
             colors = ButtonDefaults.buttonColors(
@@ -134,6 +154,7 @@ private data class DashboardCardState(
     val supporting: String,
     val action: String,
     val accent: Color,
+    val isQuietAction: Boolean = false,
 )
 
 @Composable
@@ -156,8 +177,9 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
         BackendStatus.Ready -> DashboardCardState(
             headline = "Ready",
             supporting = "Status: connected",
-            action = "Check",
+            action = "Open",
             accent = MaterialTheme.colorScheme.primary,
+            isQuietAction = true,
         )
 
         is BackendStatus.Degraded -> DashboardCardState(

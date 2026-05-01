@@ -66,6 +66,7 @@ private fun BitInstallerApp() {
         activeSession = appState.activeSession,
         liveDictionaryPrompt = appState.liveDictionaryPrompt,
         callbacks = buildHomeRouteCallbacks(
+            context = context,
             repository = repository,
             manifestStore = manifestStore,
             coroutineScope = coroutineScope,

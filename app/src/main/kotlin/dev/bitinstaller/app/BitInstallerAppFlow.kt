@@ -1,5 +1,6 @@
 package dev.bitinstaller.app
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +15,7 @@ import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchTargetUiState
 import dev.bitinstaller.app.shizuku.LiveDictionaryStatus
 import dev.bitinstaller.app.shizuku.MonetizationVarsFile
+import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +37,7 @@ internal class BitInstallerAppState(initialSnapshot: ShizukuSnapshot) {
 }
 
 internal fun buildHomeRouteCallbacks(
+    context: Context,
     repository: ShizukuMonetizationRepository,
     manifestStore: PatchManifestStore,
     coroutineScope: CoroutineScope,
@@ -42,16 +45,16 @@ internal fun buildHomeRouteCallbacks(
 ): HomeRouteCallbacks =
     HomeRouteCallbacks(
         onDashboardActionClick = {
-            requestShizukuPermission(
-                refreshSnapshot = { appState.snapshot = repository.snapshot() },
-                onError = { error -> appState.loadError = error },
-            )
+            handleDashboardAction(context = context, repository = repository, appState = appState)
         },
         onPatchClick = { target ->
             coroutineScope.launchPatchSession(target, repository, manifestStore, appState)
         },
         onDismissSession = { appState.activeSession = null },
-        onDismissLiveDictionaryPrompt = { appState.clearLiveDictionaryPrompt() },
+        onDismissLiveDictionaryPrompt = {
+            appState.liveDictionaryPrompt = null
+            appState.pendingLiveDictionaryTarget = null
+        },
         onConfirmLiveDictionaryFix = {
             coroutineScope.launchLiveDictionaryFix(repository, manifestStore, appState)
         },
@@ -60,9 +63,19 @@ internal fun buildHomeRouteCallbacks(
         },
     )
 
-private fun BitInstallerAppState.clearLiveDictionaryPrompt() {
-    liveDictionaryPrompt = null
-    pendingLiveDictionaryTarget = null
+private fun handleDashboardAction(
+    context: Context,
+    repository: ShizukuMonetizationRepository,
+    appState: BitInstallerAppState,
+) {
+    if (appState.snapshot.status == ShizukuAccessStatus.READY) {
+        openShizukuApp(context = context, onError = { error -> appState.loadError = error })
+    } else {
+        requestShizukuPermission(
+            refreshSnapshot = { appState.snapshot = repository.snapshot() },
+            onError = { error -> appState.loadError = error },
+        )
+    }
 }
 
 private fun CoroutineScope.launchPatchSession(
