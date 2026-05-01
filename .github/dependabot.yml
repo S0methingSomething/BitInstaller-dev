@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      androidx:
+        patterns:
+          - "androidx*"
+      tooling:
+        patterns:
+          - "com.android.*"
+          - "org.jetbrains.kotlin*"
+          - "io.gitlab.arturbosch.detekt*"
+          - "org.jlleitschuh.gradle*"
+          - "com.github.ben-manes*"
+          - "com.autonomousapps*"
+          - "nl.littlerobots*"
