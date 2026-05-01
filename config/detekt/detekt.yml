@@ -1,0 +1,20 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - Composable
+      - Preview
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
