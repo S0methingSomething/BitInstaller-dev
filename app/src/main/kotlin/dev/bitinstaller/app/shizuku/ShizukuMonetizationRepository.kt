@@ -1,21 +1,16 @@
 package dev.bitinstaller.app.shizuku
 
 import android.content.pm.PackageManager
+import android.util.Log
+import dev.bitinstaller.app.targets.PatchTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuRemoteProcess
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
-private const val BITLIFE_PACKAGE_NAME: String = "com.candywriter.bitlife"
-private const val MONETIZATION_VARS_FILE_NAME: String = "MonetizationVars"
-private const val LIVE_DICTIONARY_DIRECTORY_NAME: String = "LiveDictionary"
-
-private val bitLifeFilesDirectory: String = "/storage/emulated/0/Android/data/$BITLIFE_PACKAGE_NAME/files"
-private val liveDictionaryDirectory: String = "$bitLifeFilesDirectory/$LIVE_DICTIONARY_DIRECTORY_NAME"
-val bitLifeMonetizationVarsPaths: List<String> = listOf(
-    "$bitLifeFilesDirectory/$MONETIZATION_VARS_FILE_NAME",
-)
+private const val TAG = "ShizukuRepo"
 
 enum class ShizukuAccessStatus {
     UNAVAILABLE,
@@ -60,7 +55,17 @@ data class LiveDictionaryRepairResult(
 )
 
 class ShizukuMonetizationRepository {
-    fun snapshot(): ShizukuSnapshot {
+
+    /** Guard against concurrent patch operations across targets. */
+    private val operationInProgress = AtomicBoolean(false)
+
+    /**
+     * Probe current Shizuku binder and permission state.
+     *
+     * Performs Binder IPC ([Shizuku.checkSelfPermission], [Shizuku.getUid]),
+     * so callers on Main should wrap this in a coroutine on [Dispatchers.IO].
+     */
+    fun checkStatus(): ShizukuSnapshot {
         if (!isBinderAlive()) {
             return ShizukuSnapshot(status = ShizukuAccessStatus.UNAVAILABLE, uid = null)
         }
@@ -79,24 +84,21 @@ class ShizukuMonetizationRepository {
         }
     }
 
-    suspend fun readMonetizationVars(): MonetizationVarsFile {
+    suspend fun readMonetizationVars(target: PatchTarget): MonetizationVarsFile {
         requireReady()
-        requireLiveDictionaryDirectory()
+        requireLiveDictionaryDirectory(target)
 
-        val failures = mutableListOf<String>()
-        bitLifeMonetizationVarsPaths.forEach { path ->
-            val result = runShell(command = "cat ${shellQuote(path)}")
-            if (result.isSuccess) {
-                return MonetizationVarsFile(path = path, content = result.output)
-            }
-            failures += "$path: ${result.errorSummary()}"
+        val path = target.monetizationVarsPath
+        val result = runShell(command = "cat ${shellQuote(path)}")
+        if (result.isSuccess) {
+            return MonetizationVarsFile(path = path, content = result.output)
         }
 
         throw IOException(
             buildString {
-                append("Could not read BitLife MonetizationVars. ")
-                append("Open BitLife once, then make sure Shizuku has storage access for Android/data. ")
-                append(failures.joinToString(separator = " | "))
+                append("Could not read ${target.displayName} MonetizationVars. ")
+                append("Open ${target.displayName} once, then ensure Shizuku can access Android/data. ")
+                append("$path: ${result.errorSummary()}")
             },
         )
     }
@@ -106,7 +108,6 @@ class ShizukuMonetizationRepository {
         content: String,
     ): MonetizationVarsWriteResult {
         requireReady()
-        requireLiveDictionaryDirectory()
 
         val backupPath = "$path.bitinstaller.bak"
         val command =
@@ -120,11 +121,11 @@ class ShizukuMonetizationRepository {
         return MonetizationVarsWriteResult(path = path, backupPath = backupPath)
     }
 
-    suspend fun liveDictionaryState(): LiveDictionaryState {
+    suspend fun liveDictionaryState(target: PatchTarget): LiveDictionaryState {
         requireReady()
-        val result = runShell(command = liveDictionaryStateCommand())
+        val result = runShell(command = liveDictionaryStateCommand(target))
         if (!result.isSuccess) {
-            throw IOException("Could not check BitLife LiveDictionary: ${result.errorSummary()}")
+            throw IOException("Could not check ${target.displayName} LiveDictionary: ${result.errorSummary()}")
         }
 
         val status = when (result.output.trim()) {
@@ -136,12 +137,12 @@ class ShizukuMonetizationRepository {
         return LiveDictionaryState(status = status)
     }
 
-    suspend fun replaceLiveDictionary(): LiveDictionaryRepairResult {
+    suspend fun replaceLiveDictionary(target: PatchTarget): LiveDictionaryRepairResult {
         requireReady()
-        val backupPath = "$liveDictionaryDirectory.bitinstaller.bak"
-        val result = runShell(command = replaceLiveDictionaryCommand(backupPath = backupPath))
+        val backupPath = "${target.liveDictionaryPath}.bitinstaller.bak"
+        val result = runShell(command = replaceLiveDictionaryCommand(target, backupPath))
         if (!result.isSuccess) {
-            throw IOException("Could not prepare BitLife LiveDictionary: ${result.errorSummary()}")
+            throw IOException("Could not prepare ${target.displayName} LiveDictionary: ${result.errorSummary()}")
         }
 
         return when (result.output.trim()) {
@@ -154,17 +155,49 @@ class ShizukuMonetizationRepository {
         }
     }
 
-    private suspend fun requireLiveDictionaryDirectory() {
-        val state = liveDictionaryState()
+    /**
+     * Read the BitInstaller patch manifest from the target app's external storage.
+     * Returns null (with a warning log) if the manifest does not exist or is unreadable.
+     */
+    suspend fun readManifest(target: PatchTarget): String? {
+        requireReady()
+        val result = runShell(command = "cat ${shellQuote(target.manifestPath)}")
+        if (!result.isSuccess) {
+            Log.w(TAG, "Manifest unreadable for ${target.packageName}: ${result.errorSummary()}")
+        }
+        return if (result.isSuccess) result.output else null
+    }
+
+    suspend fun writeManifest(target: PatchTarget, content: String) {
+        requireReady()
+        val result = runShell(command = "cat > ${shellQuote(target.manifestPath)}", stdin = content)
+        if (!result.isSuccess) {
+            throw IOException("Could not write manifest: ${result.errorSummary()}")
+        }
+    }
+
+    /**
+     * Acquire the operation lock. Returns true if this caller acquired it,
+     * false if another operation is already running.
+     */
+    fun tryAcquireOperationLock(): Boolean = operationInProgress.compareAndSet(false, true)
+
+    /** Release the operation lock. */
+    fun releaseOperationLock() {
+        operationInProgress.set(false)
+    }
+
+    private suspend fun requireLiveDictionaryDirectory(target: PatchTarget) {
+        val state = liveDictionaryState(target)
         val failureMessage = when (state.status) {
             LiveDictionaryStatus.DIRECTORY -> null
             LiveDictionaryStatus.NOT_DIRECTORY -> {
-                "BitLife LiveDictionary exists but is not a folder. Fix LiveDictionary before saving, " +
-                    "or BitLife can reset MonetizationVars back to defaults."
+                "${target.displayName} LiveDictionary exists but is not a folder. Fix LiveDictionary before saving, " +
+                    "or ${target.displayName} can reset MonetizationVars back to defaults."
             }
             LiveDictionaryStatus.MISSING -> {
-                "BitLife LiveDictionary folder is missing. Open BitLife once and make sure " +
-                    "LiveDictionary exists before patching, or MonetizationVars can reset to defaults."
+                "${target.displayName} LiveDictionary folder is missing. Open ${target.displayName} once and make " +
+                    "sure LiveDictionary exists before patching, or MonetizationVars can reset to defaults."
             }
         }
 
@@ -173,29 +206,36 @@ class ShizukuMonetizationRepository {
         }
     }
 
+    /**
+     * Assert Shizuku is [ShizukuAccessStatus.READY].
+     *
+     * Performs Binder IPC via [checkStatus], so all call sites must already
+     * be on [Dispatchers.IO] (enforced by being private to suspend functions
+     * that dispatch to IO in [runShell]).
+     */
     private fun requireReady() {
-        val snapshot = snapshot()
-        check(snapshot.status == ShizukuAccessStatus.READY) {
-            "Shizuku is not ready. Current status: ${snapshot.status.name.lowercase()}"
+        val current = checkStatus()
+        check(current.status == ShizukuAccessStatus.READY) {
+            "Shizuku is not ready. Current status: ${current.status.name.lowercase()}"
         }
     }
 }
 
-private fun liveDictionaryStateCommand(): String =
+private fun liveDictionaryStateCommand(target: PatchTarget): String =
     buildString {
-        append("if [ -d ${shellQuote(liveDictionaryDirectory)} ]; then printf directory; ")
-        append("elif [ -e ${shellQuote(liveDictionaryDirectory)} ]; then printf not_directory; ")
+        append("if [ -d ${shellQuote(target.liveDictionaryPath)} ]; then printf directory; ")
+        append("elif [ -e ${shellQuote(target.liveDictionaryPath)} ]; then printf not_directory; ")
         append("else printf missing; fi")
     }
 
-private fun replaceLiveDictionaryCommand(backupPath: String): String =
+private fun replaceLiveDictionaryCommand(target: PatchTarget, backupPath: String): String =
     buildString {
-        append("if [ -d ${shellQuote(liveDictionaryDirectory)} ]; then printf ready; ")
-        append("elif [ -e ${shellQuote(liveDictionaryDirectory)} ]; then ")
+        append("if [ -d ${shellQuote(target.liveDictionaryPath)} ]; then printf ready; ")
+        append("elif [ -e ${shellQuote(target.liveDictionaryPath)} ]; then ")
         append("rm -rf ${shellQuote(backupPath)} && ")
-        append("mv -f ${shellQuote(liveDictionaryDirectory)} ${shellQuote(backupPath)} && ")
-        append("mkdir -p ${shellQuote(liveDictionaryDirectory)} && printf replaced; ")
-        append("else mkdir -p ${shellQuote(liveDictionaryDirectory)} && printf created; fi")
+        append("mv -f ${shellQuote(target.liveDictionaryPath)} ${shellQuote(backupPath)} && ")
+        append("mkdir -p ${shellQuote(target.liveDictionaryPath)} && printf replaced; ")
+        append("else mkdir -p ${shellQuote(target.liveDictionaryPath)} && printf created; fi")
     }
 
 private data class ShellResult(
@@ -214,6 +254,14 @@ private data class ShellResult(
 private fun isBinderAlive(): Boolean =
     runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
+/**
+ * Execute a shell command via Shizuku with concurrent stdout/stderr capture.
+ *
+ * Reads stdout and stderr in separate threads to prevent pipe deadlock —
+ * if stderr's OS buffer fills while we block on stdout.read(), the child
+ * process would stall writing to stderr, and we'd never finish reading
+ * stdout.
+ */
 private suspend fun runShell(
     command: String,
     stdin: String? = null,
@@ -228,14 +276,27 @@ private suspend fun runShell(
             }
         }
 
+        // Read stderr on a background thread to avoid pipe deadlock.
+        val errorFuture = java.util.concurrent.CompletableFuture.supplyAsync {
+            process.errorStream.bufferedReader().readText()
+        }
         val output = process.inputStream.bufferedReader().readText()
-        val error = process.errorStream.bufferedReader().readText()
+        val error = errorFuture.get()
         ShellResult(exitCode = process.waitFor(), output = output, error = error)
     }
 
 private fun shellQuote(value: String): String =
     "'${value.replace("'", "'\"'\"'")}'"
 
+/**
+ * Launch a shell via Shizuku's internal `newProcess` method.
+ *
+ * The public Shizuku API does not expose a stable process-creation method —
+ * `Shizuku.newProcess` is `@hide`. We use reflection to reach it because no
+ * supported alternative exists for running arbitrary shell commands with
+ * Shizuku-elevated privileges. If the Shizuku internals change, this will
+ * throw [NoSuchMethodException] at call time rather than silently failing.
+ */
 private fun newShizukuShellProcess(command: String): ShizukuRemoteProcess {
     val newProcess = Shizuku::class.java.getDeclaredMethod(
         "newProcess",
