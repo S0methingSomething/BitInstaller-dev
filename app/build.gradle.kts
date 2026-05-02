@@ -94,6 +94,7 @@ dependencies {
     implementation(libs.coroutines.core)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
+    implementation(libs.accompanist.drawablepainter)
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
