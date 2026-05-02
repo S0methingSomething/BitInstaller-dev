@@ -1,11 +1,12 @@
 package dev.bitinstaller.app.home
 
-import android.content.Context
+import android.util.Log
+import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
+import dev.bitinstaller.app.targets.PatchTarget
 import org.json.JSONObject
-import java.io.File
 import java.security.MessageDigest
 
-private const val PATCH_MANIFEST_FILE_NAME: String = "patch-manifest.json"
+private const val TAG = "PatchManifestStore"
 private const val MANIFEST_PACKAGE_NAME_KEY: String = "packageName"
 private const val MANIFEST_PATH_KEY: String = "path"
 private const val MANIFEST_SHA_KEY: String = "sha256"
@@ -16,19 +17,18 @@ data class PatchManifestPresence(
     val label: String,
 )
 
-class PatchManifestStore(context: Context) {
-    private val manifestFile = File(context.filesDir, PATCH_MANIFEST_FILE_NAME)
-
-    fun presenceFor(
-        packageName: String,
-        path: String,
+class PatchManifestStore(
+    private val repository: ShizukuMonetizationRepository,
+) {
+    suspend fun presenceFor(
+        target: PatchTarget,
         encryptedContent: String,
     ): PatchManifestPresence {
-        val entry = readManifest().optJSONObject(packageName)
-        val storedHash = entry?.optString(MANIFEST_SHA_KEY).orEmpty()
-        val storedPath = entry?.optString(MANIFEST_PATH_KEY).orEmpty()
+        val manifest = readRemoteManifest(target)
+        val storedHash = manifest?.optString(MANIFEST_SHA_KEY).orEmpty()
+        val storedPath = manifest?.optString(MANIFEST_PATH_KEY).orEmpty()
         val currentHash = encryptedContent.sha256()
-        val isPatched = storedHash == currentHash && storedPath == path
+        val isPatched = storedHash == currentHash && storedPath == target.monetizationVarsPath
 
         return if (isPatched) {
             PatchManifestPresence(state = PatchPresenceState.PATCHED, label = "Patched")
@@ -37,31 +37,31 @@ class PatchManifestStore(context: Context) {
         }
     }
 
-    fun recordPatched(
-        packageName: String,
-        path: String,
+    suspend fun recordPatched(
+        target: PatchTarget,
         encryptedContent: String,
     ) {
-        val manifest = readManifest()
-        manifest.put(
-            packageName,
-            JSONObject()
-                .put(MANIFEST_PACKAGE_NAME_KEY, packageName)
-                .put(MANIFEST_PATH_KEY, path)
-                .put(MANIFEST_SHA_KEY, encryptedContent.sha256())
-                .put(MANIFEST_UPDATED_AT_KEY, System.currentTimeMillis()),
-        )
-        manifestFile.writeText(manifest.toString(2))
+        val entry = JSONObject()
+            .put(MANIFEST_PACKAGE_NAME_KEY, target.packageName)
+            .put(MANIFEST_PATH_KEY, target.monetizationVarsPath)
+            .put(MANIFEST_SHA_KEY, encryptedContent.sha256())
+            .put(MANIFEST_UPDATED_AT_KEY, System.currentTimeMillis())
+        repository.writeManifest(target = target, content = entry.toString(2))
     }
 
-    private fun readManifest(): JSONObject =
-        runCatching {
-            if (manifestFile.exists()) JSONObject(manifestFile.readText()) else JSONObject()
-        }.getOrDefault(JSONObject())
+    private suspend fun readRemoteManifest(target: PatchTarget): JSONObject? {
+        val raw = repository.readManifest(target) ?: return null
+        return try {
+            JSONObject(raw)
+        } catch (e: org.json.JSONException) {
+            Log.w(TAG, "Corrupt manifest for ${target.packageName}: ${e.message}")
+            null
+        }
+    }
 }
 
 private fun String.sha256(): String {
-    val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray())
+    val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray(Charsets.UTF_8))
     return digest.joinToString(separator = "") { byte ->
         "%02x".format(byte)
     }
