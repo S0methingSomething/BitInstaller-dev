@@ -3,6 +3,13 @@
 
     <queries>
         <package android:name="com.candywriter.bitlife" />
+        <package android:name="com.goodgamestudios.bitlife.go.life.simulation" />
+        <package android:name="com.goodgamestudios.bitlife.de.deutsch.life.simulation" />
+        <package android:name="com.goodgamestudios.bitlife.es.espanol.simulador.de.vida" />
+        <package android:name="com.goodgamestudios.bitlife.br.portugues.simulacao.de.vida" />
+        <package android:name="com.goodgamestudios.bitlife.fr.francais.simulation.de.vie" />
+        <package android:name="com.candywriter.doglife" />
+        <package android:name="com.candywriter.catlife" />
         <package android:name="moe.shizuku.privileged.api" />
     </queries>
 
