@@ -181,13 +181,6 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
             accent = MaterialTheme.colorScheme.primary,
             isQuietAction = true,
         )
-
-        is BackendStatus.Degraded -> DashboardCardState(
-            headline = "Needs attention",
-            supporting = "Status: ${status.message}",
-            action = "Start",
-            accent = MaterialTheme.colorScheme.secondary,
-        )
     }
 
 @Composable

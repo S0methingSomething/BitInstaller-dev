@@ -9,8 +9,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,11 +26,19 @@ import dev.bitinstaller.app.home.PatchManifestStore
 import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchSupportState
 import dev.bitinstaller.app.home.PatchTargetUiState
+import dev.bitinstaller.app.home.TargetIcon
+import dev.bitinstaller.app.home.TargetPatchState
 import dev.bitinstaller.app.home.previewHomeUiState
+import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
+import dev.bitinstaller.app.targets.ALL_TARGETS
+import dev.bitinstaller.app.targets.InstalledAppInfo
+import dev.bitinstaller.app.targets.resolveAllAppInfo
 import dev.bitinstaller.app.ui.theme.BitInstallerTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
@@ -50,27 +62,53 @@ class MainActivity : ComponentActivity() {
 private fun BitInstallerApp() {
     val context = LocalContext.current
     val repository = remember { ShizukuMonetizationRepository() }
-    val manifestStore = remember(context) { PatchManifestStore(context.applicationContext) }
+    val manifestStore = remember(repository) { PatchManifestStore(repository) }
+    val operationLock = remember { OperationLock() }
     val coroutineScope = rememberCoroutineScope()
-    val appState = remember { BitInstallerAppState(initialSnapshot = repository.snapshot()) }
+
+    // Initial snapshot deferred — LaunchedEffect will populate on IO.
+    val appState = remember {
+        BitInstallerAppState(
+            initialSnapshot = ShizukuSnapshot(
+                status = ShizukuAccessStatus.UNAVAILABLE,
+                uid = null,
+            ),
+        )
+    }
+
+    // Resolve app info asynchronously on Dispatchers.IO instead of blocking
+    // the Main thread with 16+ Binder IPC calls during first composition.
+    var appInfoMap by remember { mutableStateOf(emptyMap<String, InstalledAppInfo>()) }
+    LaunchedEffect(Unit) {
+        appInfoMap = resolveAllAppInfo(context)
+        // Also resolve initial Shizuku status off Main.
+        appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
+    }
 
     BindShizukuListeners(repository = repository, onSnapshotChanged = { appState.snapshot = it })
 
     HomeRoute(
         state = buildHomeUiState(
-            snapshot = appState.snapshot,
-            isLoading = appState.isLoading,
-            loadError = appState.loadError,
-            patchPresence = appState.patchPresence,
+            HomeUiStateInput(
+                snapshot = appState.snapshot,
+                isLoading = appState.isLoading,
+                loadingTargetId = appState.loadingTargetId,
+                loadError = appState.loadError,
+                patchPresences = appState.patchPresences,
+                appInfoMap = appInfoMap,
+            ),
         ),
         activeSession = appState.activeSession,
         liveDictionaryPrompt = appState.liveDictionaryPrompt,
         callbacks = buildHomeRouteCallbacks(
             context = context,
-            repository = repository,
-            manifestStore = manifestStore,
-            coroutineScope = coroutineScope,
-            appState = appState,
+            deps = AppFlowDeps(
+                repository = repository,
+                manifestStore = manifestStore,
+                operationLock = operationLock,
+                coroutineScope = coroutineScope,
+                appState = appState,
+            ),
         ),
     )
 }
@@ -81,19 +119,22 @@ private fun BindShizukuListeners(
     onSnapshotChanged: (ShizukuSnapshot) -> Unit,
 ) {
     DisposableEffect(repository) {
-        val refreshSnapshot = { onSnapshotChanged(repository.snapshot()) }
-        val binderReceivedListener = Shizuku.OnBinderReceivedListener(refreshSnapshot)
-        val binderDeadListener = Shizuku.OnBinderDeadListener(refreshSnapshot)
+        // checkStatus() performs Binder IPC — these listeners run on Main,
+        // but they fire infrequently (binder connect/disconnect/permission grant)
+        // and Shizuku.checkSelfPermission() is fast enough for occasional callbacks.
+        val refreshStatus = { onSnapshotChanged(repository.checkStatus()) }
+        val binderReceivedListener = Shizuku.OnBinderReceivedListener(refreshStatus)
+        val binderDeadListener = Shizuku.OnBinderDeadListener(refreshStatus)
         val permissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, _ ->
             if (requestCode == SHIZUKU_PERMISSION_REQUEST_CODE) {
-                refreshSnapshot()
+                refreshStatus()
             }
         }
 
         runCatching { Shizuku.addBinderReceivedListener(binderReceivedListener) }
         runCatching { Shizuku.addBinderDeadListener(binderDeadListener) }
         runCatching { Shizuku.addRequestPermissionResultListener(permissionListener) }
-        refreshSnapshot()
+        refreshStatus()
 
         onDispose {
             runCatching { Shizuku.removeBinderReceivedListener(binderReceivedListener) }
@@ -103,66 +144,114 @@ private fun BindShizukuListeners(
     }
 }
 
-private fun buildHomeUiState(
-    snapshot: ShizukuSnapshot,
-    isLoading: Boolean,
-    loadError: String?,
-    patchPresence: PatchManifestPresence,
-): HomeUiState {
+private data class HomeUiStateInput(
+    val snapshot: ShizukuSnapshot,
+    val isLoading: Boolean,
+    val loadingTargetId: String?,
+    val loadError: String?,
+    val patchPresences: Map<String, PatchManifestPresence>,
+    val appInfoMap: Map<String, InstalledAppInfo>,
+)
+
+private data class TargetUiInput(
+    val target: dev.bitinstaller.app.targets.PatchTarget,
+    val info: InstalledAppInfo?,
+    val isReady: Boolean,
+    val isLoading: Boolean,
+    val loadError: String?,
+    val presence: PatchManifestPresence?,
+)
+
+private fun buildHomeUiState(input: HomeUiStateInput): HomeUiState {
     val backendStatus =
-        when (snapshot.status) {
+        when (input.snapshot.status) {
             ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
             ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
             ShizukuAccessStatus.READY -> BackendStatus.Ready
         }
+    val isReady = input.snapshot.status == ShizukuAccessStatus.READY
 
-    return previewHomeUiState().copy(
+    return HomeUiState(
+        title = "BitInstaller",
+        summary = "MonetizationVars editor",
         backendStatus = backendStatus,
-        patchTargets = listOf(
-            buildBitLifeTarget(
-                snapshot = snapshot,
-                isLoading = isLoading,
-                loadError = loadError,
-                patchPresence = patchPresence,
-            ),
+        patchTargets = ALL_TARGETS.map { target ->
+            buildTargetUiState(
+                TargetUiInput(
+                    target = target,
+                    info = input.appInfoMap[target.packageName],
+                    isReady = isReady,
+                    isLoading = input.isLoading && input.loadingTargetId == target.packageName,
+                    loadError = if (input.loadingTargetId == target.packageName) input.loadError else null,
+                    presence = input.patchPresences[target.packageName],
+                ),
+            )
+        },
+    )
+}
+
+private fun buildTargetUiState(input: TargetUiInput): PatchTargetUiState {
+    val installed = input.info?.isInstalled == true
+    return PatchTargetUiState(
+        name = input.info?.appName ?: input.target.displayName,
+        packageName = input.target.packageName,
+        icon = TargetIcon(
+            monogram = input.target.monogram,
+            drawable = input.info?.icon,
+        ),
+        versionLabel = input.info?.versionName.orEmpty(),
+        isInstalled = installed,
+        patchState = TargetPatchState(
+            supportState = targetSupportState(isReady = input.isReady, isInstalled = installed),
+            presenceState = targetPresenceState(input.isReady, input.presence),
+            presenceLabel = targetPresenceLabel(input.isReady, installed, input.presence),
+            statusLabel = targetStatusLabel(input.isReady, input.isLoading, input.loadError, installed),
+            actionLabel = if (input.isLoading) "Loading" else "Patch",
+            actionEnabled = input.isReady && installed && !input.isLoading,
         ),
     )
 }
 
-private fun buildBitLifeTarget(
-    snapshot: ShizukuSnapshot,
-    isLoading: Boolean,
-    loadError: String?,
-    patchPresence: PatchManifestPresence,
-): PatchTargetUiState {
-    val isReady = snapshot.status == ShizukuAccessStatus.READY
-    return PatchTargetUiState(
-        name = "BitLife",
-        packageName = "com.candywriter.bitlife",
-        iconMonogram = "BL",
-        versionLabel = "3.27.7",
-        supportState = if (isReady) PatchSupportState.READY else PatchSupportState.BACKEND_REQUIRED,
-        patchPresenceState = if (isReady) patchPresence.state else PatchPresenceState.UNKNOWN,
-        patchPresenceLabel = if (isReady) patchPresence.label else "Locked",
-        statusLabel = targetStatusLabel(
-            isReady = isReady,
-            isLoading = isLoading,
-            loadError = loadError,
-        ),
-        patchLabel = if (isLoading) "Loading" else "Patch",
-        patchEnabled = isReady && !isLoading,
-    )
-}
+private fun targetSupportState(isReady: Boolean, isInstalled: Boolean): PatchSupportState =
+    when {
+        !isInstalled -> PatchSupportState.UNSUPPORTED
+        isReady -> PatchSupportState.READY
+        else -> PatchSupportState.BACKEND_REQUIRED
+    }
+
+private fun targetPresenceState(
+    isReady: Boolean,
+    presence: PatchManifestPresence?,
+): PatchPresenceState =
+    when {
+        !isReady -> PatchPresenceState.UNKNOWN
+        presence != null -> presence.state
+        else -> PatchPresenceState.UNKNOWN
+    }
+
+private fun targetPresenceLabel(
+    isReady: Boolean,
+    isInstalled: Boolean,
+    presence: PatchManifestPresence?,
+): String =
+    when {
+        !isInstalled -> "Not installed"
+        !isReady -> "Locked"
+        presence != null -> presence.label
+        else -> "Unknown"
+    }
 
 private fun targetStatusLabel(
     isReady: Boolean,
     isLoading: Boolean,
     loadError: String?,
+    isInstalled: Boolean,
 ): String =
     when {
+        !isInstalled -> "App not installed on device"
         isLoading -> "Reading MonetizationVars"
         loadError != null -> loadError
-        isReady -> "Ready to load BitLife data"
+        isReady -> "Ready to load data"
         else -> "Grant Shizuku access first"
     }
 

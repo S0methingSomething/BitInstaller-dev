@@ -15,9 +15,12 @@ import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchTargetUiState
 import dev.bitinstaller.app.shizuku.LiveDictionaryStatus
 import dev.bitinstaller.app.shizuku.MonetizationVarsFile
+import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
+import dev.bitinstaller.app.targets.PatchTarget
+import dev.bitinstaller.app.targets.findTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
@@ -28,38 +31,53 @@ internal class BitInstallerAppState(initialSnapshot: ShizukuSnapshot) {
     var snapshot by mutableStateOf(initialSnapshot)
     var activeSession by mutableStateOf<PatchEditorSession?>(null)
     var isLoading by mutableStateOf(false)
+    var loadingTargetId by mutableStateOf<String?>(null)
     var loadError by mutableStateOf<String?>(null)
-    var patchPresence by mutableStateOf(
-        PatchManifestPresence(state = PatchPresenceState.NOT_PATCHED, label = "Not patched"),
-    )
+    var patchPresences by mutableStateOf(mapOf<String, PatchManifestPresence>())
     var pendingLiveDictionaryTarget by mutableStateOf<PatchTargetUiState?>(null)
     var liveDictionaryPrompt by mutableStateOf<LiveDictionaryPromptUiState?>(null)
 }
 
+internal class AppFlowDeps(
+    val repository: ShizukuMonetizationRepository,
+    val manifestStore: PatchManifestStore,
+    val operationLock: OperationLock,
+    val coroutineScope: CoroutineScope,
+    val appState: BitInstallerAppState,
+)
+
 internal fun buildHomeRouteCallbacks(
     context: Context,
-    repository: ShizukuMonetizationRepository,
-    manifestStore: PatchManifestStore,
-    coroutineScope: CoroutineScope,
-    appState: BitInstallerAppState,
+    deps: AppFlowDeps,
 ): HomeRouteCallbacks =
     HomeRouteCallbacks(
         onDashboardActionClick = {
-            handleDashboardAction(context = context, repository = repository, appState = appState)
+            handleDashboardAction(context = context, repository = deps.repository, appState = deps.appState)
         },
         onPatchClick = { target ->
-            coroutineScope.launchPatchSession(target, repository, manifestStore, appState)
+            deps.coroutineScope.launchPatchSession(
+                target,
+                deps.repository,
+                deps.manifestStore,
+                deps.operationLock,
+                deps.appState,
+            )
         },
-        onDismissSession = { appState.activeSession = null },
+        onDismissSession = { deps.appState.activeSession = null },
         onDismissLiveDictionaryPrompt = {
-            appState.liveDictionaryPrompt = null
-            appState.pendingLiveDictionaryTarget = null
+            deps.appState.liveDictionaryPrompt = null
+            deps.appState.pendingLiveDictionaryTarget = null
         },
         onConfirmLiveDictionaryFix = {
-            coroutineScope.launchLiveDictionaryFix(repository, manifestStore, appState)
+            deps.coroutineScope.launchLiveDictionaryFix(
+                deps.repository,
+                deps.manifestStore,
+                deps.operationLock,
+                deps.appState,
+            )
         },
         onSaveSession = { session, data ->
-            savePatchSession(session, data, repository, manifestStore, appState)
+            savePatchSession(session, data, deps.repository, deps.manifestStore, deps.appState)
         },
     )
 
@@ -72,47 +90,69 @@ private fun handleDashboardAction(
         openShizukuApp(context = context, onError = { error -> appState.loadError = error })
     } else {
         requestShizukuPermission(
-            refreshSnapshot = { appState.snapshot = repository.snapshot() },
+            refreshSnapshot = { appState.snapshot = repository.checkStatus() },
             onError = { error -> appState.loadError = error },
         )
     }
 }
 
+/**
+ * Launch a patch session for [target], guarded against concurrent operations.
+ *
+ * Uses [OperationLock] to prevent race conditions when tapping Patch
+ * rapidly on multiple targets.
+ */
 private fun CoroutineScope.launchPatchSession(
     target: PatchTargetUiState,
     repository: ShizukuMonetizationRepository,
     manifestStore: PatchManifestStore,
+    operationLock: OperationLock,
     appState: BitInstallerAppState,
 ) {
+    if (!operationLock.tryAcquire()) return
     launch {
-        appState.loadSession(
-            target = target,
-            repository = repository,
-            manifestStore = manifestStore,
-        )
+        try {
+            appState.loadSession(
+                target = target,
+                repository = repository,
+                manifestStore = manifestStore,
+            )
+        } finally {
+            operationLock.release()
+        }
     }
 }
 
 private fun CoroutineScope.launchLiveDictionaryFix(
     repository: ShizukuMonetizationRepository,
     manifestStore: PatchManifestStore,
+    operationLock: OperationLock,
     appState: BitInstallerAppState,
 ) {
     val target = appState.pendingLiveDictionaryTarget ?: return
+    if (!operationLock.tryAcquire()) return
     launch {
-        appState.isLoading = true
-        appState.loadError = null
-        appState.liveDictionaryPrompt = null
-        runCatching {
-            repository.replaceLiveDictionary()
-            appState.loadSession(
-                target = target,
-                repository = repository,
-                manifestStore = manifestStore,
-            )
-        }.onFailure { error -> appState.loadError = error.message }
-        appState.pendingLiveDictionaryTarget = null
-        appState.isLoading = false
+        try {
+            appState.isLoading = true
+            appState.loadingTargetId = target.packageName
+            appState.loadError = null
+            appState.liveDictionaryPrompt = null
+            runCatching {
+                val patchTarget = findTarget(target.packageName)
+                    ?: error("Unknown target: ${target.packageName}")
+                repository.replaceLiveDictionary(patchTarget)
+                appState.loadSession(
+                    target = target,
+                    repository = repository,
+                    manifestStore = manifestStore,
+                )
+            }.onFailure { error -> appState.loadError = error.message }
+            appState.pendingLiveDictionaryTarget = null
+            appState.isLoading = false
+            appState.loadingTargetId = null
+        } finally {
+            operationLock.release()
+        }
     }
 }
 
@@ -122,13 +162,16 @@ private suspend fun BitInstallerAppState.loadSession(
     manifestStore: PatchManifestStore,
 ) {
     isLoading = true
+    loadingTargetId = target.packageName
     loadError = null
     runCatching {
         loadPatchSession(
             target = target,
             repository = repository,
             manifestStore = manifestStore,
-            onPatchPresenceChanged = { patchPresence = it },
+            onPatchPresenceChanged = { pkg, presence ->
+                patchPresences = patchPresences + (pkg to presence)
+            },
             onLiveDictionaryIssue = { prompt ->
                 pendingLiveDictionaryTarget = target
                 liveDictionaryPrompt = prompt
@@ -138,6 +181,7 @@ private suspend fun BitInstallerAppState.loadSession(
         .onSuccess { session -> activeSession = session }
         .onFailure { error -> loadError = error.message }
     isLoading = false
+    loadingTargetId = null
 }
 
 private suspend fun savePatchSession(
@@ -147,51 +191,53 @@ private suspend fun savePatchSession(
     manifestStore: PatchManifestStore,
     appState: BitInstallerAppState,
 ): String {
+    val patchTarget = findTarget(session.packageName)
+        ?: error("Unknown target: ${session.packageName}")
     val encrypted = MonetizationCodec.encrypt(data)
     val writeResult = repository.writeMonetizationVars(path = session.filePath, content = encrypted)
-    manifestStore.recordPatched(
-        packageName = session.target.packageName,
-        path = session.filePath,
-        encryptedContent = encrypted,
-    )
-    appState.patchPresence = PatchManifestPresence(state = PatchPresenceState.PATCHED, label = "Patched")
-    return "Saved to BitLife. Backup: ${writeResult.backupPath.substringAfterLast('/')}"
+    manifestStore.recordPatched(target = patchTarget, encryptedContent = encrypted)
+    appState.patchPresences = appState.patchPresences + (
+        patchTarget.packageName to PatchManifestPresence(
+            state = PatchPresenceState.PATCHED,
+            label = "Patched",
+        )
+        )
+    return "Saved to ${patchTarget.displayName}. Backup: ${writeResult.backupPath.substringAfterLast('/')}"
 }
 
 private suspend fun loadPatchSession(
     target: PatchTargetUiState,
     repository: ShizukuMonetizationRepository,
     manifestStore: PatchManifestStore,
-    onPatchPresenceChanged: (PatchManifestPresence) -> Unit,
+    onPatchPresenceChanged: (String, PatchManifestPresence) -> Unit,
     onLiveDictionaryIssue: (LiveDictionaryPromptUiState) -> Unit,
 ): PatchEditorSession? {
-    val liveDictionaryState = repository.liveDictionaryState()
+    val patchTarget = findTarget(target.packageName)
+        ?: error("Unknown target: ${target.packageName}")
+
+    val liveDictionaryState = repository.liveDictionaryState(patchTarget)
     if (liveDictionaryState.status != LiveDictionaryStatus.DIRECTORY) {
-        onLiveDictionaryIssue(liveDictionaryState.status.toPromptUiState())
+        onLiveDictionaryIssue(liveDictionaryState.status.toPromptUiState(patchTarget))
         return null
     }
 
-    val file = repository.readMonetizationVars()
-    val presence = manifestStore.presenceFor(
-        packageName = target.packageName,
-        path = file.path,
-        encryptedContent = file.content,
-    )
-    onPatchPresenceChanged(presence)
+    val file = repository.readMonetizationVars(patchTarget)
+    val presence = manifestStore.presenceFor(target = patchTarget, encryptedContent = file.content)
+    onPatchPresenceChanged(patchTarget.packageName, presence)
     return file.toPatchEditorSession(target = target, patchPresence = presence)
 }
 
-private fun LiveDictionaryStatus.toPromptUiState(): LiveDictionaryPromptUiState =
+private fun LiveDictionaryStatus.toPromptUiState(target: PatchTarget): LiveDictionaryPromptUiState =
     when (this) {
         LiveDictionaryStatus.MISSING -> LiveDictionaryPromptUiState(
             title = "Create LiveDictionary?",
-            message = "BitLife can reset MonetizationVars to defaults when LiveDictionary is missing. " +
+            message = "${target.displayName} can reset MonetizationVars to defaults when LiveDictionary is missing. " +
                 "Create the LiveDictionary folder before patching?",
             confirmLabel = "Create folder",
         )
         LiveDictionaryStatus.NOT_DIRECTORY -> LiveDictionaryPromptUiState(
             title = "Replace LiveDictionary?",
-            message = "LiveDictionary exists but is not a folder. BitLife can reset MonetizationVars " +
+            message = "LiveDictionary exists but is not a folder. ${target.displayName} can reset MonetizationVars " +
                 "to defaults in this state. Replace it with a folder and keep a .bitinstaller.bak backup?",
             confirmLabel = "Replace",
         )
@@ -223,10 +269,13 @@ private fun MonetizationVarsFile.toPatchEditorSession(
     patchPresence: PatchManifestPresence,
 ): PatchEditorSession =
     PatchEditorSession(
+        packageName = target.packageName,
         target = target.copy(
-            patchPresenceState = patchPresence.state,
-            patchPresenceLabel = patchPresence.label,
-            statusLabel = "Loaded from BitLife files",
+            patchState = target.patchState.copy(
+                presenceState = patchPresence.state,
+                presenceLabel = patchPresence.label,
+                statusLabel = "Loaded from ${target.name} files",
+            ),
         ),
         filePath = path,
         initialData = MonetizationCodec.decrypt(content),

@@ -8,7 +8,6 @@ import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuRemoteProcess
 import java.io.IOException
-import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "ShizukuRepo"
 
@@ -55,9 +54,6 @@ data class LiveDictionaryRepairResult(
 )
 
 class ShizukuMonetizationRepository {
-
-    /** Guard against concurrent patch operations across targets. */
-    private val operationInProgress = AtomicBoolean(false)
 
     /**
      * Probe current Shizuku binder and permission state.
@@ -174,17 +170,6 @@ class ShizukuMonetizationRepository {
         if (!result.isSuccess) {
             throw IOException("Could not write manifest: ${result.errorSummary()}")
         }
-    }
-
-    /**
-     * Acquire the operation lock. Returns true if this caller acquired it,
-     * false if another operation is already running.
-     */
-    fun tryAcquireOperationLock(): Boolean = operationInProgress.compareAndSet(false, true)
-
-    /** Release the operation lock. */
-    fun releaseOperationLock() {
-        operationInProgress.set(false)
     }
 
     private suspend fun requireLiveDictionaryDirectory(target: PatchTarget) {

@@ -1,6 +1,7 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,10 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.google.accompanist.drawablepainter.rememberDrawablePainter
 
 private val TargetCardShape = RoundedCornerShape(12.dp)
 private val TargetButtonShape = RoundedCornerShape(6.dp)
@@ -56,7 +59,7 @@ private fun PatchTargetCard(
     target: PatchTargetUiState,
     onPatchClick: (PatchTargetUiState) -> Unit,
 ) {
-    val accent = targetAccentColor(target.supportState)
+    val accent = targetAccentColor(target.patchState.supportState)
 
     Surface(
         shape = TargetCardShape,
@@ -78,12 +81,12 @@ private fun PatchTargetCard(
                     .fillMaxWidth()
                     .padding(end = TargetButtonInset),
             ) {
-                AppGlyph(monogram = target.iconMonogram, accent = accent)
+                AppGlyph(icon = target.icon, name = target.name, accent = accent)
                 TargetTextBlock(target = target)
             }
 
             Button(
-                enabled = target.patchEnabled,
+                enabled = target.patchState.actionEnabled,
                 onClick = { onPatchClick(target) },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -92,7 +95,7 @@ private fun PatchTargetCard(
                 shape = TargetButtonShape,
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
-                Text(text = target.patchLabel)
+                Text(text = target.patchState.actionLabel)
             }
         }
     }
@@ -115,18 +118,20 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "v${target.versionLabel}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (target.versionLabel.isNotEmpty()) {
+                Text(
+                    text = "v${target.versionLabel}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             PatchStateChip(
-                label = target.patchPresenceLabel,
-                patchPresenceState = target.patchPresenceState,
+                label = target.patchState.presenceLabel,
+                patchPresenceState = target.patchState.presenceState,
             )
         }
         Text(
-            text = target.statusLabel,
+            text = target.patchState.statusLabel,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -134,10 +139,22 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
 }
 
 @Composable
-private fun AppGlyph(
-    monogram: String,
-    accent: Color,
-) {
+private fun AppGlyph(icon: TargetIcon, name: String, accent: Color) {
+    if (icon.drawable != null) {
+        Image(
+            painter = rememberDrawablePainter(drawable = icon.drawable),
+            contentDescription = name,
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(12.dp)),
+        )
+    } else {
+        MonogramGlyph(monogram = icon.monogram, accent = accent)
+    }
+}
+
+@Composable
+private fun MonogramGlyph(monogram: String, accent: Color) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
