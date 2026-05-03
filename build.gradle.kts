@@ -1,33 +1,34 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import com.github.benmanes.gradle.versions.updates.DependencyUpdatesTask
-import org.jlleitschuh.gradle.ktlint.KtlintExtension
 
 plugins {
     base
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.spotless) apply false
     alias(libs.plugins.dependency.analysis)
-    alias(libs.plugins.ktlint)
     alias(libs.plugins.versions)
     alias(libs.plugins.version.catalog.update)
 }
 
 allprojects {
-    pluginManager.withPlugin("org.jlleitschuh.gradle.ktlint") {
-        extensions.configure<KtlintExtension> {
-            android.set(true)
-            ignoreFailures.set(false)
-            filter {
-                exclude("**/build/**")
-                include("**/*.kt")
-                include("**/*.kts")
+    pluginManager.withPlugin("com.diffplug.spotless") {
+        extensions.configure<SpotlessExtension> {
+            kotlin {
+                target("**/*.kt")
+                ktlint()
+            }
+            kotlinGradle {
+                target("**/*.kts")
+                ktlint()
             }
         }
     }
 }
 
 subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "com.diffplug.spotless")
 }
 
 fun isNonStable(version: String): Boolean {
@@ -72,7 +73,7 @@ tasks.register("qualityCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the local quality gate without packaging an APK."
     dependsOn(
-        "ktlintCheck",
+        ":app:spotlessCheck",
         ":app:detekt",
         ":app:testDebugUnitTest",
         ":app:lintDebug",

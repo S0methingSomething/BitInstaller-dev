@@ -9,12 +9,21 @@ plugins {
 
 android {
     namespace = "dev.bitinstaller.app"
-    compileSdk = libs.versions.compileSdk.get().toInt()
+    compileSdk =
+        libs.versions.compileSdk
+            .get()
+            .toInt()
 
     defaultConfig {
         applicationId = "dev.bitinstaller.app"
-        minSdk = libs.versions.minSdk.get().toInt()
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        minSdk =
+            libs.versions.minSdk
+                .get()
+                .toInt()
+        targetSdk =
+            libs.versions.targetSdk
+                .get()
+                .toInt()
         versionCode = 1
         versionName = "0.1.0"
     }
@@ -61,7 +70,7 @@ android {
 
 kotlin {
     jvmToolchain(21)
-    
+
     compilerOptions {
         allWarningsAsErrors.set(true)
         freeCompilerArgs.add("-Xjsr305=strict")
@@ -77,8 +86,6 @@ detekt {
 }
 
 dependencies {
-    detektPlugins(libs.detekt.formatting)
-
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity)
     implementation(libs.androidx.activity.compose)
