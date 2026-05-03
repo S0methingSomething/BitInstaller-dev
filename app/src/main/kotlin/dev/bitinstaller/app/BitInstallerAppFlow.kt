@@ -52,7 +52,7 @@ internal fun buildHomeRouteCallbacks(
 ): HomeRouteCallbacks =
     HomeRouteCallbacks(
         onDashboardActionClick = {
-            handleDashboardAction(context = context, repository = deps.repository, appState = deps.appState)
+            handleDashboardAction(context = context, appState = deps.appState)
         },
         onPatchClick = { target ->
             deps.coroutineScope.launchPatchSession(
@@ -83,14 +83,12 @@ internal fun buildHomeRouteCallbacks(
 
 private fun handleDashboardAction(
     context: Context,
-    repository: ShizukuMonetizationRepository,
     appState: BitInstallerAppState,
 ) {
     if (appState.snapshot.status == ShizukuAccessStatus.READY) {
         openShizukuApp(context = context, onError = { error -> appState.loadError = error })
     } else {
         requestShizukuPermission(
-            refreshSnapshot = { appState.snapshot = repository.checkStatus() },
             onError = { error -> appState.loadError = error },
         )
     }
@@ -249,7 +247,6 @@ private fun LiveDictionaryStatus.toPromptUiState(target: PatchTarget): LiveDicti
     }
 
 internal fun requestShizukuPermission(
-    refreshSnapshot: () -> Unit,
     onError: (String?) -> Unit,
 ) {
     runCatching {
@@ -261,7 +258,6 @@ internal fun requestShizukuPermission(
     }.onFailure { error ->
         onError(error.message ?: "Could not request Shizuku permission")
     }
-    refreshSnapshot()
 }
 
 private fun MonetizationVarsFile.toPatchEditorSession(

@@ -1,5 +1,6 @@
 package dev.bitinstaller.app
 
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -94,7 +95,10 @@ private fun BitInstallerApp() {
         }
     }
 
-    BindShizukuListeners(repository = repository, onSnapshotChanged = { appState.snapshot = it })
+    BindShizukuListeners(
+        repository = repository,
+        onSnapshotChanged = { appState.snapshot = it },
+    )
 
     HomeRoute(
         state = buildHomeUiState(
@@ -128,15 +132,29 @@ private fun BindShizukuListeners(
     onSnapshotChanged: (ShizukuSnapshot) -> Unit,
 ) {
     DisposableEffect(repository) {
-        // checkStatus() performs Binder IPC — these listeners run on Main,
-        // but they fire infrequently (binder connect/disconnect/permission grant)
-        // and Shizuku.checkSelfPermission() is fast enough for occasional callbacks.
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
         val refreshStatus = { onSnapshotChanged(repository.checkStatus()) }
-        val binderReceivedListener = Shizuku.OnBinderReceivedListener(refreshStatus)
         val binderDeadListener = Shizuku.OnBinderDeadListener(refreshStatus)
-        val permissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, _ ->
+        val binderReceivedListener = Shizuku.OnBinderReceivedListener {
+            // Post one frame to let Shizuku synchronise internal state
+            // after reconnect so checkSelfPermission is not stale and
+            // does not overwrite the READY state set by the permission
+            // grant listener.
+            handler.post { refreshStatus() }
+        }
+        val permissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
             if (requestCode == SHIZUKU_PERMISSION_REQUEST_CODE) {
-                refreshStatus()
+                when (grantResult) {
+                    PackageManager.PERMISSION_GRANTED -> {
+                        onSnapshotChanged(
+                            ShizukuSnapshot(
+                                status = ShizukuAccessStatus.READY,
+                                uid = runCatching { Shizuku.getUid() }.getOrNull(),
+                            )
+                        )
+                    }
+                    else -> refreshStatus()
+                }
             }
         }
 
