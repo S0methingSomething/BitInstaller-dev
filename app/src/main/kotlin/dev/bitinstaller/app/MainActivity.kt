@@ -83,6 +83,15 @@ private fun BitInstallerApp() {
         appInfoMap = resolveAllAppInfo(context)
         // Also resolve initial Shizuku status off Main.
         appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
+
+        if (appState.snapshot.status == ShizukuAccessStatus.READY) {
+            val installed = ALL_TARGETS.filter {
+                appInfoMap[it.packageName]?.isInstalled == true
+            }
+            appState.patchPresences = withContext(Dispatchers.IO) {
+                manifestStore.recoverPresences(installed)
+            }
+        }
     }
 
     BindShizukuListeners(repository = repository, onSnapshotChanged = { appState.snapshot = it })
@@ -186,7 +195,9 @@ private fun buildHomeUiState(input: HomeUiStateInput): HomeUiState {
                     presence = input.patchPresences[target.packageName],
                 ),
             )
-        },
+        }.sortedWith(
+            compareByDescending<PatchTargetUiState> { it.isInstalled }.thenBy { it.name },
+        ),
     )
 }
 

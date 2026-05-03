@@ -49,6 +49,21 @@ class PatchManifestStore(
         repository.writeManifest(target = target, content = entry.toString(2))
     }
 
+    /** Recover patch presence for a target by comparing the remote manifest
+     *  hash against the current MonetizationVars file content. */
+    suspend fun recoverPresence(target: PatchTarget): PatchManifestPresence {
+        val file = runCatching { repository.readMonetizationVars(target) }.getOrNull()
+            ?: return PatchManifestPresence(PatchPresenceState.NOT_PATCHED, "Not patched")
+        return presenceFor(target, file.content)
+    }
+
+    /** Bulk-recover presences for a list of targets. Skips targets whose
+     *  MonetizationVars file is unreadable (returns NOT_PATCHED for them). */
+    suspend fun recoverPresences(targets: List<PatchTarget>): Map<String, PatchManifestPresence> =
+        targets.associate { target ->
+            target.packageName to recoverPresence(target)
+        }
+
     private suspend fun readRemoteManifest(target: PatchTarget): JSONObject? {
         val raw = repository.readManifest(target) ?: return null
         return try {
