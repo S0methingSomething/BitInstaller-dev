@@ -44,7 +44,10 @@ class InstalledAppInfo(
  * This performs Binder IPC and **must not** be called on the Main thread.
  * Internally dispatches to [Dispatchers.IO].
  */
-suspend fun resolveAppInfo(context: Context, target: PatchTarget): InstalledAppInfo =
+suspend fun resolveAppInfo(
+    context: Context,
+    target: PatchTarget,
+): InstalledAppInfo =
     withContext(Dispatchers.IO) {
         val pm = context.packageManager
         runCatching {
@@ -77,8 +80,9 @@ suspend fun resolveAppInfo(context: Context, target: PatchTarget): InstalledAppI
 suspend fun resolveAllAppInfo(
     context: Context,
     targets: List<PatchTarget> = ALL_TARGETS,
-): Map<String, InstalledAppInfo> = withContext(Dispatchers.IO) {
-    targets.associate { target ->
-        target.packageName to resolveAppInfo(context, target)
+): Map<String, InstalledAppInfo> =
+    withContext(Dispatchers.IO) {
+        targets.associate { target ->
+            target.packageName to resolveAppInfo(context, target)
+        }
     }
-}

@@ -5,7 +5,10 @@ import android.content.Intent
 
 private const val SHIZUKU_PACKAGE_NAME = "moe.shizuku.privileged.api"
 
-internal fun openShizukuApp(context: Context, onError: (String?) -> Unit) {
+internal fun openShizukuApp(
+    context: Context,
+    onError: (String?) -> Unit,
+) {
     val launchIntent = context.packageManager.getLaunchIntentForPackage(SHIZUKU_PACKAGE_NAME)
     if (launchIntent == null) {
         onError("Shizuku app is not installed")

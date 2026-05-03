@@ -31,9 +31,10 @@ fun HomeRoute(
     callbacks: HomeRouteCallbacks = HomeRouteCallbacks(),
 ) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
     ) {
         HomeContent(
             state = state,
@@ -43,18 +44,20 @@ fun HomeRoute(
 
         activeSession?.let { session ->
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.52f)),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.52f)),
             ) {
                 PatchEditorScene(
                     target = session.target,
                     contentAlpha = 1f,
                     onDismissRequest = callbacks.onDismissSession,
-                    config = PatchEditorSceneConfig(
-                        initialData = session.initialData,
-                        saveData = { data -> callbacks.onSaveSession(session, data) },
-                    ),
+                    config =
+                        PatchEditorSceneConfig(
+                            initialData = session.initialData,
+                            saveData = { data -> callbacks.onSaveSession(session, data) },
+                        ),
                 )
             }
         }
@@ -101,11 +104,12 @@ private fun HomeContent(
     LazyColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         item { HeroSection(state = state) }
         item { DashboardSection(status = state.backendStatus, onActionClick = onDashboardActionClick) }

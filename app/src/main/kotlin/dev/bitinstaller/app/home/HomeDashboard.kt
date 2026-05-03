@@ -54,17 +54,19 @@ private fun DashboardCardBody(
     onActionClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = DashboardMinHeight)
-            .padding(horizontal = 18.dp, vertical = 18.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = DashboardMinHeight)
+                .padding(horizontal = 18.dp, vertical = 18.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.Top,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(end = DashboardButtonInset),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = DashboardButtonInset),
         ) {
             ShizukuMark(accent = card.accent)
             DashboardTextBlock(card = card)
@@ -90,10 +92,11 @@ private fun BoxScope.DashboardActionButton(
     } else {
         Button(
             onClick = onActionClick,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
             shape = DashboardActionShape,
             modifier = Modifier.align(Alignment.BottomEnd),
         ) {
@@ -160,31 +163,40 @@ private data class DashboardCardState(
 @Composable
 private fun dashboardCardState(status: BackendStatus): DashboardCardState =
     when (status) {
-        BackendStatus.ShizukuUnavailable -> DashboardCardState(
-            headline = "Shizuku offline",
-            supporting = "Status: not running",
-            action = "Start",
-            accent = MaterialTheme.colorScheme.secondary,
-        )
+        BackendStatus.ShizukuUnavailable -> {
+            DashboardCardState(
+                headline = "Shizuku offline",
+                supporting = "Status: not running",
+                action = "Start",
+                accent = MaterialTheme.colorScheme.secondary,
+            )
+        }
 
-        BackendStatus.PermissionRequired -> DashboardCardState(
-            headline = "Permission needed",
-            supporting = "Status: permission required",
-            action = "Grant",
-            accent = MaterialTheme.colorScheme.primary,
-        )
+        BackendStatus.PermissionRequired -> {
+            DashboardCardState(
+                headline = "Permission needed",
+                supporting = "Status: permission required",
+                action = "Grant",
+                accent = MaterialTheme.colorScheme.primary,
+            )
+        }
 
-        BackendStatus.Ready -> DashboardCardState(
-            headline = "Ready",
-            supporting = "Status: connected",
-            action = "Open",
-            accent = MaterialTheme.colorScheme.primary,
-            isQuietAction = true,
-        )
+        BackendStatus.Ready -> {
+            DashboardCardState(
+                headline = "Ready",
+                supporting = "Status: connected",
+                action = "Open",
+                accent = MaterialTheme.colorScheme.primary,
+                isQuietAction = true,
+            )
+        }
     }
 
 @Composable
-private fun StatusLine(label: String, accent: Color) {
+private fun StatusLine(
+    label: String,
+    accent: Color,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(7.dp),
         verticalAlignment = Alignment.CenterVertically,

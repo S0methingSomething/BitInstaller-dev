@@ -72,36 +72,40 @@ fun PatchEditorScene(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
 
-    val uiState = PatchEditorUiState(
-        currentData = currentData,
-        draftValues = draftValues,
-        rawJson = rawJson,
-        editorMode = editorMode,
-        statusMessage = statusMessage,
-        errorMessage = errorMessage,
-        isSaving = isSaving,
-    )
-    val mutations = PatchEditorStateMutations(
-        onCurrentDataChanged = { currentData = it },
-        onDraftValuesChanged = { draftValues = it },
-        onRawJsonChanged = { rawJson = it },
-        onEditorModeChanged = { editorMode = it },
-        onStatusMessageChanged = { statusMessage = it },
-        onErrorMessageChanged = { errorMessage = it },
-        onSavingChanged = { isSaving = it },
-    )
+    val uiState =
+        PatchEditorUiState(
+            currentData = currentData,
+            draftValues = draftValues,
+            rawJson = rawJson,
+            editorMode = editorMode,
+            statusMessage = statusMessage,
+            errorMessage = errorMessage,
+            isSaving = isSaving,
+        )
+    val mutations =
+        PatchEditorStateMutations(
+            onCurrentDataChanged = { currentData = it },
+            onDraftValuesChanged = { draftValues = it },
+            onRawJsonChanged = { rawJson = it },
+            onEditorModeChanged = { editorMode = it },
+            onStatusMessageChanged = { statusMessage = it },
+            onErrorMessageChanged = { errorMessage = it },
+            onSavingChanged = { isSaving = it },
+        )
 
     PatchEditorContent(
-        chrome = PatchEditorContentChrome(
-            contentAlpha = contentAlpha,
-        ),
+        chrome =
+            PatchEditorContentChrome(
+                contentAlpha = contentAlpha,
+            ),
         uiState = uiState,
-        actions = rememberPatchEditorActions(
-            uiState = uiState,
-            mutations = mutations,
-            onDismissRequest = onDismissRequest,
-            config = config,
-        ),
+        actions =
+            rememberPatchEditorActions(
+                uiState = uiState,
+                mutations = mutations,
+                onDismissRequest = onDismissRequest,
+                config = config,
+            ),
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -118,17 +122,19 @@ private fun rememberPatchEditorActions(
     return buildPatchEditorActions(
         uiState = uiState,
         mutations = mutations,
-        config = PatchEditorActionConfig(
-            context = context,
-            onDismissRequest = onDismissRequest,
-            saveHandler = PatchEditorSaveHandler { data, onSuccess, onError ->
-                coroutineScope.launch {
-                    runCatching { config.saveData(data) }
-                        .onSuccess(onSuccess)
-                        .onFailure { error -> onError(error.message) }
-                }
-            },
-        ),
+        config =
+            PatchEditorActionConfig(
+                context = context,
+                onDismissRequest = onDismissRequest,
+                saveHandler =
+                    PatchEditorSaveHandler { data, onSuccess, onError ->
+                        coroutineScope.launch {
+                            runCatching { config.saveData(data) }
+                                .onSuccess(onSuccess)
+                                .onFailure { error -> onError(error.message) }
+                        }
+                    },
+            ),
     )
 }
 
@@ -141,24 +147,26 @@ private fun PatchEditorContent(
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Surface(
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 0.dp,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
             color = MaterialTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
-                .fillMaxWidth()
-                .sizeIn(maxHeight = 760.dp)
-                .graphicsLayer {
-                    alpha = chrome.contentAlpha
-                    translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP
-                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .sizeIn(maxHeight = 760.dp)
+                    .graphicsLayer {
+                        alpha = chrome.contentAlpha
+                        translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP
+                    },
         ) {
             Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
                 EditorModeRow(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
@@ -273,9 +281,10 @@ private fun EditorModeRow(
 
         if (simplifiedSelected) {
             Button(
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
+                    ),
                 onClick = { onModeSelected(EditorMode.SIMPLIFIED) },
                 modifier = Modifier.weight(1f),
             ) {
@@ -292,9 +301,10 @@ private fun EditorModeRow(
 
         if (rawSelected) {
             Button(
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
+                    ),
                 onClick = { onModeSelected(EditorMode.RAW) },
                 modifier = Modifier.weight(1f),
             ) {

@@ -36,19 +36,19 @@ data class PatchTarget(
     val manifestPath: String get() = "$filesDirectory/$MANIFEST_FILE"
 }
 
-val ALL_TARGETS: List<PatchTarget> = listOf(
-    PatchTarget("com.candywriter.bitlife", "BitLife", "BL"),
-    PatchTarget("com.goodgamestudios.bitlife.go.life.simulation", "BitLife GO", "GO"),
-    PatchTarget("com.goodgamestudios.bitlife.de.deutsch.life.simulation", "BitLife DE", "DE"),
-    PatchTarget("com.goodgamestudios.bitlife.es.espanol.simulador.de.vida", "BitLife ES", "ES"),
-    PatchTarget("com.goodgamestudios.bitlife.br.portugues.simulacao.de.vida", "BitLife BR", "BR"),
-    PatchTarget("com.goodgamestudios.bitlife.fr.francais.simulation.de.vie", "BitLife FR", "FR"),
-    PatchTarget("com.candywriter.doglife", "DogLife", "DL"),
-    PatchTarget("com.candywriter.catlife", "CatLife", "CL"),
-)
+val ALL_TARGETS: List<PatchTarget> =
+    listOf(
+        PatchTarget("com.candywriter.bitlife", "BitLife", "BL"),
+        PatchTarget("com.goodgamestudios.bitlife.go.life.simulation", "BitLife GO", "GO"),
+        PatchTarget("com.goodgamestudios.bitlife.de.deutsch.life.simulation", "BitLife DE", "DE"),
+        PatchTarget("com.goodgamestudios.bitlife.es.espanol.simulador.de.vida", "BitLife ES", "ES"),
+        PatchTarget("com.goodgamestudios.bitlife.br.portugues.simulacao.de.vida", "BitLife BR", "BR"),
+        PatchTarget("com.goodgamestudios.bitlife.fr.francais.simulation.de.vie", "BitLife FR", "FR"),
+        PatchTarget("com.candywriter.doglife", "DogLife", "DL"),
+        PatchTarget("com.candywriter.catlife", "CatLife", "CL"),
+    )
 
 /** All package names from [ALL_TARGETS], useful for batch lookups. */
 val ALL_PACKAGE_NAMES: List<String> = ALL_TARGETS.map { it.packageName }
 
-fun findTarget(packageName: String): PatchTarget? =
-    ALL_TARGETS.find { it.packageName == packageName }
+fun findTarget(packageName: String): PatchTarget? = ALL_TARGETS.find { it.packageName == packageName }

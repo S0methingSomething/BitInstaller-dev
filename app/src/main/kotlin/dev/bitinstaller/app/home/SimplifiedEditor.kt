@@ -65,18 +65,22 @@ private fun SimplifiedEditorRow(
         modifier = Modifier.fillMaxWidth(),
     ) {
         when (value) {
-            is Boolean -> BooleanEditorRow(
-                keyName = keyName,
-                value = value,
-                onBooleanChanged = onBooleanChanged,
-            )
+            is Boolean -> {
+                BooleanEditorRow(
+                    keyName = keyName,
+                    value = value,
+                    onBooleanChanged = onBooleanChanged,
+                )
+            }
 
-            else -> ValueEditorRow(
-                keyName = keyName,
-                value = value,
-                draftValue = draftValue,
-                onTextChanged = onTextChanged,
-            )
+            else -> {
+                ValueEditorRow(
+                    keyName = keyName,
+                    value = value,
+                    draftValue = draftValue,
+                    onTextChanged = onTextChanged,
+                )
+            }
         }
     }
 }
@@ -90,16 +94,18 @@ private fun BooleanEditorRow(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         SimplifiedKeyText(
             keyName = keyName,
             supportingText = if (value) "Enabled" else "Disabled",
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 12.dp),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp),
         )
         Switch(
             checked = value,

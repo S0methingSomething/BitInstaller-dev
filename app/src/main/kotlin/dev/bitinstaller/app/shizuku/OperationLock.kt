@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean
  * multiple targets — only one operation runs at a time.
  */
 class OperationLock {
-
     private val active = AtomicBoolean(false)
 
     /** Try to acquire. Returns true if this caller acquired the lock. */

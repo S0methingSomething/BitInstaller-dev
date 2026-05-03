@@ -28,10 +28,13 @@ fun ColumnScope.PatchSceneHandle(alpha: Float) {
     ) {
         Surface(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = HANDLE_ALPHA * alpha),
-            shape = androidx.compose.foundation.shape.RoundedCornerShape(999.dp),
-            modifier = Modifier
-                .fillMaxWidth(HANDLE_WIDTH_FRACTION)
-                .height(HANDLE_HEIGHT_DP.dp),
+            shape =
+                androidx.compose.foundation.shape
+                    .RoundedCornerShape(999.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth(HANDLE_WIDTH_FRACTION)
+                    .height(HANDLE_HEIGHT_DP.dp),
         ) {}
     }
 }

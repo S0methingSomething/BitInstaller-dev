@@ -54,7 +54,6 @@ data class LiveDictionaryRepairResult(
 )
 
 class ShizukuMonetizationRepository {
-
     /**
      * Probe current Shizuku binder and permission state.
      *
@@ -124,11 +123,12 @@ class ShizukuMonetizationRepository {
             throw IOException("Could not check ${target.displayName} LiveDictionary: ${result.errorSummary()}")
         }
 
-        val status = when (result.output.trim()) {
-            "directory" -> LiveDictionaryStatus.DIRECTORY
-            "not_directory" -> LiveDictionaryStatus.NOT_DIRECTORY
-            else -> LiveDictionaryStatus.MISSING
-        }
+        val status =
+            when (result.output.trim()) {
+                "directory" -> LiveDictionaryStatus.DIRECTORY
+                "not_directory" -> LiveDictionaryStatus.NOT_DIRECTORY
+                else -> LiveDictionaryStatus.MISSING
+            }
 
         return LiveDictionaryState(status = status)
     }
@@ -142,12 +142,20 @@ class ShizukuMonetizationRepository {
         }
 
         return when (result.output.trim()) {
-            "ready" -> LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.READY, backupPath = null)
-            "replaced" -> LiveDictionaryRepairResult(
-                action = LiveDictionaryRepairAction.REPLACED,
-                backupPath = backupPath,
-            )
-            else -> LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.CREATED, backupPath = null)
+            "ready" -> {
+                LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.READY, backupPath = null)
+            }
+
+            "replaced" -> {
+                LiveDictionaryRepairResult(
+                    action = LiveDictionaryRepairAction.REPLACED,
+                    backupPath = backupPath,
+                )
+            }
+
+            else -> {
+                LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.CREATED, backupPath = null)
+            }
         }
     }
 
@@ -164,7 +172,10 @@ class ShizukuMonetizationRepository {
         return if (result.isSuccess) result.output else null
     }
 
-    suspend fun writeManifest(target: PatchTarget, content: String) {
+    suspend fun writeManifest(
+        target: PatchTarget,
+        content: String,
+    ) {
         requireReady()
         val result = runShell(command = "cat > ${shellQuote(target.manifestPath)}", stdin = content)
         if (!result.isSuccess) {
@@ -174,17 +185,28 @@ class ShizukuMonetizationRepository {
 
     private suspend fun requireLiveDictionaryDirectory(target: PatchTarget) {
         val state = liveDictionaryState(target)
-        val failureMessage = when (state.status) {
-            LiveDictionaryStatus.DIRECTORY -> null
-            LiveDictionaryStatus.NOT_DIRECTORY -> {
-                "${target.displayName} LiveDictionary exists but is not a folder. Fix LiveDictionary before saving, " +
-                    "or ${target.displayName} can reset MonetizationVars back to defaults."
+        val failureMessage =
+            when (state.status) {
+                LiveDictionaryStatus.DIRECTORY -> {
+                    null
+                }
+
+                LiveDictionaryStatus.NOT_DIRECTORY -> {
+                    buildString {
+                        append("${target.displayName} LiveDictionary exists but is not a folder. ")
+                        append("Fix LiveDictionary before saving, ")
+                        append("or ${target.displayName} can reset MonetizationVars back to defaults.")
+                    }
+                }
+
+                LiveDictionaryStatus.MISSING -> {
+                    buildString {
+                        append("${target.displayName} LiveDictionary folder is missing. ")
+                        append("Open ${target.displayName} once and make sure ")
+                        append("LiveDictionary exists before patching, or MonetizationVars can reset to defaults.")
+                    }
+                }
             }
-            LiveDictionaryStatus.MISSING -> {
-                "${target.displayName} LiveDictionary folder is missing. Open ${target.displayName} once and make " +
-                    "sure LiveDictionary exists before patching, or MonetizationVars can reset to defaults."
-            }
-        }
 
         if (failureMessage != null) {
             throw IOException(failureMessage)
@@ -213,7 +235,10 @@ private fun liveDictionaryStateCommand(target: PatchTarget): String =
         append("else printf missing; fi")
     }
 
-private fun replaceLiveDictionaryCommand(target: PatchTarget, backupPath: String): String =
+private fun replaceLiveDictionaryCommand(
+    target: PatchTarget,
+    backupPath: String,
+): String =
     buildString {
         append("if [ -d ${shellQuote(target.liveDictionaryPath)} ]; then printf ready; ")
         append("elif [ -e ${shellQuote(target.liveDictionaryPath)} ]; then ")
@@ -236,8 +261,7 @@ private data class ShellResult(
         }
 }
 
-private fun isBinderAlive(): Boolean =
-    runCatching { Shizuku.pingBinder() }.getOrDefault(false)
+private fun isBinderAlive(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
 /**
  * Execute a shell command via Shizuku with concurrent stdout/stderr capture.
@@ -262,16 +286,16 @@ private suspend fun runShell(
         }
 
         // Read stderr on a background thread to avoid pipe deadlock.
-        val errorFuture = java.util.concurrent.CompletableFuture.supplyAsync {
-            process.errorStream.bufferedReader().readText()
-        }
+        val errorFuture =
+            java.util.concurrent.CompletableFuture.supplyAsync {
+                process.errorStream.bufferedReader().readText()
+            }
         val output = process.inputStream.bufferedReader().readText()
         val error = errorFuture.get()
         ShellResult(exitCode = process.waitFor(), output = output, error = error)
     }
 
-private fun shellQuote(value: String): String =
-    "'${value.replace("'", "'\"'\"'")}'"
+private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
 
 /**
  * Launch a shell via Shizuku's internal `newProcess` method.
@@ -283,12 +307,13 @@ private fun shellQuote(value: String): String =
  * throw [NoSuchMethodException] at call time rather than silently failing.
  */
 private fun newShizukuShellProcess(command: String): ShizukuRemoteProcess {
-    val newProcess = Shizuku::class.java.getDeclaredMethod(
-        "newProcess",
-        Array<String>::class.java,
-        Array<String>::class.java,
-        String::class.java,
-    )
+    val newProcess =
+        Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java,
+            Array<String>::class.java,
+            String::class.java,
+        )
     newProcess.isAccessible = true
     return newProcess.invoke(null, arrayOf("sh", "-c", command), null, null) as ShizukuRemoteProcess
 }

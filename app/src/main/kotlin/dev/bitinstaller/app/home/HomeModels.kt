@@ -67,14 +67,15 @@ class PatchTargetUiState(
         packageName: String = this.packageName,
         icon: TargetIcon = this.icon,
         patchState: TargetPatchState = this.patchState,
-    ): PatchTargetUiState = PatchTargetUiState(
-        name = name,
-        packageName = packageName,
-        icon = icon,
-        versionLabel = versionLabel,
-        isInstalled = isInstalled,
-        patchState = patchState,
-    )
+    ): PatchTargetUiState =
+        PatchTargetUiState(
+            name = name,
+            packageName = packageName,
+            icon = icon,
+            versionLabel = versionLabel,
+            isInstalled = isInstalled,
+            patchState = patchState,
+        )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -110,20 +111,22 @@ fun previewHomeUiState(): HomeUiState =
         title = "BitInstaller",
         summary = "MonetizationVars editor",
         backendStatus = BackendStatus.PermissionRequired,
-        patchTargets = listOf(
-            PatchTargetUiState(
-                name = "BitLife",
-                packageName = "com.candywriter.bitlife",
-                icon = TargetIcon(monogram = "BL"),
-                versionLabel = "3.27.7",
-                patchState = TargetPatchState(
-                    supportState = PatchSupportState.READY,
-                    presenceState = PatchPresenceState.NOT_PATCHED,
-                    presenceLabel = "Not patched",
-                    statusLabel = "Ready to load data",
-                    actionLabel = "Patch",
-                    actionEnabled = true,
+        patchTargets =
+            listOf(
+                PatchTargetUiState(
+                    name = "BitLife",
+                    packageName = "com.candywriter.bitlife",
+                    icon = TargetIcon(monogram = "BL"),
+                    versionLabel = "3.27.7",
+                    patchState =
+                        TargetPatchState(
+                            supportState = PatchSupportState.READY,
+                            presenceState = PatchPresenceState.NOT_PATCHED,
+                            presenceLabel = "Not patched",
+                            statusLabel = "Ready to load data",
+                            actionLabel = "Patch",
+                            actionEnabled = true,
+                        ),
                 ),
             ),
-        ),
     )

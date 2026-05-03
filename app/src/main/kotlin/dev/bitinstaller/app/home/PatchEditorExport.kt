@@ -18,14 +18,15 @@ fun exportRawJson(
             currentData = uiState.currentData,
         )
 
-    resolvedData.onSuccess { data ->
-        shareRawJson(context = context, jsonText = MonetizationCodec.toPrettyJson(data))
-        onStatus("Raw JSON exported to the Android share sheet.")
-        onError(null)
-    }.onFailure { error ->
-        onError(error.message)
-        onStatus(null)
-    }
+    resolvedData
+        .onSuccess { data ->
+            shareRawJson(context = context, jsonText = MonetizationCodec.toPrettyJson(data))
+            onStatus("Raw JSON exported to the Android share sheet.")
+            onError(null)
+        }.onFailure { error ->
+            onError(error.message)
+            onStatus(null)
+        }
 }
 
 private fun shareRawJson(

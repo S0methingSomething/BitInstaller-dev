@@ -24,7 +24,10 @@ internal class JsonSyntaxTransformation(
         TransformedText(highlightJson(text.text, colors), OffsetMapping.Identity)
 }
 
-private fun highlightJson(text: String, colors: JsonSyntaxColors): AnnotatedString {
+private fun highlightJson(
+    text: String,
+    colors: JsonSyntaxColors,
+): AnnotatedString {
     val builder = AnnotatedString.Builder()
     var index = 0
     while (index < text.length) {
@@ -82,7 +85,11 @@ private fun appendJsonLiteral(
     return startIndex + literal.length
 }
 
-private fun appendStyled(builder: AnnotatedString.Builder, token: String, color: Color) {
+private fun appendStyled(
+    builder: AnnotatedString.Builder,
+    token: String,
+    color: Color,
+) {
     builder.pushStyle(SpanStyle(color = color))
     builder.append(token)
     builder.pop()
@@ -106,10 +113,12 @@ private fun String.isJsonKey(endIndex: Int): Boolean {
     return nextIndex < length && this[nextIndex] == ':'
 }
 
-private fun String.startsWithJsonLiteral(index: Int): Boolean =
-    JsonLiterals.any { startsWith(it, index) }
+private fun String.startsWithJsonLiteral(index: Int): Boolean = JsonLiterals.any { startsWith(it, index) }
 
-private fun String.indexOfFirstAfter(startIndex: Int, predicate: (Char) -> Boolean): Int {
+private fun String.indexOfFirstAfter(
+    startIndex: Int,
+    predicate: (Char) -> Boolean,
+): Int {
     var index = startIndex
     while (index < length && !predicate(this[index])) {
         index += 1

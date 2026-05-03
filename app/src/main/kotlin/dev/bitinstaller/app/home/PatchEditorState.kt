@@ -211,9 +211,17 @@ private fun buildDataFromDrafts(
                     draftValue.toBooleanStrictOrNull() ?: error("'$key' must stay a boolean")
                 }
 
-                is Int -> draftValue.toIntOrNull() ?: error("'$key' must stay an Int32")
-                is String -> draftValue
-                else -> error("Unsupported type for '$key'")
+                is Int -> {
+                    draftValue.toIntOrNull() ?: error("'$key' must stay an Int32")
+                }
+
+                is String -> {
+                    draftValue
+                }
+
+                else -> {
+                    error("Unsupported type for '$key'")
+                }
             }
     }
 

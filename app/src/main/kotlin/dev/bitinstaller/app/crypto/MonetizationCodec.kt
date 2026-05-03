@@ -19,86 +19,88 @@ const val B64_NET_BOOLEAN_FALSE_STANDARD: String =
 typealias MonetizationValue = Any
 typealias MonetizationData = Map<String, MonetizationValue>
 
-private val obfuscationCharMap: Map<Char, Char> = mapOf(
-    'a' to 'z',
-    'b' to 'm',
-    'c' to 'y',
-    'd' to 'l',
-    'e' to 'x',
-    'f' to 'k',
-    'g' to 'w',
-    'h' to 'j',
-    'i' to 'v',
-    'j' to 'i',
-    'k' to 'u',
-    'l' to 'h',
-    'm' to 't',
-    'n' to 'g',
-    'o' to 's',
-    'p' to 'f',
-    'q' to 'r',
-    'r' to 'e',
-    's' to 'q',
-    't' to 'd',
-    'u' to 'p',
-    'v' to 'c',
-    'w' to 'o',
-    'x' to 'b',
-    'y' to 'n',
-    'z' to 'a',
-)
+private val obfuscationCharMap: Map<Char, Char> =
+    mapOf(
+        'a' to 'z',
+        'b' to 'm',
+        'c' to 'y',
+        'd' to 'l',
+        'e' to 'x',
+        'f' to 'k',
+        'g' to 'w',
+        'h' to 'j',
+        'i' to 'v',
+        'j' to 'i',
+        'k' to 'u',
+        'l' to 'h',
+        'm' to 't',
+        'n' to 'g',
+        'o' to 's',
+        'p' to 'f',
+        'q' to 'r',
+        'r' to 'e',
+        's' to 'q',
+        't' to 'd',
+        'u' to 'p',
+        'v' to 'c',
+        'w' to 'o',
+        'x' to 'b',
+        'y' to 'n',
+        'z' to 'a',
+    )
 
-private val userSerializedInt32Prefix: ByteArray = byteArrayOf(
-    0x00,
-    0x01,
-    0x00,
-    0x00,
-    0x00,
-    0xff.toByte(),
-    0xff.toByte(),
-    0xff.toByte(),
-    0xff.toByte(),
-    0x01,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x04,
-    0x01,
-    0x00,
-    0x00,
-    0x00,
-    0x0c,
-    0x53,
-    0x79,
-    0x73,
-    0x74,
-    0x65,
-    0x6d,
-    0x2e,
-    0x49,
-    0x6e,
-    0x74,
-    0x33,
-    0x32,
-    0x01,
-    0x00,
-    0x00,
-    0x00,
-    0x07,
-    0x6d,
-    0x5f,
-    0x76,
-    0x61,
-    0x6c,
-    0x75,
-    0x65,
-    0x00,
-    0x08,
-)
+private val userSerializedInt32Prefix: ByteArray =
+    byteArrayOf(
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0xff.toByte(),
+        0xff.toByte(),
+        0xff.toByte(),
+        0xff.toByte(),
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x04,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x0c,
+        0x53,
+        0x79,
+        0x73,
+        0x74,
+        0x65,
+        0x6d,
+        0x2e,
+        0x49,
+        0x6e,
+        0x74,
+        0x33,
+        0x32,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x07,
+        0x6d,
+        0x5f,
+        0x76,
+        0x61,
+        0x6c,
+        0x75,
+        0x65,
+        0x00,
+        0x08,
+    )
 private val userSerializedInt32Suffix: ByteArray = byteArrayOf(0x0b)
 private const val INT32_VALUE_LENGTH: Int = 4
 private const val USER_SERIALIZED_INT32_TOTAL_LENGTH: Int =
@@ -203,14 +205,21 @@ object MonetizationCodec {
 
     private fun serializeValue(value: MonetizationValue): String =
         when (value) {
-            is Boolean -> encryptNetBoolean(value)
-            is Int -> encryptNetInt32(value)
+            is Boolean -> {
+                encryptNetBoolean(value)
+            }
+
+            is Int -> {
+                encryptNetInt32(value)
+            }
+
             is Long -> {
                 require(value in Int.MIN_VALUE..Int.MAX_VALUE) {
                     "Value $value is outside the supported Int32 range"
                 }
                 encryptNetInt32(value.toInt())
             }
+
             is String -> {
                 if (value == B64_NET_BOOLEAN_TRUE_STANDARD ||
                     value == B64_NET_BOOLEAN_TRUE_VARIANT ||
@@ -221,7 +230,10 @@ object MonetizationCodec {
                     base64Encode(value)
                 }
             }
-            else -> error("Unsupported MonetizationVars value type: ${value::class.simpleName}")
+
+            else -> {
+                error("Unsupported MonetizationVars value type: ${value::class.simpleName}")
+            }
         }
 
     private fun normalizeJsonValue(
@@ -229,14 +241,21 @@ object MonetizationCodec {
         value: Any,
     ): MonetizationValue =
         when (value) {
-            is Boolean -> value
-            is Int -> value
+            is Boolean -> {
+                value
+            }
+
+            is Int -> {
+                value
+            }
+
             is Long -> {
                 require(value in Int.MIN_VALUE..Int.MAX_VALUE) {
                     "'$key' is outside the supported Int32 range"
                 }
                 value.toInt()
             }
+
             is Double -> {
                 require(value % 1.0 == 0.0) {
                     "'$key' must stay an integer"
@@ -246,9 +265,18 @@ object MonetizationCodec {
                 }
                 value.toInt()
             }
-            is String -> value
-            JSONObject.NULL -> error("'$key' cannot be null")
-            else -> error("'$key' uses unsupported JSON type ${value::class.simpleName}")
+
+            is String -> {
+                value
+            }
+
+            JSONObject.NULL -> {
+                error("'$key' cannot be null")
+            }
+
+            else -> {
+                error("'$key' uses unsupported JSON type ${value::class.simpleName}")
+            }
         }
 }
 
@@ -304,6 +332,7 @@ private fun decryptNetBoolean(base64String: String): Boolean? =
         -> true
 
         B64_NET_BOOLEAN_FALSE_STANDARD -> false
+
         else -> null
     }
 
@@ -355,11 +384,8 @@ private fun encryptNetInt32(value: Int): String {
     return base64Encode(fullByteArray)
 }
 
-private fun base64Encode(text: String): String =
-    base64Encode(text.encodeToByteArray())
+private fun base64Encode(text: String): String = base64Encode(text.encodeToByteArray())
 
-private fun base64Encode(bytes: ByteArray): String =
-    Base64.getEncoder().encodeToString(bytes)
+private fun base64Encode(bytes: ByteArray): String = Base64.getEncoder().encodeToString(bytes)
 
-private fun base64Decode(encoded: String): ByteArray =
-    Base64.getDecoder().decode(encoded)
+private fun base64Decode(encoded: String): ByteArray = Base64.getDecoder().decode(encoded)

@@ -10,11 +10,12 @@ import java.nio.file.Path
 class MonetizationCodecTest {
     @Test
     fun roundTripsBooleansAndInts() {
-        val original = linkedMapOf<String, MonetizationValue>(
-            "remove_ads" to false,
-            "bitizenship" to true,
-            "god_mode_discount_percent" to 15,
-        )
+        val original =
+            linkedMapOf<String, MonetizationValue>(
+                "remove_ads" to false,
+                "bitizenship" to true,
+                "god_mode_discount_percent" to 15,
+            )
 
         val encrypted = MonetizationCodec.encrypt(original)
         val decrypted = MonetizationCodec.decrypt(encrypted)
@@ -25,9 +26,10 @@ class MonetizationCodecTest {
 
     @Test
     fun preservesStringPayloadsAsBase64AfterDecrypt() {
-        val original = linkedMapOf<String, MonetizationValue>(
-            "marketplace_banner" to "enabled",
-        )
+        val original =
+            linkedMapOf<String, MonetizationValue>(
+                "marketplace_banner" to "enabled",
+            )
 
         val decrypted = MonetizationCodec.decrypt(MonetizationCodec.encrypt(original))
 
@@ -36,11 +38,12 @@ class MonetizationCodecTest {
 
     @Test
     fun patchesSupportedFalseValues() {
-        val original = linkedMapOf<String, MonetizationValue>(
-            "remove_ads" to false,
-            "serialized_false" to B64_NET_BOOLEAN_FALSE_STANDARD,
-            "price_tier" to 3,
-        )
+        val original =
+            linkedMapOf<String, MonetizationValue>(
+                "remove_ads" to false,
+                "serialized_false" to B64_NET_BOOLEAN_FALSE_STANDARD,
+                "price_tier" to 3,
+            )
 
         val patched = MonetizationCodec.applyUnlockAllPatch(original)
 

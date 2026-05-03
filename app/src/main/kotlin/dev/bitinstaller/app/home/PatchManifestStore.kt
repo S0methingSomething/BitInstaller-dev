@@ -41,19 +41,21 @@ class PatchManifestStore(
         target: PatchTarget,
         encryptedContent: String,
     ) {
-        val entry = JSONObject()
-            .put(MANIFEST_PACKAGE_NAME_KEY, target.packageName)
-            .put(MANIFEST_PATH_KEY, target.monetizationVarsPath)
-            .put(MANIFEST_SHA_KEY, encryptedContent.sha256())
-            .put(MANIFEST_UPDATED_AT_KEY, System.currentTimeMillis())
+        val entry =
+            JSONObject()
+                .put(MANIFEST_PACKAGE_NAME_KEY, target.packageName)
+                .put(MANIFEST_PATH_KEY, target.monetizationVarsPath)
+                .put(MANIFEST_SHA_KEY, encryptedContent.sha256())
+                .put(MANIFEST_UPDATED_AT_KEY, System.currentTimeMillis())
         repository.writeManifest(target = target, content = entry.toString(2))
     }
 
     /** Recover patch presence for a target by comparing the remote manifest
      *  hash against the current MonetizationVars file content. */
     suspend fun recoverPresence(target: PatchTarget): PatchManifestPresence {
-        val file = runCatching { repository.readMonetizationVars(target) }.getOrNull()
-            ?: return PatchManifestPresence(PatchPresenceState.NOT_PATCHED, "Not patched")
+        val file =
+            runCatching { repository.readMonetizationVars(target) }.getOrNull()
+                ?: return PatchManifestPresence(PatchPresenceState.NOT_PATCHED, "Not patched")
         return presenceFor(target, file.content)
     }
 

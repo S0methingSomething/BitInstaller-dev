@@ -16,25 +16,28 @@ fun RawEditor(
     rawJson: String,
     onRawJsonChanged: (String) -> Unit,
 ) {
-    val syntaxColors = JsonSyntaxColors(
-        key = MaterialTheme.colorScheme.primary,
-        string = MaterialTheme.colorScheme.secondary,
-        number = MaterialTheme.colorScheme.tertiary,
-        literal = MaterialTheme.colorScheme.primary,
-        punctuation = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    val syntaxColors =
+        JsonSyntaxColors(
+            key = MaterialTheme.colorScheme.primary,
+            string = MaterialTheme.colorScheme.secondary,
+            number = MaterialTheme.colorScheme.tertiary,
+            literal = MaterialTheme.colorScheme.primary,
+            punctuation = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
     OutlinedTextField(
         value = rawJson,
         onValueChange = onRawJsonChanged,
         label = { Text(text = "Raw JSON") },
         visualTransformation = JsonSyntaxTransformation(syntaxColors),
-        textStyle = MaterialTheme.typography.bodySmall.copy(
-            fontFamily = FontFamily.Monospace,
-            fontStyle = FontStyle.Normal,
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .sizeIn(minHeight = 260.dp, maxHeight = 460.dp),
+        textStyle =
+            MaterialTheme.typography.bodySmall.copy(
+                fontFamily = FontFamily.Monospace,
+                fontStyle = FontStyle.Normal,
+            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .sizeIn(minHeight = 260.dp, maxHeight = 460.dp),
     )
 }

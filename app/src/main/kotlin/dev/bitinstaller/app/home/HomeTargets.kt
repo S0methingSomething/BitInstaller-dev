@@ -69,17 +69,19 @@ private fun PatchTargetCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = TargetMinHeight)
-                .padding(horizontal = 18.dp, vertical = 16.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = TargetMinHeight)
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.Top,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = TargetButtonInset),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(end = TargetButtonInset),
             ) {
                 AppGlyph(icon = target.icon, name = target.name, accent = accent)
                 TargetTextBlock(target = target)
@@ -88,10 +90,11 @@ private fun PatchTargetCard(
             Button(
                 enabled = target.patchState.actionEnabled,
                 onClick = { onPatchClick(target) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
                 shape = TargetButtonShape,
                 modifier = Modifier.align(Alignment.BottomEnd),
             ) {
@@ -139,14 +142,19 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
 }
 
 @Composable
-private fun AppGlyph(icon: TargetIcon, name: String, accent: Color) {
+private fun AppGlyph(
+    icon: TargetIcon,
+    name: String,
+    accent: Color,
+) {
     if (icon.drawable != null) {
         Image(
             painter = rememberDrawablePainter(drawable = icon.drawable),
             contentDescription = name,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(12.dp)),
+            modifier =
+                Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(12.dp)),
         )
     } else {
         MonogramGlyph(monogram = icon.monogram, accent = accent)
@@ -154,15 +162,19 @@ private fun AppGlyph(icon: TargetIcon, name: String, accent: Color) {
 }
 
 @Composable
-private fun MonogramGlyph(monogram: String, accent: Color) {
+private fun MonogramGlyph(
+    monogram: String,
+    accent: Color,
+) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(56.dp)
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(12.dp),
-            ),
+        modifier =
+            Modifier
+                .size(56.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                ),
     ) {
         Surface(
             color = accent.copy(alpha = 0.14f),

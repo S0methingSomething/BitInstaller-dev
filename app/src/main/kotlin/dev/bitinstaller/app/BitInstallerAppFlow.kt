@@ -27,7 +27,9 @@ import rikka.shizuku.Shizuku
 
 internal const val SHIZUKU_PERMISSION_REQUEST_CODE: Int = 6207
 
-internal class BitInstallerAppState(initialSnapshot: ShizukuSnapshot) {
+internal class BitInstallerAppState(
+    initialSnapshot: ShizukuSnapshot,
+) {
     var snapshot by mutableStateOf(initialSnapshot)
     var activeSession by mutableStateOf<PatchEditorSession?>(null)
     var isLoading by mutableStateOf(false)
@@ -136,8 +138,9 @@ private fun CoroutineScope.launchLiveDictionaryFix(
             appState.loadError = null
             appState.liveDictionaryPrompt = null
             runCatching {
-                val patchTarget = findTarget(target.packageName)
-                    ?: error("Unknown target: ${target.packageName}")
+                val patchTarget =
+                    findTarget(target.packageName)
+                        ?: error("Unknown target: ${target.packageName}")
                 repository.replaceLiveDictionary(patchTarget)
                 appState.loadSession(
                     target = target,
@@ -175,8 +178,7 @@ private suspend fun BitInstallerAppState.loadSession(
                 liveDictionaryPrompt = prompt
             },
         )
-    }
-        .onSuccess { session -> activeSession = session }
+    }.onSuccess { session -> activeSession = session }
         .onFailure { error -> loadError = error.message }
     isLoading = false
     loadingTargetId = null
@@ -189,17 +191,19 @@ private suspend fun savePatchSession(
     manifestStore: PatchManifestStore,
     appState: BitInstallerAppState,
 ): String {
-    val patchTarget = findTarget(session.packageName)
-        ?: error("Unknown target: ${session.packageName}")
+    val patchTarget =
+        findTarget(session.packageName)
+            ?: error("Unknown target: ${session.packageName}")
     val encrypted = MonetizationCodec.encrypt(data)
     val writeResult = repository.writeMonetizationVars(path = session.filePath, content = encrypted)
     manifestStore.recordPatched(target = patchTarget, encryptedContent = encrypted)
     appState.patchPresences = appState.patchPresences + (
-        patchTarget.packageName to PatchManifestPresence(
-            state = PatchPresenceState.PATCHED,
-            label = "Patched",
-        )
-        )
+        patchTarget.packageName to
+            PatchManifestPresence(
+                state = PatchPresenceState.PATCHED,
+                label = "Patched",
+            )
+    )
     return "Saved to ${patchTarget.displayName}. Backup: ${writeResult.backupPath.substringAfterLast('/')}"
 }
 
@@ -210,8 +214,9 @@ private suspend fun loadPatchSession(
     onPatchPresenceChanged: (String, PatchManifestPresence) -> Unit,
     onLiveDictionaryIssue: (LiveDictionaryPromptUiState) -> Unit,
 ): PatchEditorSession? {
-    val patchTarget = findTarget(target.packageName)
-        ?: error("Unknown target: ${target.packageName}")
+    val patchTarget =
+        findTarget(target.packageName)
+            ?: error("Unknown target: ${target.packageName}")
 
     val liveDictionaryState = repository.liveDictionaryState(patchTarget)
     if (liveDictionaryState.status != LiveDictionaryStatus.DIRECTORY) {
@@ -227,28 +232,36 @@ private suspend fun loadPatchSession(
 
 private fun LiveDictionaryStatus.toPromptUiState(target: PatchTarget): LiveDictionaryPromptUiState =
     when (this) {
-        LiveDictionaryStatus.MISSING -> LiveDictionaryPromptUiState(
-            title = "Create LiveDictionary?",
-            message = "${target.displayName} can reset MonetizationVars to defaults when LiveDictionary is missing. " +
-                "Create the LiveDictionary folder before patching?",
-            confirmLabel = "Create folder",
-        )
-        LiveDictionaryStatus.NOT_DIRECTORY -> LiveDictionaryPromptUiState(
-            title = "Replace LiveDictionary?",
-            message = "LiveDictionary exists but is not a folder. ${target.displayName} can reset MonetizationVars " +
-                "to defaults in this state. Replace it with a folder and keep a .bitinstaller.bak backup?",
-            confirmLabel = "Replace",
-        )
-        LiveDictionaryStatus.DIRECTORY -> LiveDictionaryPromptUiState(
-            title = "LiveDictionary ready",
-            message = "LiveDictionary is already a folder.",
-            confirmLabel = "Continue",
-        )
+        LiveDictionaryStatus.MISSING -> {
+            LiveDictionaryPromptUiState(
+                title = "Create LiveDictionary?",
+                message =
+                    "${target.displayName} can reset MonetizationVars to defaults when LiveDictionary is missing. " +
+                        "Create the LiveDictionary folder before patching?",
+                confirmLabel = "Create folder",
+            )
+        }
+
+        LiveDictionaryStatus.NOT_DIRECTORY -> {
+            LiveDictionaryPromptUiState(
+                title = "Replace LiveDictionary?",
+                message =
+                    "LiveDictionary exists but is not a folder. ${target.displayName} can reset MonetizationVars " +
+                        "to defaults in this state. Replace it with a folder and keep a .bitinstaller.bak backup?",
+                confirmLabel = "Replace",
+            )
+        }
+
+        LiveDictionaryStatus.DIRECTORY -> {
+            LiveDictionaryPromptUiState(
+                title = "LiveDictionary ready",
+                message = "LiveDictionary is already a folder.",
+                confirmLabel = "Continue",
+            )
+        }
     }
 
-internal fun requestShizukuPermission(
-    onError: (String?) -> Unit,
-) {
+internal fun requestShizukuPermission(onError: (String?) -> Unit) {
     runCatching {
         if (Shizuku.pingBinder()) {
             Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE)
@@ -266,13 +279,15 @@ private fun MonetizationVarsFile.toPatchEditorSession(
 ): PatchEditorSession =
     PatchEditorSession(
         packageName = target.packageName,
-        target = target.copy(
-            patchState = target.patchState.copy(
-                presenceState = patchPresence.state,
-                presenceLabel = patchPresence.label,
-                statusLabel = "Loaded from ${target.name} files",
+        target =
+            target.copy(
+                patchState =
+                    target.patchState.copy(
+                        presenceState = patchPresence.state,
+                        presenceLabel = patchPresence.label,
+                        statusLabel = "Loaded from ${target.name} files",
+                    ),
             ),
-        ),
         filePath = path,
         initialData = MonetizationCodec.decrypt(content),
     )

@@ -1,17 +1,18 @@
 package dev.bitinstaller.app.home
 
-private val KnownMonetizationLabels = mapOf(
-    "UserBoughtLegacyBitizenship" to "Legacy Bitizenship",
-    "UserBoughtNewBitizenship" to "New Bitizenship",
-    "UserGivenBitizenship" to "Gifted Bitizenship",
-    "UserBoughtGodMode" to "God Mode",
-    "UserGivenGodMode" to "Gifted God Mode",
-    "UserBoughtBitizenshipAndGodModeTogether" to "Bitizenship + God Mode Bundle",
-    "UserBoughtChallengeVault" to "Challenge Vault",
-    "UserGivenChallengeVault" to "Gifted Challenge Vault",
-    "UserBoughtBossMode" to "Boss Mode",
-    "UserGivenBossMode" to "Gifted Boss Mode",
-)
+private val KnownMonetizationLabels =
+    mapOf(
+        "UserBoughtLegacyBitizenship" to "Legacy Bitizenship",
+        "UserBoughtNewBitizenship" to "New Bitizenship",
+        "UserGivenBitizenship" to "Gifted Bitizenship",
+        "UserBoughtGodMode" to "God Mode",
+        "UserGivenGodMode" to "Gifted God Mode",
+        "UserBoughtBitizenshipAndGodModeTogether" to "Bitizenship + God Mode Bundle",
+        "UserBoughtChallengeVault" to "Challenge Vault",
+        "UserGivenChallengeVault" to "Gifted Challenge Vault",
+        "UserBoughtBossMode" to "Boss Mode",
+        "UserGivenBossMode" to "Gifted Boss Mode",
+    )
 
 internal fun monetizationDisplayName(key: String): String =
     KnownMonetizationLabels[key] ?: key
