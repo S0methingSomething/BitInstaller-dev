@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,15 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -169,20 +163,13 @@ private fun PatchEditorContent(
                     },
         ) {
             Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
-                EditorModeRow(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
-                Spacer(modifier = Modifier.height(10.dp))
-                UnlockAllButton(onUnlockAll = actions.onUnlockAll)
-                Spacer(modifier = Modifier.height(12.dp))
+                PatchEditorToolbar(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
+                Spacer(modifier = Modifier.height(14.dp))
+                BulkPatchPanel(onUnlockAll = actions.onUnlockAll)
+                Spacer(modifier = Modifier.height(16.dp))
                 PatchEditorBody(uiState = uiState, actions = actions)
             }
         }
-    }
-}
-
-@Composable
-private fun UnlockAllButton(onUnlockAll: () -> Unit) {
-    OutlinedButton(onClick = onUnlockAll, modifier = Modifier.fillMaxWidth()) {
-        Text(text = "Unlock all")
     }
 }
 
@@ -191,6 +178,9 @@ private fun PatchEditorBody(
     uiState: PatchEditorUiState,
     actions: PatchEditorActions,
 ) {
+    EditorContentLabel(editorMode = uiState.editorMode)
+    Spacer(modifier = Modifier.height(8.dp))
+
     if (uiState.editorMode == EditorMode.SIMPLIFIED) {
         SimplifiedEditor(
             draftValues = uiState.draftValues,
@@ -206,7 +196,7 @@ private fun PatchEditorBody(
     HorizontalDivider()
     Spacer(modifier = Modifier.height(12.dp))
     PatchEditorStatus(errorMessage = uiState.errorMessage, statusMessage = uiState.statusMessage)
-    PatchEditorActionsRow(
+    PatchEditorFooter(
         isSaving = uiState.isSaving,
         onDismissRequest = actions.onDismissRequest,
         onExportRawJson = actions.onExportRawJson,
@@ -235,88 +225,5 @@ private fun PatchEditorStatus(
             color = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(8.dp))
-    }
-}
-
-@Composable
-private fun PatchEditorActionsRow(
-    isSaving: Boolean,
-    onDismissRequest: () -> Unit,
-    onExportRawJson: () -> Unit,
-    onSave: () -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        TextButton(onClick = onDismissRequest) {
-            Text(text = "Close")
-        }
-        OutlinedButton(onClick = onExportRawJson) {
-            Text(text = "Export JSON")
-        }
-        Spacer(modifier = Modifier.weight(1f))
-        Button(enabled = !isSaving, onClick = onSave) {
-            if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.sizeIn(maxWidth = 18.dp, maxHeight = 18.dp))
-            } else {
-                Text(text = "Save file")
-            }
-        }
-    }
-}
-
-@Composable
-private fun EditorModeRow(
-    editorMode: EditorMode,
-    onModeSelected: (EditorMode) -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        val simplifiedSelected = editorMode == EditorMode.SIMPLIFIED
-        val rawSelected = editorMode == EditorMode.RAW
-
-        if (simplifiedSelected) {
-            Button(
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
-                    ),
-                onClick = { onModeSelected(EditorMode.SIMPLIFIED) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(text = "Simplified")
-            }
-        } else {
-            OutlinedButton(
-                onClick = { onModeSelected(EditorMode.SIMPLIFIED) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(text = "Simplified")
-            }
-        }
-
-        if (rawSelected) {
-            Button(
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
-                    ),
-                onClick = { onModeSelected(EditorMode.RAW) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(text = "Raw JSON")
-            }
-        } else {
-            OutlinedButton(
-                onClick = { onModeSelected(EditorMode.RAW) },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(text = "Raw JSON")
-            }
-        }
     }
 }

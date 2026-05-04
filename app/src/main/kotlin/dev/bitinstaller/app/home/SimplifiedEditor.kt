@@ -36,7 +36,7 @@ internal fun SimplifiedEditor(
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.sizeIn(maxHeight = 460.dp),
+        modifier = Modifier.sizeIn(maxHeight = 350.dp),
     ) {
         items(originalData.entries.toList(), key = { it.key }) { entry ->
             SimplifiedEditorRow(

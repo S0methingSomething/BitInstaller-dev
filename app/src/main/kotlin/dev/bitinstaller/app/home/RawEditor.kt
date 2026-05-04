@@ -38,6 +38,6 @@ fun RawEditor(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .sizeIn(minHeight = 260.dp, maxHeight = 460.dp),
+                .sizeIn(minHeight = 240.dp, maxHeight = 350.dp),
     )
 }
