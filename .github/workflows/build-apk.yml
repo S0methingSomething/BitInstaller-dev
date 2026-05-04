@@ -2,14 +2,21 @@ name: Build APK
 
 on:
   workflow_dispatch:
-  pull_request:
   push:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Check out repository
@@ -27,21 +34,38 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Validate debug signing secrets
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_DEBUG_KEYSTORE_BASE64 }}
+          DEBUG_STORE_PASSWORD: ${{ secrets.BITINSTALLER_DEBUG_STORE_PASSWORD }}
+          DEBUG_KEY_ALIAS: ${{ secrets.BITINSTALLER_DEBUG_KEY_ALIAS }}
+          DEBUG_KEY_PASSWORD: ${{ secrets.BITINSTALLER_DEBUG_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if { [ -n "$DEBUG_KEYSTORE_BASE64" ] || [ -n "$DEBUG_STORE_PASSWORD" ] || [ -n "$DEBUG_KEY_ALIAS" ] || [ -n "$DEBUG_KEY_PASSWORD" ]; } && \
+             { [ -z "$DEBUG_KEYSTORE_BASE64" ] || [ -z "$DEBUG_STORE_PASSWORD" ] || [ -z "$DEBUG_KEY_ALIAS" ] || [ -z "$DEBUG_KEY_PASSWORD" ]; }; then
+            printf '%s\n' 'Debug signing secrets must be configured all together or omitted entirely.' >&2
+            exit 1
+          fi
+
       - name: Decode debug keystore
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_DEBUG_KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
+
           if [ -n "$DEBUG_KEYSTORE_BASE64" ]; then
             printf '%s' "$DEBUG_KEYSTORE_BASE64" | base64 --decode > app/bitinstaller-debug.jks
           fi
 
-      - name: Build debug APK
+      - name: Run full build check
         env:
           BITINSTALLER_DEBUG_STORE_FILE: bitinstaller-debug.jks
           BITINSTALLER_DEBUG_STORE_PASSWORD: ${{ secrets.BITINSTALLER_DEBUG_STORE_PASSWORD }}
           BITINSTALLER_DEBUG_KEY_ALIAS: ${{ secrets.BITINSTALLER_DEBUG_KEY_ALIAS }}
           BITINSTALLER_DEBUG_KEY_PASSWORD: ${{ secrets.BITINSTALLER_DEBUG_KEY_PASSWORD }}
-        run: ./gradlew assembleDebug --build-cache -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.jvmargs='-Xmx2g -XX:MaxMetaspaceSize=768m' -Dkotlin.daemon.jvmargs='-Xmx2g' --stacktrace
+        run: ./gradlew fullBuildCheck --build-cache --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

@@ -5,5 +5,8 @@
 build/
 captures/
 local.properties
+linear.app/
+session-ses_*.md
+.scoped/
 
 **/build/
