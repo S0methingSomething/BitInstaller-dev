@@ -88,7 +88,11 @@ private fun BindShizukuListeners(
 ) {
     DisposableEffect(repository) {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        val refreshStatus = { onSnapshotChanged(repository.checkStatus()) }
+        val refreshStatus = {
+            val snapshot = repository.checkStatus()
+            onBinderReadyChanged(snapshot.status != ShizukuAccessStatus.UNAVAILABLE)
+            onSnapshotChanged(snapshot)
+        }
         val binderDeadListener =
             Shizuku.OnBinderDeadListener {
                 onBinderReadyChanged(false)
@@ -119,7 +123,7 @@ private fun BindShizukuListeners(
                 }
             }
 
-        runCatching { Shizuku.addBinderReceivedListener(binderReceivedListener) }
+        runCatching { Shizuku.addBinderReceivedListenerSticky(binderReceivedListener) }
         runCatching { Shizuku.addBinderDeadListener(binderDeadListener) }
         runCatching { Shizuku.addRequestPermissionResultListener(permissionListener) }
         refreshStatus()
