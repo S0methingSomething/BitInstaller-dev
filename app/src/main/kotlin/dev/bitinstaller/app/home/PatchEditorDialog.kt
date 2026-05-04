@@ -151,8 +151,8 @@ private fun PatchEditorContent(
         Surface(
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 0.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.11f)),
+            color = MaterialTheme.colorScheme.surface,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -178,8 +178,10 @@ private fun PatchEditorBody(
     uiState: PatchEditorUiState,
     actions: PatchEditorActions,
 ) {
-    EditorContentLabel(editorMode = uiState.editorMode)
-    Spacer(modifier = Modifier.height(8.dp))
+    if (uiState.editorMode == EditorMode.SIMPLIFIED) {
+        EditorContentLabel()
+        Spacer(modifier = Modifier.height(8.dp))
+    }
 
     if (uiState.editorMode == EditorMode.SIMPLIFIED) {
         SimplifiedEditor(

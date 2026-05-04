@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,6 +24,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+private val EditorControlShape = RoundedCornerShape(6.dp)
 
 @Composable
 internal fun PatchEditorToolbar(
@@ -53,24 +58,25 @@ internal fun PatchEditorToolbar(
 internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         EditorSectionLabel(text = "Bulk patch")
-        OutlinedButton(
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.58f)),
-            colors =
-                ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.primary,
-                ),
+        Surface(
             onClick = onUnlockAll,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 54.dp),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+            shadowElevation = 0.dp,
+            tonalElevation = 0.dp,
+            shape = EditorControlShape,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Enable all unlocks", fontWeight = FontWeight.SemiBold)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text(text = "Enable all unlocks", fontWeight = FontWeight.Medium)
                 Text(
-                    text = "Review changes before saving",
+                    text = "Bulk command - review before saving",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -78,14 +84,8 @@ internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
 }
 
 @Composable
-internal fun EditorContentLabel(editorMode: EditorMode) {
-    EditorSectionLabel(
-        text =
-            when (editorMode) {
-                EditorMode.SIMPLIFIED -> "Unlock flags"
-                EditorMode.RAW -> "Data stream"
-            },
-    )
+internal fun EditorContentLabel() {
+    EditorSectionLabel(text = "Unlock flags")
 }
 
 @Composable
@@ -105,11 +105,14 @@ internal fun PatchEditorFooter(
                 Text(text = "Close")
             }
             OutlinedButton(
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
                 colors =
                     ButtonDefaults.outlinedButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
                 onClick = onExportRawJson,
+                shape = EditorControlShape,
                 modifier = Modifier.weight(1f),
             ) {
                 Text(text = "Export JSON")
@@ -118,6 +121,12 @@ internal fun PatchEditorFooter(
         Button(
             enabled = !isSaving,
             onClick = onSave,
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            shape = EditorControlShape,
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -143,9 +152,11 @@ private fun EditorModeButton(
         Button(
             colors =
                 ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.88f),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
             onClick = onClick,
+            shape = EditorControlShape,
             modifier = modifier.heightIn(min = 44.dp),
         ) {
             Text(text = label)
@@ -154,9 +165,12 @@ private fun EditorModeButton(
         OutlinedButton(
             colors =
                 ButtonDefaults.outlinedButtonColors(
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
             onClick = onClick,
+            shape = EditorControlShape,
             modifier = modifier.heightIn(min = 44.dp),
         ) {
             Text(text = label)

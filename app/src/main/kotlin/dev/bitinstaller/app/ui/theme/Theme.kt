@@ -3,7 +3,9 @@
 package dev.bitinstaller.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -12,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val DarkColorScheme =
@@ -26,7 +29,7 @@ private val DarkColorScheme =
         onSecondaryContainer = Color(0xFFD0D6E0),
         tertiary = Color(0xFF10B981),
         onTertiary = Color(0xFFF7F8F8),
-        background = Color(0xFF08090A),
+        background = Color(0xFF050607),
         onBackground = Color(0xFFF7F8F8),
         surface = Color(0xFF0F1011),
         onSurface = Color(0xFFF7F8F8),
@@ -57,6 +60,15 @@ private val LightColorScheme =
     )
 
 private val BaseTypography = Typography()
+
+private val BitInstallerShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(2.dp),
+        small = RoundedCornerShape(4.dp),
+        medium = RoundedCornerShape(6.dp),
+        large = RoundedCornerShape(8.dp),
+        extraLarge = RoundedCornerShape(12.dp),
+    )
 
 private val BitInstallerTypography =
     Typography(
@@ -127,6 +139,7 @@ fun BitInstallerTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        shapes = BitInstallerShapes,
         typography = BitInstallerTypography,
         content = content,
     )
