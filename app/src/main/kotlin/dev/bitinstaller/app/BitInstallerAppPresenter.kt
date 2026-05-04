@@ -116,8 +116,8 @@ internal class BitInstallerAppPresenter {
                     supportState = supportStateFor(isReady, installed),
                     presenceState = presenceStateFor(isReady, presence),
                     presenceLabel = presenceLabelFor(isReady, installed, presence),
-                    statusLabel = statusLabelFor(isReady, isLoading, loadError, installed),
-                    actionLabel = if (isLoading) "Loading" else "Patch",
+                    statusLabel = statusLabelFor(isReady, isLoading, loadError, installed, presence),
+                    actionLabel = actionLabelFor(isReady, isLoading, installed, presence),
                     actionEnabled = isReady && installed && !isLoading,
                 ),
         )
@@ -150,10 +150,11 @@ private fun presenceLabelFor(
     presence: PatchManifestPresence?,
 ): String =
     when {
-        !isInstalled -> "Not installed"
-        !isReady -> "Locked"
-        presence != null -> presence.label
-        else -> "Unknown"
+        !isInstalled -> "Not on device"
+        !isReady -> "Waiting"
+        presence?.state == PatchPresenceState.PATCHED -> "Patched"
+        presence?.state == PatchPresenceState.NOT_PATCHED -> "No patch"
+        else -> "Ready"
     }
 
 private fun statusLabelFor(
@@ -161,11 +162,28 @@ private fun statusLabelFor(
     isLoading: Boolean,
     loadError: String?,
     isInstalled: Boolean,
+    presence: PatchManifestPresence?,
 ): String =
     when {
-        !isInstalled -> "App not installed on device"
-        isLoading -> "Reading MonetizationVars"
+        !isInstalled -> "Install it to patch later"
+        isLoading -> "Opening editor"
         loadError != null -> loadError
-        isReady -> "Ready to load data"
-        else -> "Grant Shizuku access first"
+        !isReady -> "Connect Shizuku first"
+        presence?.state == PatchPresenceState.PATCHED -> "Saved patch found"
+        presence?.state == PatchPresenceState.NOT_PATCHED -> "No saved patch yet"
+        else -> "Tap Patch to begin"
+    }
+
+private fun actionLabelFor(
+    isReady: Boolean,
+    isLoading: Boolean,
+    isInstalled: Boolean,
+    presence: PatchManifestPresence?,
+): String =
+    when {
+        !isInstalled -> "Install first"
+        !isReady -> "Connect first"
+        isLoading -> "Opening"
+        presence?.state == PatchPresenceState.PATCHED -> "Review"
+        else -> "Patch"
     }

@@ -122,8 +122,8 @@ fun previewHomeUiState(): HomeUiState =
                         TargetPatchState(
                             supportState = PatchSupportState.READY,
                             presenceState = PatchPresenceState.NOT_PATCHED,
-                            presenceLabel = "Not patched",
-                            statusLabel = "Ready to load data",
+                            presenceLabel = "No patch",
+                            statusLabel = "Tap Patch to begin",
                             actionLabel = "Patch",
                             actionEnabled = true,
                         ),

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -31,6 +32,8 @@ private val TargetCardShape = RoundedCornerShape(12.dp)
 private val TargetButtonShape = RoundedCornerShape(6.dp)
 private val TargetButtonInset = 112.dp
 private val TargetMinHeight = 132.dp
+private const val INSTALLED_TARGET_CARD_ALPHA: Float = 0.02f
+private const val MISSING_TARGET_CARD_ALPHA: Float = 0.012f
 
 @Composable
 internal fun PatchTargetsSection(
@@ -42,7 +45,7 @@ internal fun PatchTargetsSection(
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
-            text = "Apps",
+            text = "Games",
             style = MaterialTheme.typography.titleLarge,
         )
         targets.forEach { target ->
@@ -60,10 +63,12 @@ private fun PatchTargetCard(
     onPatchClick: (PatchTargetUiState) -> Unit,
 ) {
     val accent = targetAccentColor(target.patchState.supportState)
+    val cardAlpha = if (target.isInstalled) INSTALLED_TARGET_CARD_ALPHA else MISSING_TARGET_CARD_ALPHA
+    val actionInset = if (target.isInstalled) TargetButtonInset else 0.dp
 
     Surface(
         shape = TargetCardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = cardAlpha),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -81,24 +86,28 @@ private fun PatchTargetCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(end = TargetButtonInset),
+                        .padding(end = actionInset),
             ) {
                 AppGlyph(icon = target.icon, name = target.name, accent = accent)
                 TargetTextBlock(target = target)
             }
 
-            Button(
-                enabled = target.patchState.actionEnabled,
-                onClick = { onPatchClick(target) },
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                shape = TargetButtonShape,
-                modifier = Modifier.align(Alignment.BottomEnd),
-            ) {
-                Text(text = target.patchState.actionLabel)
+            if (target.isInstalled) {
+                Button(
+                    enabled = target.patchState.actionEnabled,
+                    onClick = { onPatchClick(target) },
+                    colors =
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                        ),
+                    shape = TargetButtonShape,
+                    modifier = Modifier.align(Alignment.BottomEnd),
+                ) {
+                    Text(text = target.patchState.actionLabel)
+                }
             }
         }
     }
@@ -106,6 +115,8 @@ private fun PatchTargetCard(
 
 @Composable
 private fun TargetTextBlock(target: PatchTargetUiState) {
+    val statusAccent = patchPresenceColor(target.patchState.presenceState)
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -133,11 +144,23 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
                 patchPresenceState = target.patchState.presenceState,
             )
         }
-        Text(
-            text = target.patchState.statusLabel,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                color = statusAccent,
+                shape = CircleShape,
+                modifier = Modifier.size(5.dp),
+            ) {}
+            Text(
+                text = target.patchState.statusLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -203,7 +226,7 @@ private fun PatchStateChip(
 
     Surface(
         color = containerColor,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
         shape = RoundedCornerShape(999.dp),
     ) {
         Text(
