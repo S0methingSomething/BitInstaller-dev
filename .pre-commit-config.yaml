@@ -4,7 +4,9 @@ repos:
       - id: bitinstaller-quality-check
         name: BitInstaller local quality gate
         entry: >-
-          bash -c 'if [ -d "/data/data/com.termux/files/usr/lib/jvm/java-17-openjdk" ]; then
+          bash -c 'if [ -d "/data/data/com.termux/files/usr/lib/jvm/java-21-openjdk" ]; then
+          export JAVA_HOME="${JAVA_HOME:-/data/data/com.termux/files/usr/lib/jvm/java-21-openjdk}";
+          elif [ -d "/data/data/com.termux/files/usr/lib/jvm/java-17-openjdk" ]; then
           export JAVA_HOME="${JAVA_HOME:-/data/data/com.termux/files/usr/lib/jvm/java-17-openjdk}";
           fi;
           ./gradlew qualityCheck

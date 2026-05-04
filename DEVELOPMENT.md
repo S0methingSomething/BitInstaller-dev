@@ -30,13 +30,13 @@ Install the hooks once per clone:
 pre-commit install
 ```
 
-The repo uses `.pre-commit-config.yaml` with a local hook that runs `qualityCheck` using conservative Termux-friendly Gradle settings. It does not build an APK.
+The repo uses `.pre-commit-config.yaml` with a local hook that runs `qualityCheck` using conservative Termux-friendly Gradle settings. The hook prefers Termux JDK 21 when installed and falls back to JDK 17. It does not build an APK.
 
 ## GitHub APK Builds
 
 Heavy APK packaging runs in GitHub Actions through `.github/workflows/build-apk.yml`.
 
-Trigger it by pushing to `main`, opening a pull request, or running the `Build APK` workflow manually. The workflow uploads `BitInstaller-debug-apk` as an artifact.
+Trigger it by pushing to `main` or running the `Build APK` workflow manually. Pull requests run the lighter `Quality` workflow. The APK workflow uploads `BitInstaller-debug-apk` as an artifact.
 
 The debug APK workflow can use a stable debug signing key when these repository secrets are set:
 
