@@ -31,6 +31,7 @@ internal class BitInstallerAppState(
     initialSnapshot: ShizukuSnapshot,
 ) {
     var snapshot by mutableStateOf(initialSnapshot)
+    var binderReady by mutableStateOf(false)
     var activeSession by mutableStateOf<PatchEditorSession?>(null)
     var isLoading by mutableStateOf(false)
     var loadingTargetId by mutableStateOf<String?>(null)
@@ -89,7 +90,7 @@ private fun handleDashboardAction(
 ) {
     if (appState.snapshot.status == ShizukuAccessStatus.READY) {
         openShizukuApp(context = context, onError = { error -> appState.loadError = error })
-    } else {
+    } else if (appState.binderReady) {
         requestShizukuPermission(
             onError = { error -> appState.loadError = error },
         )

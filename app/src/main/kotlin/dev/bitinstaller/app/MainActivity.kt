@@ -58,6 +58,7 @@ private fun BitInstallerApp() {
     BindShizukuListeners(
         repository = presenter.repository,
         onSnapshotChanged = { presenter.appState.snapshot = it },
+        onBinderReadyChanged = { presenter.appState.binderReady = it },
     )
 
     HomeRoute(
@@ -83,13 +84,19 @@ private fun BitInstallerApp() {
 private fun BindShizukuListeners(
     repository: ShizukuMonetizationRepository,
     onSnapshotChanged: (ShizukuSnapshot) -> Unit,
+    onBinderReadyChanged: (Boolean) -> Unit,
 ) {
     DisposableEffect(repository) {
         val handler = android.os.Handler(android.os.Looper.getMainLooper())
         val refreshStatus = { onSnapshotChanged(repository.checkStatus()) }
-        val binderDeadListener = Shizuku.OnBinderDeadListener(refreshStatus)
+        val binderDeadListener =
+            Shizuku.OnBinderDeadListener {
+                onBinderReadyChanged(false)
+                refreshStatus()
+            }
         val binderReceivedListener =
             Shizuku.OnBinderReceivedListener {
+                onBinderReadyChanged(true)
                 handler.post { refreshStatus() }
             }
         val permissionListener =

@@ -38,6 +38,7 @@ internal class BitInstallerAppPresenter {
     suspend fun initialize(context: Context) {
         appInfoMap = withContext(Dispatchers.IO) { resolveAllAppInfo(context) }
         appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
+        recoverPresencesIfReady()
     }
 
     /**
@@ -59,15 +60,28 @@ internal class BitInstallerAppPresenter {
     fun buildHomeUiState(): HomeUiState {
         val snapshot = appState.snapshot
         val isReady = snapshot.status == ShizukuAccessStatus.READY
+        val canRequest = appState.binderReady
 
         return HomeUiState(
             title = "BitInstaller",
             summary = "MonetizationVars editor",
             backendStatus =
-                when (snapshot.status) {
-                    ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
-                    ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
-                    ShizukuAccessStatus.READY -> BackendStatus.Ready
+                when {
+                    isReady -> {
+                        BackendStatus.Ready
+                    }
+
+                    canRequest -> {
+                        when (snapshot.status) {
+                            ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
+                            ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
+                            ShizukuAccessStatus.READY -> BackendStatus.Ready
+                        }
+                    }
+
+                    else -> {
+                        BackendStatus.ShizukuUnavailable
+                    }
                 },
             patchTargets =
                 ALL_TARGETS
