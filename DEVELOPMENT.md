@@ -38,8 +38,32 @@ Heavy APK packaging runs in GitHub Actions through `.github/workflows/build-apk.
 
 Trigger it by pushing to `main`, opening a pull request, or running the `Build APK` workflow manually. The workflow uploads `BitInstaller-debug-apk` as an artifact.
 
+The debug APK workflow can use a stable debug signing key when these repository secrets are set:
+
+- `BITINSTALLER_DEBUG_KEYSTORE_BASE64`
+- `BITINSTALLER_DEBUG_STORE_PASSWORD`
+- `BITINSTALLER_DEBUG_KEY_ALIAS`
+- `BITINSTALLER_DEBUG_KEY_PASSWORD`
+
 For a full build locally only when needed:
 
 ```sh
 ./gradlew fullBuildCheck --no-daemon
+```
+
+## Releases
+
+Public alpha releases are tag-driven through `.github/workflows/release.yml`. Create a tag such as `v0.1.0-alpha` and push it; GitHub generates release notes from the commits since the previous tag.
+
+The release workflow builds the R8-optimized `release` variant and requires these repository secrets:
+
+- `BITINSTALLER_RELEASE_KEYSTORE_BASE64`
+- `BITINSTALLER_RELEASE_STORE_PASSWORD`
+- `BITINSTALLER_RELEASE_KEY_ALIAS`
+- `BITINSTALLER_RELEASE_KEY_PASSWORD`
+
+For a full release build locally only when needed:
+
+```sh
+./gradlew fullReleaseCheck --no-daemon
 ```

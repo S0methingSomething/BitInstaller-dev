@@ -90,6 +90,15 @@ tasks.register("fullBuildCheck") {
     )
 }
 
+tasks.register("fullReleaseCheck") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs quality checks and builds the R8-optimized release APK. Intended for release CI."
+    dependsOn(
+        "qualityCheck",
+        ":app:assembleRelease",
+    )
+}
+
 tasks.register("updateCheck") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Reports available dependency and version catalog updates."

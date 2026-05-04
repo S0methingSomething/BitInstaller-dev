@@ -1,3 +1,4 @@
+import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -6,6 +7,35 @@ plugins {
     alias(libs.plugins.detekt)
     alias(libs.plugins.dependency.analysis)
 }
+
+val releaseStoreFile = providers.environmentVariable("BITINSTALLER_RELEASE_STORE_FILE")
+val releaseStorePassword = providers.environmentVariable("BITINSTALLER_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = providers.environmentVariable("BITINSTALLER_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = providers.environmentVariable("BITINSTALLER_RELEASE_KEY_PASSWORD")
+val debugStoreFile = providers.environmentVariable("BITINSTALLER_DEBUG_STORE_FILE")
+val debugStorePassword = providers.environmentVariable("BITINSTALLER_DEBUG_STORE_PASSWORD")
+val debugKeyAlias = providers.environmentVariable("BITINSTALLER_DEBUG_KEY_ALIAS")
+val debugKeyPassword = providers.environmentVariable("BITINSTALLER_DEBUG_KEY_PASSWORD")
+
+fun List<Provider<String>>.allPresentAndNotBlank(): Boolean =
+    all { provider ->
+        provider.orNull?.isNotBlank() == true
+    }
+
+val hasReleaseSigning =
+    listOf(
+        releaseStoreFile,
+        releaseStorePassword,
+        releaseKeyAlias,
+        releaseKeyPassword,
+    ).allPresentAndNotBlank()
+val hasDebugSigning =
+    listOf(
+        debugStoreFile,
+        debugStorePassword,
+        debugKeyAlias,
+        debugKeyPassword,
+    ).allPresentAndNotBlank()
 
 android {
     namespace = "dev.bitinstaller.app"
@@ -25,16 +55,44 @@ android {
                 .get()
                 .toInt()
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.1.0-alpha"
+    }
+
+    signingConfigs {
+        if (hasDebugSigning) {
+            getByName("debug") {
+                storeFile = file(debugStoreFile.get())
+                storePassword = debugStorePassword.get()
+                keyAlias = debugKeyAlias.get()
+                keyPassword = debugKeyPassword.get()
+            }
+        }
+
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile.get())
+                storePassword = releaseStorePassword.get()
+                keyAlias = releaseKeyAlias.get()
+                keyPassword = releaseKeyPassword.get()
+            }
+        }
     }
 
     buildTypes {
         debug {
             isPseudoLocalesEnabled = true
+            if (hasDebugSigning) {
+                signingConfig = signingConfigs.getByName("debug")
+            }
         }
 
         release {
-            isMinifyEnabled = false
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
