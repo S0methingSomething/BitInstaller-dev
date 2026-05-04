@@ -16,6 +16,7 @@ changelog:
     - title: Maintenance
       labels:
         - dependencies
+        - github-actions
         - github_actions
         - maintenance
     - title: Other Changes

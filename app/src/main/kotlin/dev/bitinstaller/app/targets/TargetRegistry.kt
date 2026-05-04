@@ -48,7 +48,4 @@ val ALL_TARGETS: List<PatchTarget> =
         PatchTarget("com.candywriter.catlife", "CatLife", "CL"),
     )
 
-/** All package names from [ALL_TARGETS], useful for batch lookups. */
-val ALL_PACKAGE_NAMES: List<String> = ALL_TARGETS.map { it.packageName }
-
 fun findTarget(packageName: String): PatchTarget? = ALL_TARGETS.find { it.packageName == packageName }

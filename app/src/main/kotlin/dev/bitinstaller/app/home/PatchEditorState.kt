@@ -31,12 +31,6 @@ data class PatchEditorActions(
     val onSave: () -> Unit,
 )
 
-data class PatchEditorSaveCallbacks(
-    val onSaveStarted: () -> Unit,
-    val onSaveSuccess: () -> Unit,
-    val onSaveFailure: () -> Unit,
-)
-
 fun interface PatchEditorSaveHandler {
     fun save(
         data: MonetizationData,
@@ -58,7 +52,6 @@ data class PatchEditorStateMutations(
 data class PatchEditorActionConfig(
     val context: Context,
     val onDismissRequest: () -> Unit,
-    val saveCallbacks: PatchEditorSaveCallbacks = PatchEditorSaveCallbacks({}, {}, {}),
     val saveHandler: PatchEditorSaveHandler = previewSaveHandler(),
 )
 
@@ -70,8 +63,21 @@ fun buildPatchEditorActions(
     PatchEditorActions(
         onDismissRequest = config.onDismissRequest,
         onModeSelected = { mode ->
-            mutations.onEditorModeChanged(mode)
-            mutations.onErrorMessageChanged(null)
+            resolveEditorData(
+                editorMode = uiState.editorMode,
+                rawJson = uiState.rawJson,
+                draftValues = uiState.draftValues,
+                currentData = uiState.currentData,
+            ).onSuccess { data ->
+                mutations.onCurrentDataChanged(data)
+                mutations.onDraftValuesChanged(data.toDraftValues())
+                mutations.onRawJsonChanged(MonetizationCodec.toPrettyJson(data))
+                mutations.onEditorModeChanged(mode)
+                mutations.onErrorMessageChanged(null)
+            }.onFailure { error ->
+                mutations.onErrorMessageChanged(error.message)
+                mutations.onStatusMessageChanged(null)
+            }
         },
         onUnlockAll = {
             applyUnlockAllPatch(uiState = uiState, mutations = mutations)
@@ -116,7 +122,6 @@ private fun saveEditorData(
     config: PatchEditorActionConfig,
 ) {
     mutations.onSavingChanged(true)
-    config.saveCallbacks.onSaveStarted()
 
     resolveEditorData(
         editorMode = uiState.editorMode,
@@ -126,11 +131,11 @@ private fun saveEditorData(
     ).onSuccess { data ->
         config.saveHandler.save(
             data,
-            { statusMessage -> handleSaveSuccess(data, statusMessage, mutations, config) },
-            { error -> handleSaveFailure(error, mutations, config) },
+            { statusMessage -> handleSaveSuccess(data, statusMessage, mutations) },
+            { error -> handleSaveFailure(error, mutations) },
         )
     }.onFailure { error ->
-        handleSaveFailure(error.message, mutations, config)
+        handleSaveFailure(error.message, mutations)
     }
 }
 
@@ -138,7 +143,6 @@ private fun handleSaveSuccess(
     data: MonetizationData,
     statusMessage: String,
     mutations: PatchEditorStateMutations,
-    config: PatchEditorActionConfig,
 ) {
     mutations.onCurrentDataChanged(data)
     mutations.onDraftValuesChanged(data.toDraftValues())
@@ -146,18 +150,15 @@ private fun handleSaveSuccess(
     mutations.onStatusMessageChanged(statusMessage)
     mutations.onErrorMessageChanged(null)
     mutations.onSavingChanged(false)
-    config.saveCallbacks.onSaveSuccess()
 }
 
 private fun handleSaveFailure(
     error: String?,
     mutations: PatchEditorStateMutations,
-    config: PatchEditorActionConfig,
 ) {
     mutations.onErrorMessageChanged(error)
     mutations.onStatusMessageChanged(null)
     mutations.onSavingChanged(false)
-    config.saveCallbacks.onSaveFailure()
 }
 
 fun resolveEditorData(

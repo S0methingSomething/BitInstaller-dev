@@ -42,17 +42,6 @@ data class LiveDictionaryState(
     val status: LiveDictionaryStatus,
 )
 
-enum class LiveDictionaryRepairAction {
-    READY,
-    CREATED,
-    REPLACED,
-}
-
-data class LiveDictionaryRepairResult(
-    val action: LiveDictionaryRepairAction,
-    val backupPath: String?,
-)
-
 class ShizukuMonetizationRepository {
     /**
      * Probe current Shizuku binder and permission state.
@@ -133,29 +122,12 @@ class ShizukuMonetizationRepository {
         return LiveDictionaryState(status = status)
     }
 
-    suspend fun replaceLiveDictionary(target: PatchTarget): LiveDictionaryRepairResult {
+    suspend fun replaceLiveDictionary(target: PatchTarget) {
         requireReady()
         val backupPath = "${target.liveDictionaryPath}.bitinstaller.bak"
         val result = runShell(command = replaceLiveDictionaryCommand(target, backupPath))
         if (!result.isSuccess) {
             throw IOException("Could not prepare ${target.displayName} LiveDictionary: ${result.errorSummary()}")
-        }
-
-        return when (result.output.trim()) {
-            "ready" -> {
-                LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.READY, backupPath = null)
-            }
-
-            "replaced" -> {
-                LiveDictionaryRepairResult(
-                    action = LiveDictionaryRepairAction.REPLACED,
-                    backupPath = backupPath,
-                )
-            }
-
-            else -> {
-                LiveDictionaryRepairResult(action = LiveDictionaryRepairAction.CREATED, backupPath = null)
-            }
         }
     }
 
