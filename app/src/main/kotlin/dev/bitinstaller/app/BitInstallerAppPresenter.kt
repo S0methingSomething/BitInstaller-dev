@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.bitinstaller.app.home.BackendStatus
 import dev.bitinstaller.app.home.HomeUiState
+import dev.bitinstaller.app.home.PATCH_PRESENCE_NOT_PATCHED_LABEL
+import dev.bitinstaller.app.home.PATCH_PRESENCE_PATCHED_LABEL
 import dev.bitinstaller.app.home.PatchManifestPresence
 import dev.bitinstaller.app.home.PatchManifestStore
 import dev.bitinstaller.app.home.PatchPresenceState
@@ -60,28 +62,15 @@ internal class BitInstallerAppPresenter {
     fun buildHomeUiState(): HomeUiState {
         val snapshot = appState.snapshot
         val isReady = snapshot.status == ShizukuAccessStatus.READY
-        val canRequest = appState.binderReady
 
         return HomeUiState(
             title = "BitInstaller",
             summary = "MonetizationVars editor",
             backendStatus =
-                when {
-                    isReady -> {
-                        BackendStatus.Ready
-                    }
-
-                    canRequest -> {
-                        when (snapshot.status) {
-                            ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
-                            ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
-                            ShizukuAccessStatus.READY -> BackendStatus.Ready
-                        }
-                    }
-
-                    else -> {
-                        BackendStatus.ShizukuUnavailable
-                    }
+                when (snapshot.status) {
+                    ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
+                    ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
+                    ShizukuAccessStatus.READY -> BackendStatus.Ready
                 },
             patchTargets =
                 ALL_TARGETS
@@ -152,8 +141,8 @@ private fun presenceLabelFor(
     when {
         !isInstalled -> "Not on device"
         !isReady -> "Waiting"
-        presence?.state == PatchPresenceState.PATCHED -> "Patched"
-        presence?.state == PatchPresenceState.NOT_PATCHED -> "No patch"
+        presence?.state == PatchPresenceState.PATCHED -> PATCH_PRESENCE_PATCHED_LABEL
+        presence?.state == PatchPresenceState.NOT_PATCHED -> PATCH_PRESENCE_NOT_PATCHED_LABEL
         else -> "Ready"
     }
 

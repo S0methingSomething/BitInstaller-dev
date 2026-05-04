@@ -31,9 +31,9 @@ class PatchManifestStore(
         val isPatched = storedHash == currentHash && storedPath == target.monetizationVarsPath
 
         return if (isPatched) {
-            PatchManifestPresence(state = PatchPresenceState.PATCHED, label = "Patched")
+            PatchManifestPresence(state = PatchPresenceState.PATCHED, label = PATCH_PRESENCE_PATCHED_LABEL)
         } else {
-            PatchManifestPresence(state = PatchPresenceState.NOT_PATCHED, label = "Not patched")
+            PatchManifestPresence(state = PatchPresenceState.NOT_PATCHED, label = PATCH_PRESENCE_NOT_PATCHED_LABEL)
         }
     }
 
@@ -55,7 +55,7 @@ class PatchManifestStore(
     suspend fun recoverPresence(target: PatchTarget): PatchManifestPresence {
         val file =
             runCatching { repository.readMonetizationVars(target) }.getOrNull()
-                ?: return PatchManifestPresence(PatchPresenceState.NOT_PATCHED, "Not patched")
+                ?: return PatchManifestPresence(PatchPresenceState.NOT_PATCHED, PATCH_PRESENCE_NOT_PATCHED_LABEL)
         return presenceFor(target, file.content)
     }
 

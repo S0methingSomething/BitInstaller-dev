@@ -8,6 +8,7 @@ import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
 import dev.bitinstaller.app.home.HomeRouteCallbacks
 import dev.bitinstaller.app.home.LiveDictionaryPromptUiState
+import dev.bitinstaller.app.home.PATCH_PRESENCE_PATCHED_LABEL
 import dev.bitinstaller.app.home.PatchEditorSession
 import dev.bitinstaller.app.home.PatchManifestPresence
 import dev.bitinstaller.app.home.PatchManifestStore
@@ -31,7 +32,6 @@ internal class BitInstallerAppState(
     initialSnapshot: ShizukuSnapshot,
 ) {
     var snapshot by mutableStateOf(initialSnapshot)
-    var binderReady by mutableStateOf(false)
     var activeSession by mutableStateOf<PatchEditorSession?>(null)
     var isLoading by mutableStateOf(false)
     var loadingTargetId by mutableStateOf<String?>(null)
@@ -88,12 +88,18 @@ private fun handleDashboardAction(
     context: Context,
     appState: BitInstallerAppState,
 ) {
-    if (appState.snapshot.status == ShizukuAccessStatus.READY) {
-        openShizukuApp(context = context, onError = { error -> appState.loadError = error })
-    } else if (appState.binderReady) {
-        requestShizukuPermission(
-            onError = { error -> appState.loadError = error },
-        )
+    when (appState.snapshot.status) {
+        ShizukuAccessStatus.UNAVAILABLE,
+        ShizukuAccessStatus.READY,
+        -> {
+            openShizukuApp(context = context, onError = { error -> appState.loadError = error })
+        }
+
+        ShizukuAccessStatus.PERMISSION_REQUIRED -> {
+            requestShizukuPermission(
+                onError = { error -> appState.loadError = error },
+            )
+        }
     }
 }
 
@@ -202,7 +208,7 @@ private suspend fun savePatchSession(
         patchTarget.packageName to
             PatchManifestPresence(
                 state = PatchPresenceState.PATCHED,
-                label = "Patched",
+                label = PATCH_PRESENCE_PATCHED_LABEL,
             )
     )
     return "Saved to ${patchTarget.displayName}. Backup: ${writeResult.backupPath.substringAfterLast('/')}"

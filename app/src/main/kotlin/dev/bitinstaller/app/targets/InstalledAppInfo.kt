@@ -74,7 +74,7 @@ suspend fun resolveAppInfo(
     }
 
 /**
- * Resolve install state for all [targets] in parallel on [Dispatchers.IO].
+ * Resolve install state for all [targets] off the Main thread.
  * Returns a map keyed by package name.
  */
 suspend fun resolveAllAppInfo(

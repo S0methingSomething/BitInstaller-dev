@@ -22,6 +22,9 @@ enum class PatchPresenceState {
     UNKNOWN,
 }
 
+internal const val PATCH_PRESENCE_PATCHED_LABEL: String = "Patched"
+internal const val PATCH_PRESENCE_NOT_PATCHED_LABEL: String = "No patch"
+
 /** Icon representation for a target app — real drawable or fallback monogram. */
 class TargetIcon(
     val monogram: String,
@@ -122,7 +125,7 @@ fun previewHomeUiState(): HomeUiState =
                         TargetPatchState(
                             supportState = PatchSupportState.READY,
                             presenceState = PatchPresenceState.NOT_PATCHED,
-                            presenceLabel = "No patch",
+                            presenceLabel = PATCH_PRESENCE_NOT_PATCHED_LABEL,
                             statusLabel = "Tap Patch to begin",
                             actionLabel = "Patch",
                             actionEnabled = true,

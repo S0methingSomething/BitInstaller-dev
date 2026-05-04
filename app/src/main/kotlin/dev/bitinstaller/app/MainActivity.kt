@@ -1,6 +1,5 @@
 package dev.bitinstaller.app
 
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,10 +17,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
-import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import dev.bitinstaller.app.ui.theme.BitInstallerTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
@@ -58,7 +59,6 @@ private fun BitInstallerApp() {
     BindShizukuListeners(
         repository = presenter.repository,
         onSnapshotChanged = { presenter.appState.snapshot = it },
-        onBinderReadyChanged = { presenter.appState.binderReady = it },
     )
 
     HomeRoute(
@@ -84,42 +84,27 @@ private fun BitInstallerApp() {
 private fun BindShizukuListeners(
     repository: ShizukuMonetizationRepository,
     onSnapshotChanged: (ShizukuSnapshot) -> Unit,
-    onBinderReadyChanged: (Boolean) -> Unit,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     DisposableEffect(repository) {
-        val handler = android.os.Handler(android.os.Looper.getMainLooper())
-        val refreshStatus = {
-            val snapshot = repository.checkStatus()
-            onBinderReadyChanged(snapshot.status != ShizukuAccessStatus.UNAVAILABLE)
-            onSnapshotChanged(snapshot)
+        fun refreshStatus() {
+            coroutineScope.launch {
+                val snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
+                onSnapshotChanged(snapshot)
+            }
         }
         val binderDeadListener =
             Shizuku.OnBinderDeadListener {
-                onBinderReadyChanged(false)
                 refreshStatus()
             }
         val binderReceivedListener =
             Shizuku.OnBinderReceivedListener {
-                onBinderReadyChanged(true)
-                handler.post { refreshStatus() }
+                refreshStatus()
             }
         val permissionListener =
-            Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            Shizuku.OnRequestPermissionResultListener { requestCode, _ ->
                 if (requestCode == SHIZUKU_PERMISSION_REQUEST_CODE) {
-                    when (grantResult) {
-                        PackageManager.PERMISSION_GRANTED -> {
-                            onSnapshotChanged(
-                                ShizukuSnapshot(
-                                    status = ShizukuAccessStatus.READY,
-                                    uid = runCatching { Shizuku.getUid() }.getOrNull(),
-                                ),
-                            )
-                        }
-
-                        else -> {
-                            refreshStatus()
-                        }
-                    }
+                    refreshStatus()
                 }
             }
 
