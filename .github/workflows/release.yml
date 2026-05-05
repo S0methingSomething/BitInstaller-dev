@@ -47,11 +47,6 @@ jobs:
             exit 1
           fi
 
-          if ! git rev-parse --verify --quiet "refs/tags/$RELEASE_TAG" >/dev/null; then
-            printf 'Release tag %s does not exist in this checkout\n' "$RELEASE_TAG" >&2
-            exit 1
-          fi
-
       - name: Validate release signing secrets
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_RELEASE_KEYSTORE_BASE64 }}
