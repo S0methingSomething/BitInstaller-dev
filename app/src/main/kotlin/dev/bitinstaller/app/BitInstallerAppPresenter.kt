@@ -112,7 +112,6 @@ internal class BitInstallerAppPresenter {
         return SaveTargetUiState(
             name = info.appName,
             packageName = targetId,
-            internalFilesDirectory = info.internalFilesDirectory,
             icon = TargetIcon(monogram = target.monogram, drawable = info.icon),
             versionLabel = info.versionName,
             isLoading = isLoading,
@@ -225,9 +224,9 @@ private fun saveStatusLabelFor(
 ): String =
     when {
         !isReady -> "Connect Shizuku first"
-        isLoading -> "Scanning internal sg* saves"
+        isLoading -> "Scanning sg* save slots"
         error != null -> error
-        saves == null -> "Tap to scan internal saves"
+        saves == null -> "Tap to scan save slots"
         saves.isEmpty() -> "No sg* saves found"
         else -> "${saves.size} ${"save".pluralize(saves.size)} processed"
     }

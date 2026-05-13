@@ -40,10 +40,7 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
             val patchTarget =
                 findTarget(target.packageName)
                     ?: error("Unknown target: ${target.packageName}")
-            check(target.internalFilesDirectory.isNotBlank()) {
-                "Could not resolve internal files directory for ${target.name}"
-            }
-            repository.listLifeSaveFiles(patchTarget, target.internalFilesDirectory).map { file ->
+            repository.listLifeSaveFiles(patchTarget, patchTarget.filesDirectory).map { file ->
                 runCatching {
                     val bytes = repository.readLifeSaveFile(file)
                     BitLifeSaveParser.parse(path = file.path, bytes = bytes)

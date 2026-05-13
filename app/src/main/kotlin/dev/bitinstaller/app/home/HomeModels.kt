@@ -117,7 +117,6 @@ data class SaveEditorUiState(
 data class SaveTargetUiState(
     val name: String,
     val packageName: String,
-    val internalFilesDirectory: String,
     val icon: TargetIcon,
     val versionLabel: String,
     val isLoading: Boolean,
@@ -167,11 +166,10 @@ fun previewHomeUiState(): HomeUiState =
                         SaveTargetUiState(
                             name = "BitLife",
                             packageName = "com.candywriter.bitlife",
-                            internalFilesDirectory = "preview",
                             icon = TargetIcon(monogram = "BL"),
                             versionLabel = "3.27.7",
                             isLoading = false,
-                            statusLabel = "Tap to scan internal sg* saves",
+                            statusLabel = "Tap to scan save slots",
                             actionLabel = "Scan",
                             actionEnabled = true,
                             saves = null,

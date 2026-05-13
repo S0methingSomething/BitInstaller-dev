@@ -17,7 +17,6 @@ class InstalledAppInfo(
     val packageName: String,
     val appName: String,
     val versionName: String,
-    val internalFilesDirectory: String,
     val icon: Drawable?,
     val isInstalled: Boolean,
 ) {
@@ -27,7 +26,6 @@ class InstalledAppInfo(
         return packageName == other.packageName &&
             appName == other.appName &&
             versionName == other.versionName &&
-            internalFilesDirectory == other.internalFilesDirectory &&
             isInstalled == other.isInstalled
     }
 
@@ -35,7 +33,6 @@ class InstalledAppInfo(
         var result = packageName.hashCode()
         result = 31 * result + appName.hashCode()
         result = 31 * result + versionName.hashCode()
-        result = 31 * result + internalFilesDirectory.hashCode()
         result = 31 * result + isInstalled.hashCode()
         return result
     }
@@ -62,7 +59,6 @@ suspend fun resolveAppInfo(
                 packageName = target.packageName,
                 appName = pm.getApplicationLabel(appInfo).toString(),
                 versionName = packageInfo.versionName.orEmpty(),
-                internalFilesDirectory = "${appInfo.dataDir}/files",
                 icon = pm.getApplicationIcon(appInfo),
                 isInstalled = true,
             )
@@ -71,7 +67,6 @@ suspend fun resolveAppInfo(
                 packageName = target.packageName,
                 appName = target.displayName,
                 versionName = "",
-                internalFilesDirectory = "",
                 icon = null,
                 isInstalled = false,
             )

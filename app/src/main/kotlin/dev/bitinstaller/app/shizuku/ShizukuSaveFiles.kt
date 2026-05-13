@@ -10,10 +10,10 @@ private const val MAX_LIFE_SAVE_READ_BYTES: Long = MAX_LIFE_SAVE_BYTES + 1L
 
 suspend fun ShizukuMonetizationRepository.listLifeSaveFiles(
     target: PatchTarget,
-    internalFilesDirectory: String,
+    filesDirectory: String,
 ): List<LifeSaveFile> {
     requireReadyForSaveFiles()
-    val result = runShellBytes(command = listLifeSaveFilesCommand(internalFilesDirectory))
+    val result = runShellBytes(command = listLifeSaveFilesCommand(filesDirectory))
     if (!result.isSuccess) {
         throw IOException("Could not list ${target.displayName} saves: ${result.errorSummary()}")
     }
@@ -47,9 +47,9 @@ private fun ShizukuMonetizationRepository.requireReadyForSaveFiles() {
     }
 }
 
-private fun listLifeSaveFilesCommand(internalFilesDirectory: String): String =
+private fun listLifeSaveFilesCommand(filesDirectory: String): String =
     buildString {
-        append("dir=${shellQuote(internalFilesDirectory)}; ")
+        append("dir=${shellQuote(filesDirectory)}; ")
         append("if [ -d \"\$dir\" ]; then ")
         append("for slot in \"\$dir\"/sg*; do ")
         append("[ -d \"\$slot\" ] || continue; ")
