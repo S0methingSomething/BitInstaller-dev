@@ -112,6 +112,7 @@ class PatchTargetUiState(
 
 data class SaveEditorUiState(
     val targets: List<SaveTargetUiState>,
+    val selectedTarget: SaveTargetUiState?,
 )
 
 data class SaveTargetUiState(
@@ -161,6 +162,7 @@ fun previewHomeUiState(): HomeUiState =
             ),
         saveEditor =
             SaveEditorUiState(
+                selectedTarget = null,
                 targets =
                     listOf(
                         SaveTargetUiState(

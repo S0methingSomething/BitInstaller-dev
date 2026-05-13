@@ -16,11 +16,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveAttributeSummary
+import dev.bitinstaller.app.save.SaveCharacterSummary
 import java.util.Locale
 
 private const val BYTES_PER_KIB = 1024f
 private const val BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB
 private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 4
+private const val MAX_CHARACTER_PREVIEW_COUNT = 6
 private const val SAVE_DETAIL_COLUMNS = 2
 
 @Composable
@@ -28,7 +30,7 @@ internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
     Text(
         text =
             listOfNotNull(
-                save.fileName,
+                save.slotName,
                 save.age?.let { "Age $it" },
                 save.gender,
                 formatBytes(save.sizeBytes),
@@ -66,6 +68,25 @@ internal fun SaveAttributeRows(attributes: List<SaveAttributeSummary>) {
                     modifier = Modifier.weight(1f),
                 )
             }
+        }
+    }
+}
+
+@Composable
+internal fun SaveCharacterRows(characters: List<SaveCharacterSummary>) {
+    if (characters.isEmpty()) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Characters",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        characters.take(MAX_CHARACTER_PREVIEW_COUNT).forEach { character ->
+            SaveFactChipView(
+                fact = SaveFactChip(character.role, character.characterLabel()),
+                modifier = Modifier,
+            )
         }
     }
 }
@@ -113,3 +134,11 @@ private fun formatBytes(sizeBytes: Int): String =
 private fun formatMoney(value: Double): String = String.format(Locale.US, "$%,.0f", value)
 
 private fun formatPercent(value: Float): String = String.format(Locale.US, "%.0f", value)
+
+private fun SaveCharacterSummary.characterLabel(): String =
+    listOfNotNull(
+        name.takeUnless { it == "Unnamed life" },
+        age?.let { "Age $it" },
+        relationship?.let { String.format(Locale.US, "%.0f relationship", it) },
+        isAlive?.let { alive -> if (alive) "Alive" else "Dead" },
+    ).joinToString(" • ").ifBlank { name }

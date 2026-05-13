@@ -1,10 +1,12 @@
 package dev.bitinstaller.app.save
 
 import dev.nrbf4j.NrbfDocument
+import dev.nrbf4j.ObjectNode
 
 data class BitLifeSaveSummary(
     val path: String,
     val fileName: String,
+    val slotName: String,
     val sizeBytes: Int,
     val heroName: String,
     val age: Int?,
@@ -12,6 +14,7 @@ data class BitLifeSaveSummary(
     val bankBalance: Double?,
     val attributes: List<SaveAttributeSummary>,
     val facts: List<SaveFactSummary>,
+    val characters: List<SaveCharacterSummary>,
     val errorMessage: String? = null,
 )
 
@@ -23,6 +26,14 @@ data class SaveAttributeSummary(
 data class SaveFactSummary(
     val label: String,
     val value: String,
+)
+
+data class SaveCharacterSummary(
+    val role: String,
+    val name: String,
+    val age: Int?,
+    val relationship: Float?,
+    val isAlive: Boolean?,
 )
 
 internal object BitLifeSaveParser {
@@ -41,6 +52,7 @@ internal object BitLifeSaveParser {
         BitLifeSaveSummary(
             path = path,
             fileName = path.substringAfterLast('/'),
+            slotName = path.slotName(),
             sizeBytes = sizeBytes,
             heroName = "Unreadable save",
             age = null,
@@ -48,6 +60,7 @@ internal object BitLifeSaveParser {
             bankBalance = null,
             attributes = emptyList(),
             facts = emptyList(),
+            characters = emptyList(),
             errorMessage = error.message ?: error::class.java.simpleName,
         )
 
@@ -62,6 +75,7 @@ internal object BitLifeSaveParser {
             val occupation = life?.logicalObject("Occupation")
             val job = occupation?.logicalObject("Job")
             val name = hero?.logicalObject("Name")
+            val characters = doc.characterSummaries(life)
 
             val firstName = name?.logicalString("FirstName").orEmpty()
             val lastName = name?.logicalString("LastName").orEmpty()
@@ -70,12 +84,17 @@ internal object BitLifeSaveParser {
             val age = hero?.logicalInt("Age")
             val gender = hero?.logicalInt("Gender")?.toGenderLabel()
             val bankBalance = finances?.logicalDouble("BankBalance")
+            val heroName = displayName(firstName, lastName, royalTitle, hasDoctorate)
 
             BitLifeSaveSummary(
                 path = path,
                 fileName = path.substringAfterLast('/'),
+                slotName = path.slotName(),
                 sizeBytes = bytes.size,
-                heroName = displayName(firstName, lastName, royalTitle, hasDoctorate),
+                heroName =
+                    heroName.takeUnless { it == "Unnamed life" }
+                        ?: characters.firstOrNull { it.role == "Hero" }?.name
+                        ?: "Unnamed life",
                 age = age,
                 gender = gender,
                 bankBalance = bankBalance,
@@ -87,6 +106,23 @@ internal object BitLifeSaveParser {
                         addFact("Career", job?.logicalString("CareerName"))
                         addFact("Salary", occupation?.logicalDouble("Salary")?.toWholeNumberLabel())
                     },
+                characters = characters,
             )
         }
+
+    private fun NrbfDocument.characterSummaries(
+        life: ObjectNode? = objectByClassOrNull("Life"),
+    ): List<SaveCharacterSummary> =
+        buildList {
+            life?.logicalCharacter("Hero", "Hero")?.let(::add)
+            life?.logicalCharacter("Father", "Father")?.let(::add)
+            life?.logicalCharacter("Mother", "Mother")?.let(::add)
+            life?.logicalCharacter("Lover", "Partner")?.let(::add)
+            life?.logicalCharacterList(this@characterSummaries, "_ChildArray", "Child")?.let(::addAll)
+            life?.logicalCharacterList(this@characterSummaries, "_SiblingArray", "Sibling")?.let(::addAll)
+            life?.logicalCharacterList(this@characterSummaries, "_FriendArray", "Friend")?.let(::addAll)
+        }.distinctBy { character -> character.role to character.name }
+
+    private fun String.slotName(): String =
+        substringBeforeLast('/').substringAfterLast('/', missingDelimiterValue = "Save slot")
 }

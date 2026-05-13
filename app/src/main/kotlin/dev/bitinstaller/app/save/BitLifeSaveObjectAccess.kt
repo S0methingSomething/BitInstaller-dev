@@ -39,6 +39,6 @@ internal fun ObjectNode.logicalMember(logicalName: String): MemberNode? =
     members().firstOrNull { member -> member.name.matchesLogicalName(logicalName) }
 
 private fun String.matchesLogicalName(logicalName: String): Boolean =
-    equals(logicalName, ignoreCase = true) || endsWith("<$logicalName>k__BackingField")
+    equals(logicalName, ignoreCase = true) || contains("<$logicalName>k__BackingField", ignoreCase = true)
 
 private fun MemberNode.derefObjectOrNull(): ObjectNode? = runCatching { derefObject() }.getOrNull()

@@ -42,6 +42,7 @@ internal class BitInstallerAppState(
     var pendingLiveDictionaryTarget by mutableStateOf<PatchTargetUiState?>(null)
     var liveDictionaryPrompt by mutableStateOf<LiveDictionaryPromptUiState?>(null)
     var selectedDestination by mutableStateOf(BitInstallerDestination.MonetizationVars)
+    var selectedSaveTargetId by mutableStateOf<String?>(null)
     var saveScanTargetId by mutableStateOf<String?>(null)
     var saveScanErrors by mutableStateOf(mapOf<String, String>())
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
@@ -74,6 +75,7 @@ internal fun buildHomeRouteCallbacks(
             )
         },
         onSaveTargetClick = { target ->
+            deps.appState.selectedSaveTargetId = target.packageName
             deps.coroutineScope.launchSaveScan(
                 target,
                 deps.repository,
@@ -81,6 +83,7 @@ internal fun buildHomeRouteCallbacks(
                 deps.appState,
             )
         },
+        onSaveEditorBack = { deps.appState.selectedSaveTargetId = null },
         onDismissSession = { deps.appState.activeSession = null },
         onDismissLiveDictionaryPrompt = {
             deps.appState.liveDictionaryPrompt = null

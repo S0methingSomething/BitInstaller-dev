@@ -8,6 +8,7 @@ data class HomeRouteCallbacks(
     val onDashboardActionClick: () -> Unit = {},
     val onPatchClick: (PatchTargetUiState) -> Unit = {},
     val onSaveTargetClick: (SaveTargetUiState) -> Unit = {},
+    val onSaveEditorBack: () -> Unit = {},
     val onDismissSession: () -> Unit = {},
     val onDismissLiveDictionaryPrompt: () -> Unit = {},
     val onConfirmLiveDictionaryFix: () -> Unit = {},

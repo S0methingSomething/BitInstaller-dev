@@ -45,10 +45,7 @@ fun HomeRoute(
     ) {
         HomeContent(
             state = state,
-            onDashboardActionClick = callbacks.onDashboardActionClick,
-            onPatchClick = callbacks.onPatchClick,
-            onDestinationSelected = callbacks.onDestinationSelected,
-            onSaveTargetClick = callbacks.onSaveTargetClick,
+            callbacks = callbacks,
         )
 
         activeSession?.let { session ->
@@ -107,11 +104,11 @@ private fun LiveDictionaryPrompt(
 @Composable
 private fun HomeContent(
     state: HomeUiState,
-    onDashboardActionClick: () -> Unit,
-    onPatchClick: (PatchTargetUiState) -> Unit,
-    onDestinationSelected: (BitInstallerDestination) -> Unit,
-    onSaveTargetClick: (SaveTargetUiState) -> Unit,
+    callbacks: HomeRouteCallbacks,
 ) {
+    val isFocusedSaveEditor =
+        state.selectedDestination == BitInstallerDestination.SaveEditor && state.saveEditor.selectedTarget != null
+
     LazyColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -122,21 +119,23 @@ private fun HomeContent(
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
-        item { HeroSection(state = state) }
-        item {
-            DestinationNav(
-                selectedDestination = state.selectedDestination,
-                onDestinationSelected = onDestinationSelected,
-            )
+        if (!isFocusedSaveEditor) {
+            item { HeroSection(state = state) }
+            item {
+                DestinationNav(
+                    selectedDestination = state.selectedDestination,
+                    onDestinationSelected = callbacks.onDestinationSelected,
+                )
+            }
+            item { DashboardSection(status = state.backendStatus, onActionClick = callbacks.onDashboardActionClick) }
         }
-        item { DashboardSection(status = state.backendStatus, onActionClick = onDashboardActionClick) }
 
         when (state.selectedDestination) {
             BitInstallerDestination.MonetizationVars -> {
                 item {
                     PatchTargetsSection(
                         targets = state.patchTargets,
-                        onPatchClick = onPatchClick,
+                        onPatchClick = callbacks.onPatchClick,
                     )
                 }
             }
@@ -145,7 +144,8 @@ private fun HomeContent(
                 item {
                     SaveEditorSection(
                         state = state.saveEditor,
-                        onTargetClick = onSaveTargetClick,
+                        onTargetClick = callbacks.onSaveTargetClick,
+                        onBackClick = callbacks.onSaveEditorBack,
                     )
                 }
             }

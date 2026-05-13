@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -18,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +32,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 
 private val SaveEditorShape = RoundedCornerShape(12.dp)
+private val SaveEditorHeroShape = RoundedCornerShape(22.dp)
 private val SaveEditorButtonShape = RoundedCornerShape(6.dp)
 private val SaveEditorInset = 112.dp
 
@@ -36,7 +40,18 @@ private val SaveEditorInset = 112.dp
 internal fun SaveEditorSection(
     state: SaveEditorUiState,
     onTargetClick: (SaveTargetUiState) -> Unit,
+    onBackClick: () -> Unit,
 ) {
+    val selectedTarget = state.selectedTarget
+    if (selectedTarget != null) {
+        SaveTargetDetail(
+            target = selectedTarget,
+            onTargetClick = onTargetClick,
+            onBackClick = onBackClick,
+        )
+        return
+    }
+
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -46,9 +61,44 @@ internal fun SaveEditorSection(
             EmptySaveTargetsCard()
         } else {
             state.targets.forEach { target ->
-                SaveTargetCard(target = target, onTargetClick = onTargetClick)
+                SaveTargetCard(target = target, onTargetClick = onTargetClick, showSaves = false)
             }
         }
+    }
+}
+
+@Composable
+private fun SaveTargetDetail(
+    target: SaveTargetUiState,
+    onTargetClick: (SaveTargetUiState) -> Unit,
+    onBackClick: () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "${target.name} saves",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = "Current savedLife.data from every sg* slot",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            TextButton(onClick = onBackClick) {
+                Text(text = "Change app")
+            }
+        }
+        SaveTargetCard(target = target, onTargetClick = onTargetClick, showSaves = true, isFocused = true)
     }
 }
 
@@ -70,7 +120,9 @@ private fun SaveEditorIntro() {
                 fontWeight = FontWeight.Medium,
             )
             Text(
-                text = "Scans internal BitLife files matching sg* and previews the life name, money, and key stats.",
+                text =
+                    "Pick an installed BitLife app, then scan each sg* slot's current " +
+                        "savedLife.data for names, money, stats, and characters.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -99,11 +151,18 @@ private fun EmptySaveTargetsCard() {
 private fun SaveTargetCard(
     target: SaveTargetUiState,
     onTargetClick: (SaveTargetUiState) -> Unit,
+    showSaves: Boolean,
+    isFocused: Boolean = false,
 ) {
     Surface(
-        shape = SaveEditorShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        shape = if (isFocused) SaveEditorHeroShape else SaveEditorShape,
+        color =
+            if (isFocused) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f)
+            },
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isFocused) 0.55f else 1f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -144,8 +203,12 @@ private fun SaveTargetCard(
                 }
             }
 
-            target.saves?.let { saves ->
-                SaveFileList(saves = saves)
+            if (showSaves) {
+                if (target.saves == null) {
+                    SaveScanPrompt()
+                } else {
+                    SaveFileList(saves = target.saves)
+                }
             }
         }
     }
@@ -241,14 +304,20 @@ private fun SaveFileCard(save: BitLifeSaveSummary) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(9.dp),
+            verticalArrangement = Arrangement.spacedBy(11.dp),
             modifier = Modifier.padding(14.dp),
         ) {
-            Text(
-                text = save.heroName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SaveSlotBadge(slotName = save.slotName)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = save.heroName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             SaveFileMetaLine(save = save)
             if (save.errorMessage != null) {
                 Text(
@@ -259,6 +328,7 @@ private fun SaveFileCard(save: BitLifeSaveSummary) {
             } else {
                 SaveFactRows(save = save)
                 SaveAttributeRows(attributes = save.attributes)
+                SaveCharacterRows(characters = save.characters)
             }
         }
     }

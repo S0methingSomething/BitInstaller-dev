@@ -89,15 +89,18 @@ internal class BitInstallerAppPresenter {
     }
 
     private fun buildSaveEditorUiState(isReady: Boolean): SaveEditorUiState =
-        SaveEditorUiState(
-            targets =
-                ALL_TARGETS
-                    .mapNotNull { target ->
-                        val info = appInfoMap[target.packageName]
-                        if (info?.isInstalled != true) return@mapNotNull null
-                        buildSaveTargetUiState(target = target, info = info, isReady = isReady)
-                    }.sortedBy { it.name },
-        )
+        ALL_TARGETS
+            .mapNotNull { target ->
+                val info = appInfoMap[target.packageName]
+                if (info?.isInstalled != true) return@mapNotNull null
+                buildSaveTargetUiState(target = target, info = info, isReady = isReady)
+            }.sortedBy { it.name }
+            .let { targets ->
+                SaveEditorUiState(
+                    targets = targets,
+                    selectedTarget = targets.firstOrNull { it.packageName == appState.selectedSaveTargetId },
+                )
+            }
 
     private fun buildSaveTargetUiState(
         target: PatchTarget,
@@ -106,6 +109,7 @@ internal class BitInstallerAppPresenter {
     ): SaveTargetUiState {
         val targetId = target.packageName
         val isLoading = appState.saveScanTargetId == targetId
+        val isSelected = appState.selectedSaveTargetId == targetId
         val saves = appState.saveScanResults[targetId]
         val error = appState.saveScanErrors[targetId]
 
@@ -116,7 +120,7 @@ internal class BitInstallerAppPresenter {
             versionLabel = info.versionName,
             isLoading = isLoading,
             statusLabel = saveStatusLabelFor(isReady, isLoading, error, saves),
-            actionLabel = saveActionLabelFor(isLoading, saves),
+            actionLabel = saveActionLabelFor(isLoading, saves, isSelected),
             actionEnabled = isReady && !isLoading,
             saves = saves,
         )
@@ -224,19 +228,21 @@ private fun saveStatusLabelFor(
 ): String =
     when {
         !isReady -> "Connect Shizuku first"
-        isLoading -> "Scanning sg* save slots"
+        isLoading -> "Scanning current savedLife.data slots"
         error != null -> error
-        saves == null -> "Tap to scan save slots"
-        saves.isEmpty() -> "No sg* saves found"
+        saves == null -> "Open to scan save slots"
+        saves.isEmpty() -> "No savedLife.data files found"
         else -> "${saves.size} ${"save".pluralize(saves.size)} processed"
     }
 
 private fun saveActionLabelFor(
     isLoading: Boolean,
     saves: List<BitLifeSaveSummary>?,
+    isSelected: Boolean,
 ): String =
     when {
         isLoading -> "Scanning"
+        !isSelected -> "Open"
         saves == null -> "Scan"
         else -> "Rescan"
     }

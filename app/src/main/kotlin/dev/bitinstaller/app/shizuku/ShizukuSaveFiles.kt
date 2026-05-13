@@ -53,11 +53,10 @@ private fun listLifeSaveFilesCommand(filesDirectory: String): String =
         append("if [ -d \"\$dir\" ]; then ")
         append("for slot in \"\$dir\"/sg*; do ")
         append("[ -d \"\$slot\" ] || continue; ")
-        append("for file in \"\$slot\"/savedLife*.data; do ")
+        append("file=\"\$slot/savedLife.data\"; ")
         append("[ -f \"\$file\" ] || continue; ")
         append("size=$(wc -c < \"\$file\" 2>/dev/null) || continue; ")
         append("printf '%s\\t%s\\n' \"\$size\" \"\$file\"; ")
-        append("done; ")
         append("done; ")
         append("fi")
     }
