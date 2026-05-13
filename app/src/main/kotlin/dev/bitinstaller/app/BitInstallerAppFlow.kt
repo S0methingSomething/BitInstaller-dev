@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
+import dev.bitinstaller.app.home.BitInstallerDestination
 import dev.bitinstaller.app.home.HomeRouteCallbacks
 import dev.bitinstaller.app.home.LiveDictionaryPromptUiState
 import dev.bitinstaller.app.home.PATCH_PRESENCE_PATCHED_LABEL
@@ -14,6 +15,7 @@ import dev.bitinstaller.app.home.PatchManifestPresence
 import dev.bitinstaller.app.home.PatchManifestStore
 import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchTargetUiState
+import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.shizuku.LiveDictionaryStatus
 import dev.bitinstaller.app.shizuku.MonetizationVarsFile
 import dev.bitinstaller.app.shizuku.OperationLock
@@ -39,6 +41,10 @@ internal class BitInstallerAppState(
     var patchPresences by mutableStateOf(mapOf<String, PatchManifestPresence>())
     var pendingLiveDictionaryTarget by mutableStateOf<PatchTargetUiState?>(null)
     var liveDictionaryPrompt by mutableStateOf<LiveDictionaryPromptUiState?>(null)
+    var selectedDestination by mutableStateOf(BitInstallerDestination.MonetizationVars)
+    var saveScanTargetId by mutableStateOf<String?>(null)
+    var saveScanErrors by mutableStateOf(mapOf<String, String>())
+    var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
 }
 
 internal class AppFlowDeps(
@@ -54,6 +60,7 @@ internal fun buildHomeRouteCallbacks(
     deps: AppFlowDeps,
 ): HomeRouteCallbacks =
     HomeRouteCallbacks(
+        onDestinationSelected = { destination -> deps.appState.selectedDestination = destination },
         onDashboardActionClick = {
             handleDashboardAction(context = context, appState = deps.appState)
         },
@@ -62,6 +69,14 @@ internal fun buildHomeRouteCallbacks(
                 target,
                 deps.repository,
                 deps.manifestStore,
+                deps.operationLock,
+                deps.appState,
+            )
+        },
+        onSaveTargetClick = { target ->
+            deps.coroutineScope.launchSaveScan(
+                target,
+                deps.repository,
                 deps.operationLock,
                 deps.appState,
             )

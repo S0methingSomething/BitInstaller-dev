@@ -1,17 +1,22 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,6 +26,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+
+private val DestinationNavShape = RoundedCornerShape(999.dp)
 
 @Composable
 fun HomeRoute(
@@ -40,6 +47,8 @@ fun HomeRoute(
             state = state,
             onDashboardActionClick = callbacks.onDashboardActionClick,
             onPatchClick = callbacks.onPatchClick,
+            onDestinationSelected = callbacks.onDestinationSelected,
+            onSaveTargetClick = callbacks.onSaveTargetClick,
         )
 
         activeSession?.let { session ->
@@ -100,6 +109,8 @@ private fun HomeContent(
     state: HomeUiState,
     onDashboardActionClick: () -> Unit,
     onPatchClick: (PatchTargetUiState) -> Unit,
+    onDestinationSelected: (BitInstallerDestination) -> Unit,
+    onSaveTargetClick: (SaveTargetUiState) -> Unit,
 ) {
     LazyColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -112,13 +123,94 @@ private fun HomeContent(
                 .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
         item { HeroSection(state = state) }
-        item { DashboardSection(status = state.backendStatus, onActionClick = onDashboardActionClick) }
         item {
-            PatchTargetsSection(
-                targets = state.patchTargets,
-                onPatchClick = onPatchClick,
+            DestinationNav(
+                selectedDestination = state.selectedDestination,
+                onDestinationSelected = onDestinationSelected,
             )
         }
+        item { DashboardSection(status = state.backendStatus, onActionClick = onDashboardActionClick) }
+
+        when (state.selectedDestination) {
+            BitInstallerDestination.MonetizationVars -> {
+                item {
+                    PatchTargetsSection(
+                        targets = state.patchTargets,
+                        onPatchClick = onPatchClick,
+                    )
+                }
+            }
+
+            BitInstallerDestination.SaveEditor -> {
+                item {
+                    SaveEditorSection(
+                        state = state.saveEditor,
+                        onTargetClick = onSaveTargetClick,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DestinationNav(
+    selectedDestination: BitInstallerDestination,
+    onDestinationSelected: (BitInstallerDestination) -> Unit,
+) {
+    Surface(
+        shape = DestinationNavShape,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(6.dp),
+        ) {
+            BitInstallerDestination.entries.forEach { destination ->
+                DestinationNavItem(
+                    destination = destination,
+                    isSelected = destination == selectedDestination,
+                    onClick = { onDestinationSelected(destination) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DestinationNavItem(
+    destination: BitInstallerDestination,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        shape = DestinationNavShape,
+        color =
+            if (isSelected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                Color.Transparent
+            },
+        contentColor =
+            if (isSelected) {
+                MaterialTheme.colorScheme.onPrimary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        modifier = modifier,
+    ) {
+        Text(
+            text = destination.label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        )
     }
 }
 

@@ -32,6 +32,11 @@ data class MonetizationVarsWriteResult(
     val backupPath: String,
 )
 
+data class LifeSaveFile(
+    val path: String,
+    val sizeBytes: Long,
+)
+
 enum class LiveDictionaryStatus {
     DIRECTORY,
     MISSING,
@@ -233,6 +238,19 @@ private data class ShellResult(
         }
 }
 
+internal data class ShellBytesResult(
+    val exitCode: Int,
+    val output: ByteArray,
+    val error: String,
+) {
+    val isSuccess: Boolean = exitCode == 0
+
+    fun errorSummary(): String =
+        error.trim().ifEmpty {
+            "exit $exitCode"
+        }
+}
+
 private fun isBinderAlive(): Boolean = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
 
 /**
@@ -267,7 +285,28 @@ private suspend fun runShell(
         ShellResult(exitCode = process.waitFor(), output = output, error = error)
     }
 
-private fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
+internal suspend fun runShellBytes(
+    command: String,
+    stdin: ByteArray? = null,
+): ShellBytesResult =
+    withContext(Dispatchers.IO) {
+        val process = newShizukuShellProcess(command)
+        if (stdin == null) {
+            process.outputStream.close()
+        } else {
+            process.outputStream.use { output -> output.write(stdin) }
+        }
+
+        val errorFuture =
+            java.util.concurrent.CompletableFuture.supplyAsync {
+                process.errorStream.bufferedReader().readText()
+            }
+        val output = process.inputStream.readBytes()
+        val error = errorFuture.get()
+        ShellBytesResult(exitCode = process.waitFor(), output = output, error = error)
+    }
+
+internal fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"
 
 /**
  * Launch a shell via Shizuku's internal `newProcess` method.

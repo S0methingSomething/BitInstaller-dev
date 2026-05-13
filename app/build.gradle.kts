@@ -113,6 +113,13 @@ android {
     lint {
         abortOnError = true
         checkDependencies = true
+        // Dependabot owns dependency drift; lint version checks are time-volatile under warningsAsErrors.
+        disable +=
+            setOf(
+                "AndroidGradlePluginVersion",
+                "GradleDependency",
+                "NewerVersionAvailable",
+            )
         htmlReport = true
         sarifReport = true
         textReport = true
@@ -160,6 +167,7 @@ dependencies {
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
     implementation(libs.accompanist.drawablepainter)
+    implementation(libs.nrbf4j)
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)

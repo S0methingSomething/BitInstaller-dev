@@ -1,6 +1,14 @@
 package dev.bitinstaller.app.home
 
 import android.graphics.drawable.Drawable
+import dev.bitinstaller.app.save.BitLifeSaveSummary
+
+enum class BitInstallerDestination(
+    val label: String,
+) {
+    MonetizationVars("MonetizationVars"),
+    SaveEditor("Save Editor"),
+}
 
 sealed interface BackendStatus {
     data object ShizukuUnavailable : BackendStatus
@@ -102,11 +110,30 @@ class PatchTargetUiState(
     }
 }
 
+data class SaveEditorUiState(
+    val targets: List<SaveTargetUiState>,
+)
+
+data class SaveTargetUiState(
+    val name: String,
+    val packageName: String,
+    val internalFilesDirectory: String,
+    val icon: TargetIcon,
+    val versionLabel: String,
+    val isLoading: Boolean,
+    val statusLabel: String,
+    val actionLabel: String,
+    val actionEnabled: Boolean,
+    val saves: List<BitLifeSaveSummary>? = null,
+)
+
 data class HomeUiState(
     val title: String,
     val summary: String,
     val backendStatus: BackendStatus,
     val patchTargets: List<PatchTargetUiState>,
+    val selectedDestination: BitInstallerDestination,
+    val saveEditor: SaveEditorUiState,
 )
 
 fun previewHomeUiState(): HomeUiState =
@@ -114,6 +141,7 @@ fun previewHomeUiState(): HomeUiState =
         title = "BitInstaller",
         summary = "MonetizationVars editor",
         backendStatus = BackendStatus.PermissionRequired,
+        selectedDestination = BitInstallerDestination.MonetizationVars,
         patchTargets =
             listOf(
                 PatchTargetUiState(
@@ -131,5 +159,23 @@ fun previewHomeUiState(): HomeUiState =
                             actionEnabled = true,
                         ),
                 ),
+            ),
+        saveEditor =
+            SaveEditorUiState(
+                targets =
+                    listOf(
+                        SaveTargetUiState(
+                            name = "BitLife",
+                            packageName = "com.candywriter.bitlife",
+                            internalFilesDirectory = "preview",
+                            icon = TargetIcon(monogram = "BL"),
+                            versionLabel = "3.27.7",
+                            isLoading = false,
+                            statusLabel = "Tap to scan internal sg* saves",
+                            actionLabel = "Scan",
+                            actionEnabled = true,
+                            saves = null,
+                        ),
+                    ),
             ),
     )

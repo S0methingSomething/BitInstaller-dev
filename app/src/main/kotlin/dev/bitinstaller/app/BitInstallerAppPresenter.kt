@@ -13,8 +13,11 @@ import dev.bitinstaller.app.home.PatchManifestStore
 import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchSupportState
 import dev.bitinstaller.app.home.PatchTargetUiState
+import dev.bitinstaller.app.home.SaveEditorUiState
+import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.home.TargetIcon
 import dev.bitinstaller.app.home.TargetPatchState
+import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
@@ -80,6 +83,43 @@ internal class BitInstallerAppPresenter {
                     }.sortedWith(
                         compareByDescending<PatchTargetUiState> { it.isInstalled }.thenBy { it.name },
                     ),
+            selectedDestination = appState.selectedDestination,
+            saveEditor = buildSaveEditorUiState(isReady),
+        )
+    }
+
+    private fun buildSaveEditorUiState(isReady: Boolean): SaveEditorUiState =
+        SaveEditorUiState(
+            targets =
+                ALL_TARGETS
+                    .mapNotNull { target ->
+                        val info = appInfoMap[target.packageName]
+                        if (info?.isInstalled != true) return@mapNotNull null
+                        buildSaveTargetUiState(target = target, info = info, isReady = isReady)
+                    }.sortedBy { it.name },
+        )
+
+    private fun buildSaveTargetUiState(
+        target: PatchTarget,
+        info: InstalledAppInfo,
+        isReady: Boolean,
+    ): SaveTargetUiState {
+        val targetId = target.packageName
+        val isLoading = appState.saveScanTargetId == targetId
+        val saves = appState.saveScanResults[targetId]
+        val error = appState.saveScanErrors[targetId]
+
+        return SaveTargetUiState(
+            name = info.appName,
+            packageName = targetId,
+            internalFilesDirectory = info.internalFilesDirectory,
+            icon = TargetIcon(monogram = target.monogram, drawable = info.icon),
+            versionLabel = info.versionName,
+            isLoading = isLoading,
+            statusLabel = saveStatusLabelFor(isReady, isLoading, error, saves),
+            actionLabel = saveActionLabelFor(isLoading, saves),
+            actionEnabled = isReady && !isLoading,
+            saves = saves,
         )
     }
 
@@ -176,3 +216,30 @@ private fun actionLabelFor(
         presence?.state == PatchPresenceState.PATCHED -> "Review"
         else -> "Patch"
     }
+
+private fun saveStatusLabelFor(
+    isReady: Boolean,
+    isLoading: Boolean,
+    error: String?,
+    saves: List<BitLifeSaveSummary>?,
+): String =
+    when {
+        !isReady -> "Connect Shizuku first"
+        isLoading -> "Scanning internal sg* saves"
+        error != null -> error
+        saves == null -> "Tap to scan internal saves"
+        saves.isEmpty() -> "No sg* saves found"
+        else -> "${saves.size} ${"save".pluralize(saves.size)} processed"
+    }
+
+private fun saveActionLabelFor(
+    isLoading: Boolean,
+    saves: List<BitLifeSaveSummary>?,
+): String =
+    when {
+        isLoading -> "Scanning"
+        saves == null -> "Scan"
+        else -> "Rescan"
+    }
+
+private fun String.pluralize(count: Int): String = if (count == 1) this else "${this}s"
