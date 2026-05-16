@@ -1,8 +1,8 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,7 +25,6 @@ private const val BYTES_PER_KIB = 1024f
 private const val BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB
 private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 4
 private const val MAX_CHARACTER_PREVIEW_COUNT = 6
-private const val SAVE_DETAIL_COLUMNS = 2
 
 @Composable
 internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
@@ -56,11 +55,9 @@ internal fun SaveFactRows(
             save.bankBalance?.let { add(SaveFactChip("Bank", formatMoney(it), save.bankBalanceField)) }
             save.facts.forEach { fact -> add(SaveFactChip(fact.label, fact.value, fact.field)) }
         }
-    facts.chunked(SAVE_DETAIL_COLUMNS).forEach { rowFacts ->
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            rowFacts.forEach { fact ->
-                SaveFactChipView(fact = fact, onFieldClick = onFieldClick, modifier = Modifier.weight(1f))
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        facts.forEach { fact ->
+            SaveFactChipView(fact = fact, onFieldClick = onFieldClick, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -70,15 +67,13 @@ internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
-    attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).chunked(SAVE_DETAIL_COLUMNS).forEach { rowAttributes ->
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            rowAttributes.forEach { attribute ->
-                SaveFactChipView(
-                    fact = SaveFactChip(attribute.label, formatPercent(attribute.value), attribute.field),
-                    onFieldClick = onFieldClick,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
+            SaveFactChipView(
+                fact = SaveFactChip(attribute.label, formatPercent(attribute.value), attribute.field),
+                onFieldClick = onFieldClick,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -112,16 +107,12 @@ internal fun SaveCharacterRows(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(text = character.characterLabel(), style = MaterialTheme.typography.labelLarge)
-                    character.fields.chunked(SAVE_DETAIL_COLUMNS).forEach { rowFields ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            rowFields.forEach { field ->
-                                SaveFactChipView(
-                                    fact = SaveFactChip(field.label, field.value, field),
-                                    onFieldClick = onFieldClick,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            }
-                        }
+                    character.fields.forEach { field ->
+                        SaveFactChipView(
+                            fact = SaveFactChip(field.label, field.value, field),
+                            onFieldClick = onFieldClick,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
                 }
             }
@@ -139,26 +130,34 @@ private fun SaveFactChipView(
     if (field == null) {
         Surface(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
             shape = RoundedCornerShape(8.dp),
             modifier = modifier,
         ) {
-            SaveFactChipContent(fact = fact)
+            SaveFactChipContent(fact = fact, isEditable = false)
         }
     } else {
         Surface(
             onClick = { onFieldClick(field) },
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.09f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)),
             shape = RoundedCornerShape(8.dp),
             modifier = modifier,
         ) {
-            SaveFactChipContent(fact = fact)
+            SaveFactChipContent(fact = fact, isEditable = true)
         }
     }
 }
 
 @Composable
-private fun SaveFactChipContent(fact: SaveFactChip) {
-    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+private fun SaveFactChipContent(
+    fact: SaveFactChip,
+    isEditable: Boolean,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+    ) {
         Text(
             text = fact.label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
@@ -169,9 +168,16 @@ private fun SaveFactChipContent(fact: SaveFactChip) {
         Text(
             text = fact.value,
             style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
+        if (isEditable) {
+            Text(
+                text = "Tap to edit",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
 

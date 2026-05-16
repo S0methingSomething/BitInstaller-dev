@@ -10,18 +10,43 @@ internal fun SaveEditableField.parseRawValue(rawValue: String): Any? =
         else -> rawValue.parseNumericValue(valueKind, label)
     }
 
+internal fun String.normalizedSaveNumberInput(): String =
+    trim().filterNot { ch -> ch == ',' || ch == '_' || ch.isWhitespace() }
+
 private fun String.parseNumericValue(
     kind: SaveEditableValueKind,
     label: String,
 ): Number =
     when (kind) {
-        SaveEditableValueKind.BYTE -> trim().toByteOrNull() ?: error("$label must be 0-255")
-        SaveEditableValueKind.SHORT -> trim().toShortOrNull() ?: error("$label must be a small whole number")
-        SaveEditableValueKind.INT -> trim().toIntOrNull() ?: error("$label must be a whole number")
-        SaveEditableValueKind.LONG -> trim().toLongOrNull() ?: error("$label must be a whole number")
-        SaveEditableValueKind.FLOAT -> trim().toFloatOrNull() ?: error("$label must be a number")
-        SaveEditableValueKind.DOUBLE -> trim().toDoubleOrNull() ?: error("$label must be a number")
-        else -> error("$label is not numeric")
+        SaveEditableValueKind.BYTE -> {
+            normalizedSaveNumberInput().toByteOrNull()
+                ?: error("$label must be a whole number from -128 to 127")
+        }
+
+        SaveEditableValueKind.SHORT -> {
+            normalizedSaveNumberInput().toShortOrNull()
+                ?: error("$label must be a whole number from -32768 to 32767")
+        }
+
+        SaveEditableValueKind.INT -> {
+            normalizedSaveNumberInput().toIntOrNull() ?: error("$label must be a whole number")
+        }
+
+        SaveEditableValueKind.LONG -> {
+            normalizedSaveNumberInput().toLongOrNull() ?: error("$label must be a whole number")
+        }
+
+        SaveEditableValueKind.FLOAT -> {
+            normalizedSaveNumberInput().toFloatOrNull() ?: error("$label must be a number")
+        }
+
+        SaveEditableValueKind.DOUBLE -> {
+            normalizedSaveNumberInput().toDoubleOrNull() ?: error("$label must be a number")
+        }
+
+        else -> {
+            error("$label is not numeric")
+        }
     }
 
 internal fun Any?.toEditableDisplayValue(): String =

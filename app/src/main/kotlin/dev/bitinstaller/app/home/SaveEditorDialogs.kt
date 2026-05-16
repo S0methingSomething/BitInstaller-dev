@@ -1,26 +1,24 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
-import dev.bitinstaller.app.save.SaveEditableValueKind
 
 @Composable
 internal fun SaveFieldEditDialog(
@@ -29,47 +27,43 @@ internal fun SaveFieldEditDialog(
     onConfirm: (String) -> Unit,
 ) {
     var value by remember(draft.field.id) { mutableStateOf(draft.field.value) }
-    val validationError = remember(value) { draft.field.valueKind.validate(value) }
-    AlertDialog(
+    val validationError = remember(value, draft.field.valueKind) { draft.field.valueKind.validateEditInput(value) }
+    Dialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "Edit ${draft.field.label}") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = draft.field.path,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { next -> value = draft.field.valueKind.filterInput(next) },
-                    label = { Text(text = draft.field.valueKind.inputLabel()) },
-                    isError = validationError != null,
-                    supportingText = validationError?.let { error -> { Text(text = error) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = draft.field.valueKind.keyboardType()),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onConfirm(value) },
-                enabled = validationError == null,
-            ) {
-                Text(text = "Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = "Cancel")
-            }
-        },
-    )
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            SaveFieldEditContent(
+                state =
+                    SaveFieldEditContentState(
+                        draft = draft,
+                        value = value,
+                        validationError = validationError,
+                    ),
+                actions =
+                    SaveFieldEditContentActions(
+                        onValueChange = { value = it },
+                        onDismissRequest = onDismissRequest,
+                        onConfirm = { onConfirm(value) },
+                    ),
+                modifier =
+                    Modifier
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                        .imePadding()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+            )
+        }
+    }
 }
 
 @Composable
 internal fun SaveAdvancedFieldsDialog(
+    targetName: String,
     save: BitLifeSaveSummary,
     recentFieldIds: List<String>,
     onDismissRequest: () -> Unit,
@@ -87,13 +81,19 @@ internal fun SaveAdvancedFieldsDialog(
                 sort = sort,
             )
         }
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = "Advanced fields") },
-        text = {
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+            modifier = Modifier.fillMaxSize(),
+        ) {
             SaveAdvancedFieldsContent(
                 state =
                     SaveAdvancedFieldsContentState(
+                        targetName = targetName,
                         save = save,
                         fields = filtered,
                         recentFieldIds = recentFieldIds,
@@ -101,108 +101,20 @@ internal fun SaveAdvancedFieldsDialog(
                         filter = filter,
                         sort = sort,
                     ),
-                onQueryChange = { query = it },
-                onFilterChange = { filter = filter.next() },
-                onSortChange = { sort = sort.next() },
-                onFieldClick = onFieldClick,
+                actions =
+                    SaveAdvancedFieldsContentActions(
+                        onQueryChange = { query = it },
+                        onFilterChange = { filter = filter.next() },
+                        onSortChange = { sort = sort.next() },
+                        onFieldClick = onFieldClick,
+                        onClose = onDismissRequest,
+                    ),
+                modifier =
+                    Modifier
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
             )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = "Close")
-            }
-        },
-    )
-}
-
-private fun SaveEditableValueKind.inputLabel(): String =
-    when (this) {
-        SaveEditableValueKind.TEXT -> "Text"
-
-        SaveEditableValueKind.BYTE,
-        SaveEditableValueKind.SHORT,
-        SaveEditableValueKind.INT,
-        SaveEditableValueKind.LONG,
-        -> "Whole number"
-
-        SaveEditableValueKind.FLOAT,
-        SaveEditableValueKind.DOUBLE,
-        -> "Number"
-
-        SaveEditableValueKind.BOOLEAN -> "true / false"
-    }
-
-private fun SaveEditableValueKind.keyboardType(): KeyboardType =
-    when (this) {
-        SaveEditableValueKind.TEXT -> KeyboardType.Text
-
-        SaveEditableValueKind.BOOLEAN -> KeyboardType.Text
-
-        SaveEditableValueKind.FLOAT,
-        SaveEditableValueKind.DOUBLE,
-        -> KeyboardType.Decimal
-
-        SaveEditableValueKind.BYTE,
-        SaveEditableValueKind.SHORT,
-        SaveEditableValueKind.INT,
-        SaveEditableValueKind.LONG,
-        -> KeyboardType.Number
-    }
-
-private fun SaveEditableValueKind.filterInput(raw: String): String =
-    when (this) {
-        SaveEditableValueKind.TEXT -> {
-            raw
         }
-
-        SaveEditableValueKind.BOOLEAN -> {
-            raw.lowercase().filter { ch -> ch in "truefalse" }
-        }
-
-        SaveEditableValueKind.BYTE,
-        SaveEditableValueKind.SHORT,
-        SaveEditableValueKind.INT,
-        SaveEditableValueKind.LONG,
-        -> {
-            raw.filter { ch -> ch == '-' || ch.isDigit() }
-        }
-
-        SaveEditableValueKind.FLOAT,
-        SaveEditableValueKind.DOUBLE,
-        -> {
-            raw.filter { ch -> ch == '-' || ch == '.' || ch.isDigit() }
-        }
-    }
-
-private fun SaveEditableValueKind.validate(raw: String): String? {
-    if (raw.isBlank()) return "Value is required"
-    return when (this) {
-        SaveEditableValueKind.TEXT -> null
-
-        SaveEditableValueKind.BOOLEAN -> validateBoolean(raw)
-
-        SaveEditableValueKind.BYTE,
-        SaveEditableValueKind.SHORT,
-        SaveEditableValueKind.INT,
-        SaveEditableValueKind.LONG,
-        -> validateInteger(raw)
-
-        SaveEditableValueKind.FLOAT,
-        SaveEditableValueKind.DOUBLE,
-        -> validateDecimal(raw)
     }
 }
-
-private fun SaveEditableValueKind.validateBoolean(raw: String): String? =
-    if (raw.trim().lowercase() in listOf("true", "false")) null else "Enter true or false"
-
-private fun SaveEditableValueKind.validateInteger(raw: String): String? =
-    when (this) {
-        SaveEditableValueKind.BYTE -> raw.toByteOrNull()?.let { null } ?: "Expected a whole number (-128 to 127)"
-        SaveEditableValueKind.SHORT -> raw.toShortOrNull()?.let { null } ?: "Expected a whole number (-32768 to 32767)"
-        SaveEditableValueKind.INT -> raw.toIntOrNull()?.let { null } ?: "Expected a whole number"
-        SaveEditableValueKind.LONG -> raw.toLongOrNull()?.let { null } ?: "Expected a whole number"
-        else -> null
-    }
-
-private fun validateDecimal(raw: String): String? = if (raw.toDoubleOrNull() != null) null else "Expected a number"

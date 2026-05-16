@@ -1,9 +1,7 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,7 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -91,35 +88,26 @@ private fun SaveFileCard(
 ) {
     val save = state.save
     Surface(
-        onClick = actions.onToggle,
         shape = SaveCardShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(
-            modifier =
-                Modifier.background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
-                        ),
-                    ),
-                ),
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(14.dp),
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.padding(14.dp),
-            ) {
-                SaveFileCardHeader(save = save, isExpanded = state.isExpanded)
-                SaveStatusMessage(
-                    isSaving = state.isSaving,
-                    error = state.editError ?: save.errorMessage,
-                    message = state.editMessage,
-                )
-                SaveFileCardBody(state = state, actions = actions)
-            }
+            SaveFileCardHeader(
+                save = save,
+                isExpanded = state.isExpanded,
+                onToggle = actions.onToggle,
+            )
+            SaveStatusMessage(
+                isSaving = state.isSaving,
+                error = state.editError ?: save.errorMessage,
+                message = state.editMessage,
+            )
+            SaveFileCardBody(state = state, actions = actions)
         }
     }
 }
@@ -128,8 +116,9 @@ private fun SaveFileCard(
 private fun SaveFileCardHeader(
     save: BitLifeSaveSummary,
     isExpanded: Boolean,
+    onToggle: () -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         SaveSlotBadge(slotName = save.slotName)
         Spacer(modifier = Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -142,11 +131,9 @@ private fun SaveFileCardHeader(
             )
             SaveFileMetaLine(save = save)
         }
-        Text(
-            text = if (isExpanded) "Collapse" else "Edit",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        TextButton(onClick = onToggle) {
+            Text(text = if (isExpanded) "Collapse" else "Edit")
+        }
     }
 }
 
@@ -200,12 +187,37 @@ private fun SaveStatusMessage(
             message != null -> message
             else -> return
         }
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    val isError = error != null
+    Surface(
+        color = statusColor(isError = isError),
+        border = BorderStroke(1.dp, statusBorderColor(isError = isError)),
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        )
+    }
 }
+
+@Composable
+private fun statusColor(isError: Boolean) =
+    if (isError) {
+        MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+    }
+
+@Composable
+private fun statusBorderColor(isError: Boolean) =
+    if (isError) {
+        MaterialTheme.colorScheme.error.copy(alpha = 0.24f)
+    } else {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+    }
 
 @Composable
 private fun SaveFileActions(
@@ -213,17 +225,17 @@ private fun SaveFileActions(
     actions: SaveFileCardActions,
     enabled: Boolean,
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = enabled,
             onClick = actions.onAdvancedClick,
             shape = AdvancedButtonShape,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(text = "Advanced · $fieldCount")
+            Text(text = "Open values · $fieldCount")
         }
-        TextButton(enabled = enabled, onClick = actions.onSaveRevert) {
+        TextButton(enabled = enabled, onClick = actions.onSaveRevert, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Revert backup")
         }
     }

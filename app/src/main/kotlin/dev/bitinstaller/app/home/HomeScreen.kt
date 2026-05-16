@@ -1,5 +1,6 @@
 package dev.bitinstaller.app.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,10 @@ fun HomeRoute(
     liveDictionaryPrompt: LiveDictionaryPromptUiState? = null,
     callbacks: HomeRouteCallbacks = HomeRouteCallbacks(),
 ) {
+    BackHandler(enabled = activeSession != null) {
+        callbacks.onDismissSession()
+    }
+
     Box(
         modifier =
             modifier

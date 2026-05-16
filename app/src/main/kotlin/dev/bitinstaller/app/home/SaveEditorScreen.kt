@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -37,7 +36,6 @@ import dev.bitinstaller.app.save.SaveEditableField
 private val SaveEditorShape = RoundedCornerShape(12.dp)
 private val SaveEditorHeroShape = RoundedCornerShape(22.dp)
 private val SaveEditorButtonShape = RoundedCornerShape(6.dp)
-private val SaveEditorInset = 112.dp
 
 @Composable
 internal fun SaveEditorSection(
@@ -51,40 +49,37 @@ internal fun SaveEditorSection(
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
     var revertSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     val selectedTarget = state.selectedTarget
-
-    advancedSave?.let { save ->
-        SaveAdvancedFieldsDialog(
-            save = save,
-            recentFieldIds = selectedTarget?.recentEditFieldIds?.get(save.path).orEmpty(),
-            onDismissRequest = { advancedSave = null },
-            onFieldClick = { field ->
-                val target = selectedTarget ?: return@SaveAdvancedFieldsDialog
-                editDraft = SaveFieldEditDraft(target = target, save = save, field = field)
-                advancedSave = null
-            },
+    val modalState =
+        SaveEditorModalState(
+            selectedTarget = selectedTarget,
+            advancedSave = advancedSave,
+            editDraft = editDraft,
+            revertSave = revertSave,
         )
-    }
-    editDraft?.let { draft ->
-        SaveFieldEditDialog(
-            draft = draft,
-            onDismissRequest = { editDraft = null },
-            onConfirm = { value ->
+    val modalActions =
+        SaveEditorModalActions(
+            closeAdvanced = { advancedSave = null },
+            closeEdit = { editDraft = null },
+            closeRevert = { revertSave = null },
+            openEditFromAdvanced = { save, field ->
+                selectedTarget?.let { target ->
+                    editDraft = SaveFieldEditDraft(target = target, save = save, field = field)
+                    advancedSave = null
+                }
+            },
+            submitEdit = { draft, value ->
                 onFieldEdit(draft.target, draft.save, draft.field, value)
                 editDraft = null
             },
-        )
-    }
-    revertSave?.let { save ->
-        SaveRevertDialog(
-            save = save,
-            target = selectedTarget,
-            onDismissRequest = { revertSave = null },
-            onConfirm = { target, targetSave ->
-                onSaveRevert(target, targetSave)
+            confirmRevert = { target, save ->
+                onSaveRevert(target, save)
                 revertSave = null
             },
+            backToTargets = onBackClick,
         )
-    }
+
+    SaveEditorBackHandler(state = modalState, actions = modalActions)
+    SaveEditorModals(state = modalState, actions = modalActions)
 
     if (selectedTarget != null) {
         SaveTargetDetail(
@@ -158,12 +153,18 @@ private fun SaveTargetDetail(
                 Text(text = "Change app")
             }
         }
-        SaveTargetCard(
-            target = target,
-            showSaves = true,
-            isFocused = true,
-            actions = actions,
-        )
+        SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
+        if (target.saves == null) {
+            SaveScanPrompt()
+        } else {
+            SaveFileList(
+                target = target,
+                saves = target.saves,
+                onFieldClick = actions.onFieldClick,
+                onAdvancedClick = actions.onAdvancedClick,
+                onSaveRevert = actions.onSaveRevert,
+            )
+        }
     }
 }
 
@@ -178,8 +179,8 @@ private data class SaveTargetCardActions(
 private fun SaveEditorIntro() {
     Surface(
         shape = SaveEditorShape,
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -207,7 +208,7 @@ private fun EmptySaveTargetsCard() {
     Surface(
         shape = SaveEditorShape,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
@@ -230,11 +231,11 @@ private fun SaveTargetCard(
         shape = if (isFocused) SaveEditorHeroShape else SaveEditorShape,
         color =
             if (isFocused) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f)
             } else {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f)
             },
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isFocused) 0.55f else 1f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = if (isFocused) 0.08f else 0.07f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -265,19 +266,11 @@ private fun SaveTargetCardHeader(
     target: SaveTargetUiState,
     onTargetClick: (SaveTargetUiState) -> Unit,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .heightIn(min = 84.dp),
-    ) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.Top,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(end = SaveEditorInset),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             SaveAppGlyph(icon = target.icon, name = target.name)
             SaveTargetTextBlock(target = target)
@@ -285,7 +278,7 @@ private fun SaveTargetCardHeader(
         SaveTargetActionButton(
             target = target,
             onTargetClick = onTargetClick,
-            modifier = Modifier.align(Alignment.BottomEnd),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
