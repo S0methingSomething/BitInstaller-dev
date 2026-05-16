@@ -67,8 +67,9 @@ internal object BitLifeSaveParser {
     fun parse(
         path: String,
         bytes: ByteArray,
+        collectAdvancedFields: Boolean = true,
     ): BitLifeSaveSummary =
-        runCatching { parseTrusted(path = path, bytes = bytes) }
+        runCatching { parseTrusted(path = path, bytes = bytes, collectAdvancedFields = collectAdvancedFields) }
             .getOrElse { error -> failure(path = path, sizeBytes = bytes.size, error = error) }
 
     fun failure(
@@ -96,10 +97,16 @@ internal object BitLifeSaveParser {
     private fun parseTrusted(
         path: String,
         bytes: ByteArray,
+        collectAdvancedFields: Boolean,
     ): BitLifeSaveSummary =
         NrbfDocument.open(bytes).use { doc ->
             val objects = doc.resolveCoreObjects()
-            objects.toSummary(path = path, sizeBytes = bytes.size, doc = doc)
+            objects.toSummary(
+                path = path,
+                sizeBytes = bytes.size,
+                doc = doc,
+                collectAdvancedFields = collectAdvancedFields,
+            )
         }
 
     private fun NrbfDocument.resolveCoreObjects(): SaveCoreObjects {
@@ -146,6 +153,7 @@ internal object BitLifeSaveParser {
             path: String,
             sizeBytes: Int,
             doc: NrbfDocument,
+            collectAdvancedFields: Boolean,
         ): BitLifeSaveSummary {
             val bankBalanceMember = finances?.logicalMember("BankBalance")
             val heroName =
@@ -171,7 +179,7 @@ internal object BitLifeSaveParser {
                 attributes = hero.attributes(),
                 facts = buildFacts(),
                 characters = characters,
-                advancedFields = doc.collectAdvancedFields(life = life),
+                advancedFields = if (collectAdvancedFields) doc.collectAdvancedFields(life = life) else emptyList(),
             )
         }
 

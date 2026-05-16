@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -41,9 +42,9 @@ internal fun SaveFieldEditContent(
     modifier: Modifier = Modifier,
 ) {
     val draft = state.draft
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = modifier) {
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = modifier) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
             modifier =
                 Modifier
                     .weight(1f)
@@ -81,16 +82,19 @@ internal fun SaveFieldEditContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = actions.onConfirm,
                 enabled = state.validationError == null,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp),
             ) {
                 Text(text = "Save value")
             }
-            TextButton(onClick = actions.onDismissRequest, modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Cancel")
+            TextButton(
+                onClick = actions.onDismissRequest,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+            ) {
+                Text(text = "Close without saving")
             }
         }
     }
@@ -102,15 +106,15 @@ private fun SaveFieldEditTip(draft: SaveFieldEditDraft) {
     val body = explanation?.description ?: draft.field.valueKind.editTip()
     val title = explanation?.category ?: "Value type: ${draft.field.valueKind.inputLabel()}"
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(14.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(18.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = body,

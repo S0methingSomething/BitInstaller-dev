@@ -128,6 +128,7 @@ data class SaveTargetUiState(
     val editingSavePath: String? = null,
     val editErrors: Map<String, String> = emptyMap(),
     val editMessages: Map<String, String> = emptyMap(),
+    val editMessageTokens: Map<String, Int> = emptyMap(),
     val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
 )
 

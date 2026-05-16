@@ -55,7 +55,7 @@ internal fun SaveFactRows(
             save.bankBalance?.let { add(SaveFactChip("Bank", formatMoney(it), save.bankBalanceField)) }
             save.facts.forEach { fact -> add(SaveFactChip(fact.label, fact.value, fact.field)) }
         }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         facts.forEach { fact ->
             SaveFactChipView(fact = fact, onFieldClick = onFieldClick, modifier = Modifier.fillMaxWidth())
         }
@@ -67,7 +67,7 @@ internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
             SaveFactChipView(
                 fact = SaveFactChip(attribute.label, formatPercent(attribute.value), attribute.field),
@@ -85,7 +85,7 @@ internal fun SaveCharacterRows(
 ) {
     if (characters.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
             text = "Characters",
             style = MaterialTheme.typography.labelMedium,
@@ -94,12 +94,13 @@ internal fun SaveCharacterRows(
         characters.take(MAX_CHARACTER_PREVIEW_COUNT).forEach { character ->
             Surface(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
                 ) {
                     Text(
                         text = character.role.uppercase(),
@@ -130,8 +131,8 @@ private fun SaveFactChipView(
     if (field == null) {
         Surface(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
-            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f)),
+            shape = RoundedCornerShape(12.dp),
             modifier = modifier,
         ) {
             SaveFactChipContent(fact = fact, isEditable = false)
@@ -140,8 +141,8 @@ private fun SaveFactChipView(
         Surface(
             onClick = { onFieldClick(field) },
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)),
-            shape = RoundedCornerShape(8.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f)),
+            shape = RoundedCornerShape(12.dp),
             modifier = modifier,
         ) {
             SaveFactChipContent(fact = fact, isEditable = true)
@@ -155,8 +156,8 @@ private fun SaveFactChipContent(
     isEditable: Boolean,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(3.dp),
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
     ) {
         Text(
             text = fact.label.uppercase(),
@@ -167,7 +168,7 @@ private fun SaveFactChipContent(
         )
         Text(
             text = fact.value,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.titleMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
@@ -175,7 +176,7 @@ private fun SaveFactChipContent(
             Text(
                 text = "Tap to edit",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

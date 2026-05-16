@@ -7,9 +7,14 @@ internal data class SaveFieldExplanation(
 
 internal fun SaveEditableField.explanation(): SaveFieldExplanation? = SaveFieldExplanations.forField(this)
 
+private fun String.patternName(): String =
+    substringAfterLast('+')
+        .replace(Regex("<([^>]+)>k__BackingField"), "$1")
+        .removePrefix("_")
+
 private object SaveFieldExplanations {
     fun forField(field: SaveEditableField): SaveFieldExplanation? =
-        field.memberName.explanationByName()
+        field.memberName.patternName().explanationByName()
             ?: when (field.valueKind) {
                 SaveEditableValueKind.BOOLEAN -> {
                     SaveFieldExplanation(

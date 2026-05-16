@@ -48,6 +48,7 @@ internal class BitInstallerAppState(
     var saveScanErrors by mutableStateOf(mapOf<String, String>())
     var saveEditErrors by mutableStateOf(mapOf<String, String>())
     var saveEditMessages by mutableStateOf(mapOf<String, String>())
+    var saveEditMessageTokens by mutableStateOf(mapOf<String, Int>())
     var saveRecentEditFieldIds by mutableStateOf(mapOf<String, List<String>>())
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
 }

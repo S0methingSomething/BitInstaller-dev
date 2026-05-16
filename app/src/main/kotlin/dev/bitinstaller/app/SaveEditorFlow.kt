@@ -92,13 +92,15 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
 ) {
     saveScanTargetId = target.packageName
     saveScanErrors = saveScanErrors - target.packageName
-    saveScanResults = saveScanResults - target.packageName
+    val cachedSaves = saveScanResults[target.packageName].orEmpty().associateBy { save -> save.path }
     runCatching {
         withContext(Dispatchers.IO) {
             val patchTarget =
                 findTarget(target.packageName)
                     ?: error("Unknown target: ${target.packageName}")
             repository.listLifeSaveFiles(patchTarget, patchTarget.filesDirectory).map { file ->
+                val cached = cachedSaves[file.path]
+                if (cached != null && cached.sizeBytes.toLong() == file.sizeBytes) return@map cached
                 runCatching {
                     val bytes = repository.readLifeSaveFile(file)
                     BitLifeSaveParser.parse(path = file.path, bytes = bytes)
@@ -139,7 +141,12 @@ private suspend fun BitInstallerAppState.editSaveField(
                         outputFile = tempFile,
                     )
                 val writeResult = repository.writeLifeSaveFile(path = save.path, bytes = edited)
-                val parsed = BitLifeSaveParser.parse(path = save.path, bytes = edited)
+                val parsed =
+                    BitLifeSaveParser.parse(
+                        path = save.path,
+                        bytes = edited,
+                        collectAdvancedFields = false,
+                    )
                 parsed.copy(advancedFields = save.advancedFields) to writeResult.backupPath
             } finally {
                 tempFile.delete()
@@ -152,6 +159,7 @@ private suspend fun BitInstallerAppState.editSaveField(
         saveRecentEditFieldIds =
             saveRecentEditFieldIds + (save.path to saveRecentEditFieldIds[save.path].promote(request.field.id))
         saveEditMessages = saveEditMessages + (save.path to "Saved. Backup: ${backupPath.substringAfterLast('/')}")
+        saveEditMessageTokens = saveEditMessageTokens.increment(save.path)
     }.onFailure { error ->
         saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not save edit"))
     }
@@ -171,13 +179,16 @@ private suspend fun BitInstallerAppState.revertSaveFile(
     runCatching {
         withContext(Dispatchers.IO) {
             val restored = repository.revertLifeSaveFile(save.path)
-            BitLifeSaveParser.parse(path = save.path, bytes = restored)
+            BitLifeSaveParser
+                .parse(path = save.path, bytes = restored, collectAdvancedFields = false)
+                .copy(advancedFields = save.advancedFields)
         }
     }.onSuccess { updatedSave ->
         saveScanResults =
             saveScanResults +
             (request.target.packageName to saveScanResults[request.target.packageName].replaceSave(updatedSave))
         saveEditMessages = saveEditMessages + (save.path to "Reverted to backup")
+        saveEditMessageTokens = saveEditMessageTokens.increment(save.path)
     }.onFailure { error ->
         saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not revert"))
     }
@@ -189,3 +200,5 @@ private fun List<BitLifeSaveSummary>?.replaceSave(updatedSave: BitLifeSaveSummar
 
 private fun List<String>?.promote(fieldId: String): List<String> =
     listOf(fieldId).plus(orEmpty().filterNot { it == fieldId }).take(MAX_RECENT_EDIT_FIELDS)
+
+private fun Map<String, Int>.increment(path: String): Map<String, Int> = this + (path to ((this[path] ?: 0) + 1))

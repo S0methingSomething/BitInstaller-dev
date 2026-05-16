@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -44,8 +46,8 @@ internal data class SaveAdvancedFieldsContentState(
 
 internal data class SaveAdvancedFieldsContentActions(
     val onQueryChange: (String) -> Unit,
-    val onFilterChange: () -> Unit,
-    val onSortChange: () -> Unit,
+    val onFilterChange: (AdvancedFieldFilter) -> Unit,
+    val onSortChange: (AdvancedFieldSort) -> Unit,
     val onFieldClick: (SaveEditableField) -> Unit,
     val onClose: () -> Unit,
 )
@@ -56,7 +58,7 @@ internal fun SaveAdvancedFieldsContent(
     actions: SaveAdvancedFieldsContentActions,
     modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = modifier) {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = modifier) {
         AdvancedFieldsTopBar(state = state, onClose = actions.onClose)
         AdvancedSaveSummary(save = state.save)
         OutlinedTextField(
@@ -78,6 +80,9 @@ internal fun SaveAdvancedFieldsContent(
             onFieldClick = actions.onFieldClick,
             modifier = Modifier.weight(1f),
         )
+        Button(onClick = actions.onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)) {
+            Text(text = "Close advanced values")
+        }
     }
 }
 
@@ -94,14 +99,14 @@ private fun AdvancedFieldsTopBar(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
             Text(
                 text = state.targetName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = "${state.save.slotName} · ${state.fields.size}/${state.save.advancedFields.size} values",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -116,14 +121,14 @@ private fun AdvancedFieldsTopBar(
 @Composable
 private fun AdvancedSaveSummary(save: BitLifeSaveSummary) {
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(14.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(18.dp)) {
             Text(
                 text = save.heroName,
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -150,13 +155,13 @@ private fun AdvancedSummaryLine(
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(ADVANCED_SUMMARY_LABEL_WEIGHT),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(ADVANCED_SUMMARY_VALUE_WEIGHT),
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
@@ -172,7 +177,7 @@ private fun AdvancedFieldList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = modifier,
     ) {
         items(fields, key = { field -> field.id }) { field ->
@@ -193,22 +198,22 @@ private fun AdvancedFieldRow(
 ) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)),
         shape = AdvancedFieldShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = Modifier.weight(1f)) {
-                Text(text = field.label, style = MaterialTheme.typography.labelLarge)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
+                Text(text = field.label, style = MaterialTheme.typography.titleMedium)
                 AdvancedFieldMeta(field = field, isRecent = isRecent)
                 Text(
                     text = field.path,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -216,7 +221,7 @@ private fun AdvancedFieldRow(
             }
             Text(
                 text = field.value.ifBlank { "empty" },
-                style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Monospace),
                 textAlign = TextAlign.End,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

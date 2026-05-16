@@ -41,12 +41,6 @@ internal fun List<SaveEditableField>.filteredAndSorted(
     }.sortedWith(sort.comparator(recentRank))
 }
 
-internal fun AdvancedFieldFilter.next(): AdvancedFieldFilter =
-    enumValues<AdvancedFieldFilter>().let { entries -> entries[(ordinal + 1) % entries.size] }
-
-internal fun AdvancedFieldSort.next(): AdvancedFieldSort =
-    enumValues<AdvancedFieldSort>().let { entries -> entries[(ordinal + 1) % entries.size] }
-
 private fun SaveEditableField.matchesQuery(
     needle: String,
     hint: dev.bitinstaller.app.save.SaveFieldExplanation?,

@@ -48,14 +48,9 @@ internal fun SaveEditorSection(
     var advancedSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
     var revertSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
+    var dismissedSuccessTokens by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     val selectedTarget = state.selectedTarget
-    val modalState =
-        SaveEditorModalState(
-            selectedTarget = selectedTarget,
-            advancedSave = advancedSave,
-            editDraft = editDraft,
-            revertSave = revertSave,
-        )
+    val modalState = SaveEditorModalState(selectedTarget, advancedSave, editDraft, revertSave)
     val modalActions =
         SaveEditorModalActions(
             closeAdvanced = { advancedSave = null },
@@ -80,6 +75,13 @@ internal fun SaveEditorSection(
 
     SaveEditorBackHandler(state = modalState, actions = modalActions)
     SaveEditorModals(state = modalState, actions = modalActions)
+    SaveEditorSuccessPopup(
+        selectedTarget = selectedTarget,
+        dismissedTokens = dismissedSuccessTokens,
+        onDismiss = { popup ->
+            dismissedSuccessTokens = dismissedSuccessTokens + (popup.path to popup.token)
+        },
+    )
 
     if (selectedTarget != null) {
         SaveTargetDetail(
@@ -106,7 +108,7 @@ private fun SaveEditorTargetList(
     targets: List<SaveTargetUiState>,
     onTargetClick: (SaveTargetUiState) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = Modifier.fillMaxWidth()) {
         SaveEditorIntro()
         if (targets.isEmpty()) {
             EmptySaveTargetsCard()
@@ -180,12 +182,12 @@ private fun SaveEditorIntro() {
     Surface(
         shape = SaveEditorShape,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
         ) {
             Text(
                 text = "Save Editor",
@@ -208,14 +210,14 @@ private fun EmptySaveTargetsCard() {
     Surface(
         shape = SaveEditorShape,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
             text = "No installed BitLife apps found on this device.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
         )
     }
 }
@@ -235,12 +237,12 @@ private fun SaveTargetCard(
             } else {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f)
             },
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = if (isFocused) 0.08f else 0.07f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = if (isFocused) 0.34f else 0.24f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
         ) {
             SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
 
@@ -266,9 +268,9 @@ private fun SaveTargetCardHeader(
     target: SaveTargetUiState,
     onTargetClick: (SaveTargetUiState) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth(),
         ) {

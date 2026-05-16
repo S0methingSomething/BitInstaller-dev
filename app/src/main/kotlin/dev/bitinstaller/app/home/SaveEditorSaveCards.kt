@@ -42,7 +42,7 @@ internal fun SaveFileList(
     onSaveRevert: (BitLifeSaveSummary) -> Unit,
 ) {
     var expandedPath by remember(saves) { mutableStateOf<String?>(null) }
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         saves.forEach { save ->
             val isExpanded = expandedPath == save.path
             SaveFileCard(
@@ -52,7 +52,7 @@ internal fun SaveFileList(
                         isExpanded = isExpanded,
                         isSaving = target.editingSavePath == save.path,
                         editError = if (isExpanded) target.editErrors[save.path] else null,
-                        editMessage = if (isExpanded) target.editMessages[save.path] else null,
+                        editMessage = null,
                     ),
                 actions =
                     SaveFileCardActions(
@@ -89,13 +89,13 @@ private fun SaveFileCard(
     val save = state.save
     Surface(
         shape = SaveCardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(18.dp),
         ) {
             SaveFileCardHeader(
                 save = save,
@@ -120,11 +120,11 @@ private fun SaveFileCardHeader(
 ) {
     Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         SaveSlotBadge(slotName = save.slotName)
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = save.heroName,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -191,14 +191,14 @@ private fun SaveStatusMessage(
     Surface(
         color = statusColor(isError = isError),
         border = BorderStroke(1.dp, statusBorderColor(isError = isError)),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(14.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         )
     }
 }
@@ -225,7 +225,7 @@ private fun SaveFileActions(
     actions: SaveFileCardActions,
     enabled: Boolean,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = enabled,
             onClick = actions.onAdvancedClick,
@@ -233,7 +233,7 @@ private fun SaveFileActions(
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(text = "Open values · $fieldCount")
+            Text(text = "Open advanced values · $fieldCount")
         }
         TextButton(enabled = enabled, onClick = actions.onSaveRevert, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Revert backup")

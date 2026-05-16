@@ -126,6 +126,7 @@ internal class BitInstallerAppPresenter {
             editingSavePath = appState.saveEditTargetPath,
             editErrors = appState.saveEditErrors,
             editMessages = appState.saveEditMessages,
+            editMessageTokens = appState.saveEditMessageTokens,
             recentEditFieldIds = appState.saveRecentEditFieldIds,
         )
     }

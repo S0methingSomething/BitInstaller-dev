@@ -34,7 +34,7 @@ internal fun SaveFieldEditDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
             modifier = Modifier.fillMaxSize(),
         ) {
             SaveFieldEditContent(
@@ -55,7 +55,7 @@ internal fun SaveFieldEditDialog(
                         .statusBarsPadding()
                         .navigationBarsPadding()
                         .imePadding()
-                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
             )
         }
     }
@@ -87,7 +87,7 @@ internal fun SaveAdvancedFieldsDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
             modifier = Modifier.fillMaxSize(),
         ) {
             SaveAdvancedFieldsContent(
@@ -104,8 +104,8 @@ internal fun SaveAdvancedFieldsDialog(
                 actions =
                     SaveAdvancedFieldsContentActions(
                         onQueryChange = { query = it },
-                        onFilterChange = { filter = filter.next() },
-                        onSortChange = { sort = sort.next() },
+                        onFilterChange = { selected -> filter = selected },
+                        onSortChange = { selected -> sort = selected },
                         onFieldClick = onFieldClick,
                         onClose = onDismissRequest,
                     ),
@@ -113,7 +113,7 @@ internal fun SaveAdvancedFieldsDialog(
                     Modifier
                         .statusBarsPadding()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                        .padding(horizontal = 24.dp, vertical = 22.dp),
             )
         }
     }
