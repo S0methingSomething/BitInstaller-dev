@@ -44,7 +44,11 @@ internal class BitInstallerAppState(
     var selectedDestination by mutableStateOf(BitInstallerDestination.MonetizationVars)
     var selectedSaveTargetId by mutableStateOf<String?>(null)
     var saveScanTargetId by mutableStateOf<String?>(null)
+    var saveEditTargetPath by mutableStateOf<String?>(null)
     var saveScanErrors by mutableStateOf(mapOf<String, String>())
+    var saveEditErrors by mutableStateOf(mapOf<String, String>())
+    var saveEditMessages by mutableStateOf(mapOf<String, String>())
+    var saveRecentEditFieldIds by mutableStateOf(mapOf<String, List<String>>())
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
 }
 
@@ -81,6 +85,22 @@ internal fun buildHomeRouteCallbacks(
                 deps.repository,
                 deps.operationLock,
                 deps.appState,
+            )
+        },
+        onSaveFieldEdit = { target, save, field, value ->
+            deps.coroutineScope.launchSaveFieldEdit(
+                request = SaveFieldEditRequest(context, target, save, field, value),
+                repository = deps.repository,
+                operationLock = deps.operationLock,
+                appState = deps.appState,
+            )
+        },
+        onSaveRevert = { target, save ->
+            deps.coroutineScope.launchSaveRevert(
+                request = SaveRevertRequest(target = target, save = save),
+                repository = deps.repository,
+                operationLock = deps.operationLock,
+                appState = deps.appState,
             )
         },
         onSaveEditorBack = { deps.appState.selectedSaveTargetId = null },

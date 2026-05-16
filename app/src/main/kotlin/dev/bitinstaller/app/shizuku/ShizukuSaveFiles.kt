@@ -40,6 +40,27 @@ suspend fun ShizukuMonetizationRepository.readLifeSaveFile(file: LifeSaveFile): 
     return result.output
 }
 
+suspend fun ShizukuMonetizationRepository.writeLifeSaveFile(
+    path: String,
+    bytes: ByteArray,
+): LifeSaveWriteResult {
+    requireReadyForSaveFiles()
+    bytes.requireSafePreviewBytes()
+
+    val backupPath = "$path.bitinstaller.bak"
+    val tmpPath = "$path.bitinstaller.tmp"
+    val result =
+        runShellBytes(
+            command = writeLifeSaveFileCommand(path = path, tmpPath = tmpPath, backupPath = backupPath),
+            stdin = bytes,
+        )
+    if (!result.isSuccess) {
+        throw IOException("Could not write ${path.substringAfterLast('/')}: ${result.errorSummary()}")
+    }
+
+    return LifeSaveWriteResult(path = path, backupPath = backupPath)
+}
+
 private fun ShizukuMonetizationRepository.requireReadyForSaveFiles() {
     val current = checkStatus()
     check(current.status == ShizukuAccessStatus.READY) {
@@ -59,6 +80,24 @@ private fun listLifeSaveFilesCommand(filesDirectory: String): String =
         append("printf '%s\\t%s\\n' \"\$size\" \"\$file\"; ")
         append("done; ")
         append("fi")
+    }
+
+private fun writeLifeSaveFileCommand(
+    path: String,
+    tmpPath: String,
+    backupPath: String,
+): String =
+    buildString {
+        append("path=${shellQuote(path)}; ")
+        append("tmp=${shellQuote(tmpPath)}; ")
+        append("bak=${shellQuote(backupPath)}; ")
+        append("cp -p \"\$path\" \"\$tmp\" && ")
+        append("cat > \"\$tmp\" && ")
+        append("cp -p \"\$path\" \"\$bak\" && ")
+        append("mv \"\$tmp\" \"\$path\"; ")
+        append("status=\$?; ")
+        append("if [ \$status -ne 0 ]; then rm -f \"\$tmp\"; fi; ")
+        append("exit \$status")
     }
 
 private fun parseLifeSaveFileLine(line: String): LifeSaveFile {

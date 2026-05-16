@@ -37,6 +37,11 @@ data class LifeSaveFile(
     val sizeBytes: Long,
 )
 
+data class LifeSaveWriteResult(
+    val path: String,
+    val backupPath: String,
+)
+
 enum class LiveDictionaryStatus {
     DIRECTORY,
     MISSING,

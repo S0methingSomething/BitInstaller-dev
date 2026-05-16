@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -162,7 +164,12 @@ private fun PatchEditorContent(
                         translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP
                     },
         ) {
-            Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp)) {
+            Column(
+                modifier =
+                    Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+            ) {
                 PatchEditorToolbar(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
                 Spacer(modifier = Modifier.height(14.dp))
                 BulkPatchPanel(onUnlockAll = actions.onUnlockAll)

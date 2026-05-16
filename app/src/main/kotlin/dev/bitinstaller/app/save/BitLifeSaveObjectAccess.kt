@@ -18,7 +18,19 @@ private val CoreAttributeFields =
 internal fun ObjectNode?.attributes(): List<SaveAttributeSummary> {
     val node = this ?: return emptyList()
     return CoreAttributeFields.mapNotNull { (field, label) ->
-        node.logicalFloat(field)?.let { value -> SaveAttributeSummary(label = label, value = value) }
+        val member = node.logicalMember(field)
+        node.logicalFloat(field)?.let { value ->
+            SaveAttributeSummary(
+                label = label,
+                value = value,
+                field =
+                    member?.toEditableField(
+                        label = label,
+                        path = "Life / Hero / $label",
+                        group = "Attributes",
+                    ),
+            )
+        }
     }
 }
 

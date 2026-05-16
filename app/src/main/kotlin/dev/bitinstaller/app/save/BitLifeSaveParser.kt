@@ -12,20 +12,46 @@ data class BitLifeSaveSummary(
     val age: Int?,
     val gender: String?,
     val bankBalance: Double?,
+    val bankBalanceField: SaveEditableField?,
     val attributes: List<SaveAttributeSummary>,
     val facts: List<SaveFactSummary>,
     val characters: List<SaveCharacterSummary>,
+    val advancedFields: List<SaveEditableField>,
     val errorMessage: String? = null,
 )
+
+data class SaveEditableField(
+    val id: String,
+    val objectId: Int,
+    val memberName: String,
+    val label: String,
+    val path: String,
+    val group: String,
+    val value: String,
+    val valueKind: SaveEditableValueKind,
+)
+
+enum class SaveEditableValueKind {
+    TEXT,
+    BYTE,
+    SHORT,
+    INT,
+    LONG,
+    FLOAT,
+    DOUBLE,
+    BOOLEAN,
+}
 
 data class SaveAttributeSummary(
     val label: String,
     val value: Float,
+    val field: SaveEditableField?,
 )
 
 data class SaveFactSummary(
     val label: String,
     val value: String,
+    val field: SaveEditableField?,
 )
 
 data class SaveCharacterSummary(
@@ -34,6 +60,7 @@ data class SaveCharacterSummary(
     val age: Int?,
     val relationship: Float?,
     val isAlive: Boolean?,
+    val fields: List<SaveEditableField>,
 )
 
 internal object BitLifeSaveParser {
@@ -58,9 +85,11 @@ internal object BitLifeSaveParser {
             age = null,
             gender = null,
             bankBalance = null,
+            bankBalanceField = null,
             attributes = emptyList(),
             facts = emptyList(),
             characters = emptyList(),
+            advancedFields = emptyList(),
             errorMessage = error.message ?: error::class.java.simpleName,
         )
 
@@ -69,46 +98,24 @@ internal object BitLifeSaveParser {
         bytes: ByteArray,
     ): BitLifeSaveSummary =
         NrbfDocument.open(bytes).use { doc ->
-            val life = doc.lifeObjectOrNull()
-            val hero = life?.logicalObject("Hero") ?: doc.objectByClassOrNull("SimHero")
-            val finances = life?.logicalObject("Finances") ?: doc.objectByClassOrNull("SimFinances")
-            val occupation = life?.logicalObject("Occupation")
-            val job = occupation?.logicalObject("Job")
-            val name = hero?.logicalObject("Name")
-            val characters = doc.characterSummaries(life)
-
-            val firstName = name?.logicalString("FirstName").orEmpty()
-            val lastName = name?.logicalString("LastName").orEmpty()
-            val royalTitle = name?.logicalString("RoyalTitle").orEmpty()
-            val hasDoctorate = name?.logicalBoolean("HasDoctorate") == true
-            val age = hero?.logicalInt("Age")
-            val gender = hero?.logicalInt("Gender")?.toGenderLabel()
-            val bankBalance = finances?.logicalDouble("BankBalance")
-            val heroName = displayName(firstName, lastName, royalTitle, hasDoctorate)
-
-            BitLifeSaveSummary(
-                path = path,
-                fileName = path.substringAfterLast('/'),
-                slotName = path.slotName(),
-                sizeBytes = bytes.size,
-                heroName =
-                    heroName.takeUnless { it == "Unnamed life" }
-                        ?: characters.firstOrNull { it.role == "Hero" }?.name
-                        ?: "Unnamed life",
-                age = age,
-                gender = gender,
-                bankBalance = bankBalance,
-                attributes = hero.attributes(),
-                facts =
-                    buildList {
-                        addFact("Residence", hero?.logicalString("PlaceOfResidenceString"))
-                        addFact("Birthplace", hero?.logicalString("PlaceOfBirthString"))
-                        addFact("Career", job?.logicalString("CareerName"))
-                        addFact("Salary", occupation?.logicalDouble("Salary")?.toWholeNumberLabel())
-                    },
-                characters = characters,
-            )
+            val objects = doc.resolveCoreObjects()
+            objects.toSummary(path = path, sizeBytes = bytes.size, doc = doc)
         }
+
+    private fun NrbfDocument.resolveCoreObjects(): SaveCoreObjects {
+        val life = lifeObjectOrNull()
+        val hero = life?.logicalObject("Hero") ?: objectByClassOrNull("SimHero")
+        val occupation = life?.logicalObject("Occupation")
+        return SaveCoreObjects(
+            life = life,
+            hero = hero,
+            finances = life?.logicalObject("Finances") ?: objectByClassOrNull("SimFinances"),
+            occupation = occupation,
+            job = occupation?.logicalObject("Job"),
+            name = hero?.logicalObject("Name"),
+            characters = characterSummaries(life),
+        )
+    }
 
     private fun NrbfDocument.characterSummaries(
         life: ObjectNode? = objectByClassOrNull("Life"),
@@ -125,4 +132,78 @@ internal object BitLifeSaveParser {
 
     private fun String.slotName(): String =
         substringBeforeLast('/').substringAfterLast('/', missingDelimiterValue = "Save slot")
+
+    private data class SaveCoreObjects(
+        val life: ObjectNode?,
+        val hero: ObjectNode?,
+        val finances: ObjectNode?,
+        val occupation: ObjectNode?,
+        val job: ObjectNode?,
+        val name: ObjectNode?,
+        val characters: List<SaveCharacterSummary>,
+    ) {
+        fun toSummary(
+            path: String,
+            sizeBytes: Int,
+            doc: NrbfDocument,
+        ): BitLifeSaveSummary {
+            val bankBalanceMember = finances?.logicalMember("BankBalance")
+            val heroName =
+                displayName(
+                    firstName = name?.logicalString("FirstName").orEmpty(),
+                    lastName = name?.logicalString("LastName").orEmpty(),
+                    royalTitle = name?.logicalString("RoyalTitle").orEmpty(),
+                    hasDoctorate = name?.logicalBoolean("HasDoctorate") == true,
+                )
+            return BitLifeSaveSummary(
+                path = path,
+                fileName = path.substringAfterLast('/'),
+                slotName = path.slotName(),
+                sizeBytes = sizeBytes,
+                heroName =
+                    heroName.takeUnless { it == "Unnamed life" }
+                        ?: characters.firstOrNull { it.role == "Hero" }?.name
+                        ?: "Unnamed life",
+                age = hero?.logicalInt("Age"),
+                gender = hero?.logicalInt("Gender")?.toGenderLabel(),
+                bankBalance = finances?.logicalDouble("BankBalance"),
+                bankBalanceField = bankBalanceMember.toBankField(),
+                attributes = hero.attributes(),
+                facts = buildFacts(),
+                characters = characters,
+                advancedFields = doc.collectAdvancedFields(life = life),
+            )
+        }
+
+        private fun buildFacts(): List<SaveFactSummary> =
+            buildList {
+                addFact("Residence", hero?.logicalString("PlaceOfResidenceString"), hero.residenceField())
+                addFact("Birthplace", hero?.logicalString("PlaceOfBirthString"), hero.birthplaceField())
+                addFact("Career", job?.logicalString("CareerName"), job.careerField())
+                addFact("Salary", occupation?.logicalDouble("Salary")?.toWholeNumberLabel(), occupation.salaryField())
+            }
+    }
 }
+
+private fun dev.nrbf4j.MemberNode?.toBankField(): SaveEditableField? =
+    this?.toEditableField(label = "Bank", path = "Life / Finances / Bank", group = "Finances")
+
+private fun ObjectNode?.residenceField(): SaveEditableField? =
+    this
+        ?.logicalMember("PlaceOfResidenceString")
+        ?.toEditableField(label = "Residence", path = "Life / Hero / Residence", group = "Hero")
+
+private fun ObjectNode?.birthplaceField(): SaveEditableField? =
+    this
+        ?.logicalMember("PlaceOfBirthString")
+        ?.toEditableField(label = "Birthplace", path = "Life / Hero / Birthplace", group = "Hero")
+
+private fun ObjectNode?.careerField(): SaveEditableField? =
+    this
+        ?.logicalMember("CareerName")
+        ?.toEditableField(label = "Career", path = "Life / Occupation / Job / Career", group = "Career")
+
+private fun ObjectNode?.salaryField(): SaveEditableField? =
+    this
+        ?.logicalMember("Salary")
+        ?.toEditableField(label = "Salary", path = "Life / Occupation / Salary", group = "Career")

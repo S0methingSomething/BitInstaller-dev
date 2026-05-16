@@ -145,6 +145,8 @@ private fun HomeContent(
                     SaveEditorSection(
                         state = state.saveEditor,
                         onTargetClick = callbacks.onSaveTargetClick,
+                        onFieldEdit = callbacks.onSaveFieldEdit,
+                        onSaveRevert = callbacks.onSaveRevert,
                         onBackClick = callbacks.onSaveEditorBack,
                     )
                 }

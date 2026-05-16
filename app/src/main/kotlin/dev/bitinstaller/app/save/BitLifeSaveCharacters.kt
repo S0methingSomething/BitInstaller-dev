@@ -17,7 +17,11 @@ internal fun ObjectNode.logicalCharacterList(
     logicalMember(logicalName)
         ?.derefObjectRefsOrNull()
         ?.mapIndexedNotNull { index, refId ->
-            document.objectNodeOrNull(refId)?.toCharacterSummary("$role ${index + 1}")
+            val node = document.objectNodeOrNull(refId) ?: return@mapIndexedNotNull null
+            val firstName = node.logicalObject("Name")?.logicalString("FirstName")
+            val roleLabel =
+                if (firstName.isNullOrBlank()) "$role ${index + 1}" else "$role ($firstName)"
+            node.toCharacterSummary(roleLabel)
         }
 
 private fun NrbfDocument.objectNodeOrNull(objectId: Int): ObjectNode? = runCatching { objectNode(objectId) }.getOrNull()
@@ -26,6 +30,41 @@ private fun MemberNode.derefObjectRefsOrNull(): List<Int>? = runCatching { deref
 
 private fun ObjectNode.toCharacterSummary(role: String): SaveCharacterSummary {
     val name = logicalObject("Name")
+    val fields =
+        buildList {
+            name
+                ?.logicalMember("FirstName")
+                ?.toEditableField(
+                    label = "First name",
+                    path = "Characters / $role / First name",
+                    group = role,
+                )?.let(::add)
+            name
+                ?.logicalMember("LastName")
+                ?.toEditableField(
+                    label = "Last name",
+                    path = "Characters / $role / Last name",
+                    group = role,
+                )?.let(::add)
+            logicalMember("Age")
+                ?.toEditableField(
+                    label = "Age",
+                    path = "Characters / $role / Age",
+                    group = role,
+                )?.let(::add)
+            logicalMember("HeroRelationshipStrength")
+                ?.toEditableField(
+                    label = "Relationship",
+                    path = "Characters / $role / Relationship",
+                    group = role,
+                )?.let(::add)
+            logicalMember("Alive")
+                ?.toEditableField(
+                    label = "Alive",
+                    path = "Characters / $role / Alive",
+                    group = role,
+                )?.let(::add)
+        }
     return SaveCharacterSummary(
         role = role,
         name =
@@ -38,5 +77,6 @@ private fun ObjectNode.toCharacterSummary(role: String): SaveCharacterSummary {
         age = logicalInt("Age"),
         relationship = logicalFloat("HeroRelationshipStrength"),
         isAlive = logicalBoolean("Alive"),
+        fields = fields,
     )
 }

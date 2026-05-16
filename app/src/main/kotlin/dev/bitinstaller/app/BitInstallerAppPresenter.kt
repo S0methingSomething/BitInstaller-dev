@@ -123,6 +123,10 @@ internal class BitInstallerAppPresenter {
             actionLabel = saveActionLabelFor(isLoading, saves, isSelected),
             actionEnabled = isReady && !isLoading,
             saves = saves,
+            editingSavePath = appState.saveEditTargetPath,
+            editErrors = appState.saveEditErrors,
+            editMessages = appState.saveEditMessages,
+            recentEditFieldIds = appState.saveRecentEditFieldIds,
         )
     }
 

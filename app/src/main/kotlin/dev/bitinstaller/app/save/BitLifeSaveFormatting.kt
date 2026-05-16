@@ -5,9 +5,10 @@ import java.util.Locale
 internal fun MutableList<SaveFactSummary>.addFact(
     label: String,
     value: String?,
+    field: SaveEditableField?,
 ) {
     if (!value.isNullOrBlank()) {
-        add(SaveFactSummary(label = label, value = value))
+        add(SaveFactSummary(label = label, value = value, field = field))
     }
 }
 

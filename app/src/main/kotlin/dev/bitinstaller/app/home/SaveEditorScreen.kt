@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -22,6 +20,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveEditableField
 
 private val SaveEditorShape = RoundedCornerShape(12.dp)
 private val SaveEditorHeroShape = RoundedCornerShape(22.dp)
@@ -40,28 +43,85 @@ private val SaveEditorInset = 112.dp
 internal fun SaveEditorSection(
     state: SaveEditorUiState,
     onTargetClick: (SaveTargetUiState) -> Unit,
+    onFieldEdit: (SaveTargetUiState, BitLifeSaveSummary, SaveEditableField, String) -> Unit,
+    onSaveRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit,
     onBackClick: () -> Unit,
 ) {
+    var advancedSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
+    var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
+    var revertSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     val selectedTarget = state.selectedTarget
+
+    advancedSave?.let { save ->
+        SaveAdvancedFieldsDialog(
+            save = save,
+            recentFieldIds = selectedTarget?.recentEditFieldIds?.get(save.path).orEmpty(),
+            onDismissRequest = { advancedSave = null },
+            onFieldClick = { field ->
+                val target = selectedTarget ?: return@SaveAdvancedFieldsDialog
+                editDraft = SaveFieldEditDraft(target = target, save = save, field = field)
+                advancedSave = null
+            },
+        )
+    }
+    editDraft?.let { draft ->
+        SaveFieldEditDialog(
+            draft = draft,
+            onDismissRequest = { editDraft = null },
+            onConfirm = { value ->
+                onFieldEdit(draft.target, draft.save, draft.field, value)
+                editDraft = null
+            },
+        )
+    }
+    revertSave?.let { save ->
+        SaveRevertDialog(
+            save = save,
+            target = selectedTarget,
+            onDismissRequest = { revertSave = null },
+            onConfirm = { target, targetSave ->
+                onSaveRevert(target, targetSave)
+                revertSave = null
+            },
+        )
+    }
+
     if (selectedTarget != null) {
         SaveTargetDetail(
             target = selectedTarget,
-            onTargetClick = onTargetClick,
+            actions =
+                SaveTargetCardActions(
+                    onTargetClick = onTargetClick,
+                    onFieldClick = { save, field ->
+                        editDraft = SaveFieldEditDraft(target = selectedTarget, save = save, field = field)
+                    },
+                    onAdvancedClick = { save -> advancedSave = save },
+                    onSaveRevert = { save -> revertSave = save },
+                ),
             onBackClick = onBackClick,
         )
         return
     }
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    SaveEditorTargetList(targets = state.targets, onTargetClick = onTargetClick)
+}
+
+@Composable
+private fun SaveEditorTargetList(
+    targets: List<SaveTargetUiState>,
+    onTargetClick: (SaveTargetUiState) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         SaveEditorIntro()
-        if (state.targets.isEmpty()) {
+        if (targets.isEmpty()) {
             EmptySaveTargetsCard()
         } else {
-            state.targets.forEach { target ->
-                SaveTargetCard(target = target, onTargetClick = onTargetClick, showSaves = false)
+            targets.forEach { target ->
+                SaveTargetCard(
+                    target = target,
+                    showSaves = false,
+                    actions = SaveTargetCardActions(onTargetClick = onTargetClick),
+                )
             }
         }
     }
@@ -70,7 +130,7 @@ internal fun SaveEditorSection(
 @Composable
 private fun SaveTargetDetail(
     target: SaveTargetUiState,
-    onTargetClick: (SaveTargetUiState) -> Unit,
+    actions: SaveTargetCardActions,
     onBackClick: () -> Unit,
 ) {
     Column(
@@ -98,9 +158,21 @@ private fun SaveTargetDetail(
                 Text(text = "Change app")
             }
         }
-        SaveTargetCard(target = target, onTargetClick = onTargetClick, showSaves = true, isFocused = true)
+        SaveTargetCard(
+            target = target,
+            showSaves = true,
+            isFocused = true,
+            actions = actions,
+        )
     }
 }
+
+private data class SaveTargetCardActions(
+    val onTargetClick: (SaveTargetUiState) -> Unit,
+    val onFieldClick: (BitLifeSaveSummary, SaveEditableField) -> Unit = { _, _ -> },
+    val onAdvancedClick: (BitLifeSaveSummary) -> Unit = {},
+    val onSaveRevert: (BitLifeSaveSummary) -> Unit = {},
+)
 
 @Composable
 private fun SaveEditorIntro() {
@@ -150,9 +222,9 @@ private fun EmptySaveTargetsCard() {
 @Composable
 private fun SaveTargetCard(
     target: SaveTargetUiState,
-    onTargetClick: (SaveTargetUiState) -> Unit,
     showSaves: Boolean,
     isFocused: Boolean = false,
+    actions: SaveTargetCardActions,
 ) {
     Surface(
         shape = if (isFocused) SaveEditorHeroShape else SaveEditorShape,
@@ -169,48 +241,75 @@ private fun SaveTargetCard(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 84.dp),
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.Top,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(end = SaveEditorInset),
-                ) {
-                    SaveAppGlyph(icon = target.icon, name = target.name)
-                    SaveTargetTextBlock(target = target)
-                }
-                Button(
-                    enabled = target.actionEnabled,
-                    onClick = { onTargetClick(target) },
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
-                            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
-                        ),
-                    shape = SaveEditorButtonShape,
-                    modifier = Modifier.align(Alignment.BottomEnd),
-                ) {
-                    Text(text = target.actionLabel)
-                }
-            }
+            SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
 
             if (showSaves) {
                 if (target.saves == null) {
                     SaveScanPrompt()
                 } else {
-                    SaveFileList(saves = target.saves)
+                    SaveFileList(
+                        target = target,
+                        saves = target.saves,
+                        onFieldClick = actions.onFieldClick,
+                        onAdvancedClick = actions.onAdvancedClick,
+                        onSaveRevert = actions.onSaveRevert,
+                    )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SaveTargetCardHeader(
+    target: SaveTargetUiState,
+    onTargetClick: (SaveTargetUiState) -> Unit,
+) {
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 84.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.Top,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(end = SaveEditorInset),
+        ) {
+            SaveAppGlyph(icon = target.icon, name = target.name)
+            SaveTargetTextBlock(target = target)
+        }
+        SaveTargetActionButton(
+            target = target,
+            onTargetClick = onTargetClick,
+            modifier = Modifier.align(Alignment.BottomEnd),
+        )
+    }
+}
+
+@Composable
+private fun SaveTargetActionButton(
+    target: SaveTargetUiState,
+    onTargetClick: (SaveTargetUiState) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        enabled = target.actionEnabled,
+        onClick = { onTargetClick(target) },
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            ),
+        shape = SaveEditorButtonShape,
+        modifier = modifier,
+    ) {
+        Text(text = target.actionLabel)
     }
 }
 
@@ -284,52 +383,6 @@ private fun SaveAppGlyph(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
             )
-        }
-    }
-}
-
-@Composable
-private fun SaveFileList(saves: List<BitLifeSaveSummary>) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        saves.forEach { save -> SaveFileCard(save = save) }
-    }
-}
-
-@Composable
-private fun SaveFileCard(save: BitLifeSaveSummary) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(11.dp),
-            modifier = Modifier.padding(14.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SaveSlotBadge(slotName = save.slotName)
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = save.heroName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            SaveFileMetaLine(save = save)
-            if (save.errorMessage != null) {
-                Text(
-                    text = save.errorMessage,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            } else {
-                SaveFactRows(save = save)
-                SaveAttributeRows(attributes = save.attributes)
-                SaveCharacterRows(characters = save.characters)
-            }
         }
     }
 }

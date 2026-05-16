@@ -125,6 +125,10 @@ data class SaveTargetUiState(
     val actionLabel: String,
     val actionEnabled: Boolean,
     val saves: List<BitLifeSaveSummary>? = null,
+    val editingSavePath: String? = null,
+    val editErrors: Map<String, String> = emptyMap(),
+    val editMessages: Map<String, String> = emptyMap(),
+    val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
 )
 
 data class HomeUiState(
