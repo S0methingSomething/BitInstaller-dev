@@ -69,7 +69,7 @@ internal object BitLifeSaveParser {
         bytes: ByteArray,
     ): BitLifeSaveSummary =
         NrbfDocument.open(bytes).use { doc ->
-            val life = doc.objectByClassOrNull("Life")
+            val life = doc.lifeObjectOrNull()
             val hero = life?.logicalObject("Hero") ?: doc.objectByClassOrNull("SimHero")
             val finances = life?.logicalObject("Finances") ?: doc.objectByClassOrNull("SimFinances")
             val occupation = life?.logicalObject("Occupation")

@@ -1,7 +1,6 @@
 package dev.bitinstaller.app.save
 
 import dev.nrbf4j.MemberNode
-import dev.nrbf4j.NrbfDocument
 import dev.nrbf4j.ObjectNode
 
 private val CoreAttributeFields =
@@ -15,9 +14,6 @@ private val CoreAttributeFields =
         "Att_fertility" to "Fertility",
         "Att_fame" to "Fame",
     )
-
-internal fun NrbfDocument.objectByClassOrNull(className: String): ObjectNode? =
-    runCatching { objectByClass(className) }.getOrNull()
 
 internal fun ObjectNode?.attributes(): List<SaveAttributeSummary> {
     val node = this ?: return emptyList()
@@ -36,9 +32,18 @@ internal fun ObjectNode.logicalBoolean(logicalName: String): Boolean? = logicalM
 internal fun ObjectNode.logicalInt(logicalName: String): Int? = (logicalMember(logicalName)?.value as? Number)?.toInt()
 
 internal fun ObjectNode.logicalMember(logicalName: String): MemberNode? =
-    members().firstOrNull { member -> member.name.matchesLogicalName(logicalName) }
+    members()
+        .filter { member -> member.name.matchesLogicalName(logicalName) }
+        .maxByOrNull { member -> member.name.logicalMemberScore(logicalName) }
 
 private fun String.matchesLogicalName(logicalName: String): Boolean =
     equals(logicalName, ignoreCase = true) || contains("<$logicalName>k__BackingField", ignoreCase = true)
+
+private fun String.logicalMemberScore(logicalName: String): Int =
+    when {
+        contains("<$logicalName>k__BackingField", ignoreCase = true) -> 2
+        equals(logicalName, ignoreCase = true) -> 1
+        else -> 0
+    }
 
 private fun MemberNode.derefObjectOrNull(): ObjectNode? = runCatching { derefObject() }.getOrNull()
