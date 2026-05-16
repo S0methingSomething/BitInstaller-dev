@@ -33,8 +33,9 @@ internal fun SaveScanPrompt() {
 internal fun SaveSlotBadge(slotName: String) {
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.primary,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)),
     ) {
         Text(
             text = slotName,

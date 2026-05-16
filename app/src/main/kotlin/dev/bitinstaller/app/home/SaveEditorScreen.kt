@@ -48,9 +48,11 @@ internal fun SaveEditorSection(
     var advancedSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
     var revertSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
-    var dismissedSuccessTokens by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     val selectedTarget = state.selectedTarget
-    val modalState = SaveEditorModalState(selectedTarget, advancedSave, editDraft, revertSave)
+    var selectedSavePath by remember(selectedTarget?.packageName) { mutableStateOf<String?>(null) }
+    var dismissedSuccessTokens by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    val selectedSave = selectedTarget?.saves?.firstOrNull { save -> save.path == selectedSavePath }
+    val modalState = SaveEditorModalState(selectedTarget, selectedSavePath, advancedSave, editDraft, revertSave)
     val modalActions =
         SaveEditorModalActions(
             closeAdvanced = { advancedSave = null },
@@ -70,32 +72,32 @@ internal fun SaveEditorSection(
                 onSaveRevert(target, save)
                 revertSave = null
             },
+            backToSaves = { selectedSavePath = null },
             backToTargets = onBackClick,
         )
 
     SaveEditorBackHandler(state = modalState, actions = modalActions)
     SaveEditorModals(state = modalState, actions = modalActions)
-    SaveEditorSuccessPopup(
-        selectedTarget = selectedTarget,
-        dismissedTokens = dismissedSuccessTokens,
-        onDismiss = { popup ->
-            dismissedSuccessTokens = dismissedSuccessTokens + (popup.path to popup.token)
-        },
-    )
+    SaveEditorSuccessPopup(selectedTarget, dismissedSuccessTokens) { popup ->
+        dismissedSuccessTokens = dismissedSuccessTokens + (popup.path to popup.token)
+    }
 
     if (selectedTarget != null) {
-        SaveTargetDetail(
+        SaveSelectedTargetContent(
             target = selectedTarget,
+            selectedSave = selectedSave,
+            onSaveBackClick = { selectedSavePath = null },
             actions =
-                SaveTargetCardActions(
+                SaveSelectedTargetActions(
                     onTargetClick = onTargetClick,
+                    onSaveOpen = { save -> selectedSavePath = save.path },
                     onFieldClick = { save, field ->
                         editDraft = SaveFieldEditDraft(target = selectedTarget, save = save, field = field)
                     },
                     onAdvancedClick = { save -> advancedSave = save },
                     onSaveRevert = { save -> revertSave = save },
+                    onChangeApp = onBackClick,
                 ),
-            onBackClick = onBackClick,
         )
         return
     }
@@ -125,13 +127,13 @@ private fun SaveEditorTargetList(
 }
 
 @Composable
-private fun SaveTargetDetail(
+internal fun SaveTargetDetail(
     target: SaveTargetUiState,
     actions: SaveTargetCardActions,
     onBackClick: () -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -141,13 +143,13 @@ private fun SaveTargetDetail(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "${target.name} saves",
+                    text = "Save slots",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "Current savedLife.data from every sg* slot",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "${target.name} · pick the life ID you want to edit",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -162,19 +164,15 @@ private fun SaveTargetDetail(
             SaveFileList(
                 target = target,
                 saves = target.saves,
-                onFieldClick = actions.onFieldClick,
-                onAdvancedClick = actions.onAdvancedClick,
-                onSaveRevert = actions.onSaveRevert,
+                onSaveOpen = actions.onSaveOpen,
             )
         }
     }
 }
 
-private data class SaveTargetCardActions(
+internal data class SaveTargetCardActions(
     val onTargetClick: (SaveTargetUiState) -> Unit,
-    val onFieldClick: (BitLifeSaveSummary, SaveEditableField) -> Unit = { _, _ -> },
-    val onAdvancedClick: (BitLifeSaveSummary) -> Unit = {},
-    val onSaveRevert: (BitLifeSaveSummary) -> Unit = {},
+    val onSaveOpen: (BitLifeSaveSummary) -> Unit = {},
 )
 
 @Composable
@@ -253,9 +251,7 @@ private fun SaveTargetCard(
                     SaveFileList(
                         target = target,
                         saves = target.saves,
-                        onFieldClick = actions.onFieldClick,
-                        onAdvancedClick = actions.onAdvancedClick,
-                        onSaveRevert = actions.onSaveRevert,
+                        onSaveOpen = actions.onSaveOpen,
                     )
                 }
             }

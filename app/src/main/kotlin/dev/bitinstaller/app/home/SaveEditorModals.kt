@@ -7,6 +7,7 @@ import dev.bitinstaller.app.save.SaveEditableField
 
 internal data class SaveEditorModalState(
     val selectedTarget: SaveTargetUiState?,
+    val selectedSavePath: String?,
     val advancedSave: BitLifeSaveSummary?,
     val editDraft: SaveFieldEditDraft?,
     val revertSave: BitLifeSaveSummary?,
@@ -19,6 +20,7 @@ internal data class SaveEditorModalActions(
     val openEditFromAdvanced: (BitLifeSaveSummary, SaveEditableField) -> Unit,
     val submitEdit: (SaveFieldEditDraft, String) -> Unit,
     val confirmRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit,
+    val backToSaves: () -> Unit,
     val backToTargets: () -> Unit,
 )
 
@@ -32,6 +34,7 @@ internal fun SaveEditorBackHandler(
             state.editDraft != null -> actions.closeEdit()
             state.advancedSave != null -> actions.closeAdvanced()
             state.revertSave != null -> actions.closeRevert()
+            state.selectedSavePath != null -> actions.backToSaves()
             state.selectedTarget != null -> actions.backToTargets()
         }
     }
@@ -73,4 +76,8 @@ internal fun SaveEditorModals(
 }
 
 private fun SaveEditorModalState.hasVisibleModalOrDetail(): Boolean =
-    editDraft != null || advancedSave != null || revertSave != null || selectedTarget != null
+    editDraft != null ||
+        advancedSave != null ||
+        revertSave != null ||
+        selectedSavePath != null ||
+        selectedTarget != null
