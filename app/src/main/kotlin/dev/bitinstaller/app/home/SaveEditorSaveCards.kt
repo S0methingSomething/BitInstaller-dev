@@ -7,10 +7,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import java.util.Locale
 
-private val SaveCardShape = RoundedCornerShape(18.dp)
-private val SaveMetricShape = RoundedCornerShape(10.dp)
+private val SaveCardShape = RoundedCornerShape(16.dp)
+private val SaveMetricShape = RoundedCornerShape(12.dp)
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
@@ -32,7 +33,7 @@ internal fun SaveFileList(
     saves: List<BitLifeSaveSummary>,
     onSaveOpen: (BitLifeSaveSummary) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         saves.forEach { save ->
             SaveSlotSummaryCard(
                 save = save,
@@ -54,15 +55,15 @@ private fun SaveSlotSummaryCard(
     Surface(
         onClick = onOpen,
         shape = SaveCardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
+        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(18.dp),
         ) {
-            SaveSlotSummaryHeader(save = save, isWorking = isWorking, onOpen = onOpen)
+            SaveSlotSummaryHeader(save = save, isWorking = isWorking)
             if (error != null) {
                 SaveSlotStatus(text = error, isError = true)
             } else {
@@ -76,32 +77,49 @@ private fun SaveSlotSummaryCard(
 private fun SaveSlotSummaryHeader(
     save: BitLifeSaveSummary,
     isWorking: Boolean,
-    onOpen: () -> Unit,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
     ) {
         SaveSlotBadge(slotName = save.slotName)
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.weight(1f),
+        ) {
             Text(
                 text = save.heroName,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = save.identityLine(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        TextButton(enabled = !isWorking, onClick = onOpen) {
-            Text(text = if (isWorking) "Working" else "Open Editor")
+        OutlinedButton(
+            enabled = !isWorking,
+            onClick = {},
+            shape = RoundedCornerShape(999.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f)),
+            colors =
+                ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        ) {
+            Text(
+                text = if (isWorking) "Working" else "Open",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+            )
         }
     }
 }
@@ -109,9 +127,9 @@ private fun SaveSlotSummaryHeader(
 @Composable
 private fun SaveSlotMetrics(save: BitLifeSaveSummary) {
     val metrics = save.summaryMetrics()
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         metrics.chunked(2).forEach { rowMetrics ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 rowMetrics.forEach { metric ->
                     SaveSlotMetric(label = metric.label, value = metric.value, modifier = Modifier.weight(1f))
                 }
@@ -127,22 +145,28 @@ private fun SaveSlotMetric(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f)),
         shape = SaveMetricShape,
         modifier = modifier,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(10.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
             Text(
                 text = label.uppercase(Locale.US),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f),
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -158,8 +182,8 @@ internal fun SaveSlotStatus(
 ) {
     val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     Surface(
-        color = color.copy(alpha = if (isError) 0.10f else 0.05f),
-        border = BorderStroke(1.dp, color.copy(alpha = if (isError) 0.30f else 0.22f)),
+        color = color.copy(alpha = if (isError) 0.12f else 0.06f),
+        border = BorderStroke(1.dp, color.copy(alpha = if (isError) 0.40f else 0.30f)),
         shape = SaveMetricShape,
         modifier = modifier.fillMaxWidth(),
     ) {
