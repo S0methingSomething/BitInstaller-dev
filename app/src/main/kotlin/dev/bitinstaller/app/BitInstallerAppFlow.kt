@@ -16,6 +16,7 @@ import dev.bitinstaller.app.home.PatchManifestStore
 import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchTargetUiState
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveScanCache
 import dev.bitinstaller.app.shizuku.LiveDictionaryStatus
 import dev.bitinstaller.app.shizuku.MonetizationVarsFile
 import dev.bitinstaller.app.shizuku.OperationLock
@@ -59,69 +60,56 @@ internal class AppFlowDeps(
     val operationLock: OperationLock,
     val coroutineScope: CoroutineScope,
     val appState: BitInstallerAppState,
+    val saveCache: SaveScanCache,
 )
 
 internal fun buildHomeRouteCallbacks(
     context: Context,
     deps: AppFlowDeps,
 ): HomeRouteCallbacks =
-    HomeRouteCallbacks(
-        onDestinationSelected = { destination -> deps.appState.selectedDestination = destination },
-        onDashboardActionClick = {
-            handleDashboardAction(context = context, appState = deps.appState)
-        },
-        onPatchClick = { target ->
-            deps.coroutineScope.launchPatchSession(
-                target,
-                deps.repository,
-                deps.manifestStore,
-                deps.operationLock,
-                deps.appState,
-            )
-        },
-        onSaveTargetClick = { target ->
-            deps.appState.selectedSaveTargetId = target.packageName
-            deps.coroutineScope.launchSaveScan(
-                target,
-                deps.repository,
-                deps.operationLock,
-                deps.appState,
-            )
-        },
-        onSaveFieldEdit = { target, save, field, value ->
-            deps.coroutineScope.launchSaveFieldEdit(
-                request = SaveFieldEditRequest(context, target, save, field, value),
-                repository = deps.repository,
-                operationLock = deps.operationLock,
-                appState = deps.appState,
-            )
-        },
-        onSaveRevert = { target, save ->
-            deps.coroutineScope.launchSaveRevert(
-                request = SaveRevertRequest(target = target, save = save),
-                repository = deps.repository,
-                operationLock = deps.operationLock,
-                appState = deps.appState,
-            )
-        },
-        onSaveEditorBack = { deps.appState.selectedSaveTargetId = null },
-        onDismissSession = { deps.appState.activeSession = null },
-        onDismissLiveDictionaryPrompt = {
-            deps.appState.liveDictionaryPrompt = null
-            deps.appState.pendingLiveDictionaryTarget = null
-        },
-        onConfirmLiveDictionaryFix = {
-            deps.coroutineScope.launchLiveDictionaryFix(
-                deps.repository,
-                deps.manifestStore,
-                deps.operationLock,
-                deps.appState,
-            )
-        },
-        onSaveSession = { session, data ->
-            savePatchSession(session, data, deps.repository, deps.manifestStore, deps.appState)
-        },
-    )
+    with(deps) {
+        HomeRouteCallbacks(
+            onDestinationSelected = { destination -> appState.selectedDestination = destination },
+            onDashboardActionClick = { handleDashboardAction(context = context, appState = appState) },
+            onPatchClick = { target ->
+                coroutineScope.launchPatchSession(target, repository, manifestStore, operationLock, appState)
+            },
+            onSaveTargetClick = { target ->
+                appState.selectedSaveTargetId = target.packageName
+                coroutineScope.launchSaveScan(target, repository, operationLock, appState, saveCache)
+            },
+            onSaveFieldEdit = { target, save, field, value ->
+                coroutineScope.launchSaveFieldEdit(
+                    request = SaveFieldEditRequest(context, target, save, field, value),
+                    repository = repository,
+                    operationLock = operationLock,
+                    appState = appState,
+                    saveCache = saveCache,
+                )
+            },
+            onSaveRevert = { target, save ->
+                coroutineScope.launchSaveRevert(
+                    request = SaveRevertRequest(target = target, save = save),
+                    repository = repository,
+                    operationLock = operationLock,
+                    appState = appState,
+                    saveCache = saveCache,
+                )
+            },
+            onSaveEditorBack = { appState.selectedSaveTargetId = null },
+            onDismissSession = { appState.activeSession = null },
+            onDismissLiveDictionaryPrompt = {
+                appState.liveDictionaryPrompt = null
+                appState.pendingLiveDictionaryTarget = null
+            },
+            onConfirmLiveDictionaryFix = {
+                coroutineScope.launchLiveDictionaryFix(repository, manifestStore, operationLock, appState)
+            },
+            onSaveSession = { session, data ->
+                savePatchSession(session, data, repository, manifestStore, appState)
+            },
+        )
+    }
 
 private fun handleDashboardAction(
     context: Context,

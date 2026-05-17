@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +58,7 @@ internal fun SaveAdvancedFieldsContent(
     modifier: Modifier = Modifier,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = modifier) {
-        AdvancedFieldsTopBar(state = state, onClose = actions.onClose)
+        AdvancedFieldsTopBar(state = state)
         AdvancedSaveSummary(save = state.save)
         OutlinedTextField(
             value = state.query,
@@ -81,40 +80,28 @@ internal fun SaveAdvancedFieldsContent(
             modifier = Modifier.weight(1f),
         )
         Button(onClick = actions.onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)) {
-            Text(text = "Close advanced values")
+            Text(text = "Save and close")
         }
     }
 }
 
 @Composable
-private fun AdvancedFieldsTopBar(
-    state: SaveAdvancedFieldsContentState,
-    onClose: () -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
-            Text(
-                text = state.targetName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = "${state.save.slotName} · ${state.fields.size}/${state.save.advancedFields.size} values",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        TextButton(onClick = onClose) {
-            Text(text = "Close")
-        }
+private fun AdvancedFieldsTopBar(state: SaveAdvancedFieldsContentState) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = state.targetName,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = "${state.save.slotName} · ${state.fields.size}/${state.save.advancedFields.size} values",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

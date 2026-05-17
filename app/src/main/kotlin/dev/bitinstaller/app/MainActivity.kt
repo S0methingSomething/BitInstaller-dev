@@ -75,6 +75,7 @@ private fun BitInstallerApp() {
                         operationLock = presenter.operationLock,
                         coroutineScope = coroutineScope,
                         appState = presenter.appState,
+                        saveCache = checkNotNull(presenter.saveCache),
                     ),
             ),
     )

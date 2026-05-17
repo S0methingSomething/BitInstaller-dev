@@ -2,7 +2,9 @@ package dev.bitinstaller.app.save
 
 import dev.nrbf4j.NrbfDocument
 import dev.nrbf4j.ObjectNode
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class BitLifeSaveSummary(
     val path: String,
     val fileName: String,
@@ -20,6 +22,7 @@ data class BitLifeSaveSummary(
     val errorMessage: String? = null,
 )
 
+@Serializable
 data class SaveEditableField(
     val id: String,
     val objectId: Int,
@@ -31,6 +34,7 @@ data class SaveEditableField(
     val valueKind: SaveEditableValueKind,
 )
 
+@Serializable
 enum class SaveEditableValueKind {
     TEXT,
     BYTE,
@@ -42,18 +46,21 @@ enum class SaveEditableValueKind {
     BOOLEAN,
 }
 
+@Serializable
 data class SaveAttributeSummary(
     val label: String,
     val value: Float,
     val field: SaveEditableField?,
 )
 
+@Serializable
 data class SaveFactSummary(
     val label: String,
     val value: String,
     val field: SaveEditableField?,
 )
 
+@Serializable
 data class SaveCharacterSummary(
     val role: String,
     val name: String,
