@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
+import dev.bitinstaller.app.save.SaveScanCache
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import dev.bitinstaller.app.ui.theme.BitInstallerTheme
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
 private fun BitInstallerApp() {
     val context = LocalContext.current
     val presenter = remember { BitInstallerAppPresenter() }
+    val saveCache = remember(context) { SaveScanCache(context) }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { presenter.initialize(context) }
@@ -75,7 +77,7 @@ private fun BitInstallerApp() {
                         operationLock = presenter.operationLock,
                         coroutineScope = coroutineScope,
                         appState = presenter.appState,
-                        saveCache = checkNotNull(presenter.saveCache),
+                        saveCache = saveCache,
                     ),
             ),
     )

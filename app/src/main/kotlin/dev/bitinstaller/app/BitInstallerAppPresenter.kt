@@ -18,7 +18,6 @@ import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.home.TargetIcon
 import dev.bitinstaller.app.home.TargetPatchState
 import dev.bitinstaller.app.save.BitLifeSaveSummary
-import dev.bitinstaller.app.save.SaveScanCache
 import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
@@ -34,7 +33,6 @@ internal class BitInstallerAppPresenter {
     val repository = ShizukuMonetizationRepository()
     val manifestStore = PatchManifestStore(repository)
     val operationLock = OperationLock()
-    var saveCache: SaveScanCache? = null
     val appState =
         BitInstallerAppState(
             initialSnapshot = ShizukuSnapshot(ShizukuAccessStatus.UNAVAILABLE, null),
@@ -43,7 +41,6 @@ internal class BitInstallerAppPresenter {
     private var appInfoMap by mutableStateOf(emptyMap<String, InstalledAppInfo>())
 
     suspend fun initialize(context: Context) {
-        saveCache = SaveScanCache(context)
         appInfoMap = withContext(Dispatchers.IO) { resolveAllAppInfo(context) }
         appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
         recoverPresencesIfReady()
