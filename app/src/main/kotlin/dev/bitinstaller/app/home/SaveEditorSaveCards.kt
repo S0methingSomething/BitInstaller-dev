@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -97,7 +98,7 @@ private fun SaveSlotSummaryHeader(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = save.identityLine(),
+                text = remember(save) { save.identityLine() },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                 maxLines = 1,
@@ -126,9 +127,10 @@ private fun SaveSlotSummaryHeader(
 
 @Composable
 private fun SaveSlotMetrics(save: BitLifeSaveSummary) {
-    val metrics = save.summaryMetrics()
+    val metrics = remember(save) { save.summaryMetrics() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        metrics.chunked(2).forEach { rowMetrics ->
+        val rows = remember(metrics) { metrics.chunked(2) }
+        rows.forEach { rowMetrics ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                 rowMetrics.forEach { metric ->
                     SaveSlotMetric(label = metric.label, value = metric.value, modifier = Modifier.weight(1f))

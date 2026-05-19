@@ -16,6 +16,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -125,8 +126,10 @@ private fun AdvancedSaveSummary(save: BitLifeSaveSummary) {
                 AdvancedSummaryLine(label = "Bank", value = formatAdvancedMoney(balance))
             }
             save.age?.let { age -> AdvancedSummaryLine(label = "Age", value = age.toString()) }
-            save.occupation()?.let { occupation -> AdvancedSummaryLine(label = "Occupation", value = occupation) }
-            save.characterNames().takeIf { it.isNotBlank() }?.let { names ->
+            remember(save) { save.occupation() }?.let { occupation ->
+                AdvancedSummaryLine(label = "Occupation", value = occupation)
+            }
+            remember(save) { save.characterNames() }.takeIf { it.isNotBlank() }?.let { names ->
                 AdvancedSummaryLine(label = "Names", value = names, maxLines = 2)
             }
         }
@@ -167,7 +170,7 @@ private fun AdvancedFieldList(
         verticalArrangement = Arrangement.spacedBy(14.dp),
         modifier = modifier,
     ) {
-        items(fields, key = { field -> field.id }) { field ->
+        items(fields, key = { field -> field.id }, contentType = { SaveEditableField::class }) { field ->
             AdvancedFieldRow(
                 field = field,
                 isRecent = field.id in recentFieldIds,

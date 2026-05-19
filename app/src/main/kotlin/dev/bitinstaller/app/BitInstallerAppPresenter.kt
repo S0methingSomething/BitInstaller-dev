@@ -1,6 +1,8 @@
 package dev.bitinstaller.app
 
 import android.app.Application
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -66,31 +68,32 @@ internal class BitInstallerAppPresenter(
         appState.patchPresences = manifestStore.recoverPresences(installed)
     }
 
-    fun buildHomeUiState(): HomeUiState {
-        val snapshot = appState.snapshot
-        val isReady = snapshot.status == ShizukuAccessStatus.READY
+    val homeUiState: State<HomeUiState> =
+        derivedStateOf {
+            val snapshot = appState.snapshot
+            val isReady = snapshot.status == ShizukuAccessStatus.READY
 
-        return HomeUiState(
-            title = "BitInstaller",
-            summary = "MonetizationVars editor",
-            backendStatus =
-                when (snapshot.status) {
-                    ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
-                    ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
-                    ShizukuAccessStatus.READY -> BackendStatus.Ready
-                },
-            patchTargets =
-                ALL_TARGETS
-                    .map { target ->
-                        val info = appInfoMap[target.packageName]
-                        buildTargetUiState(target, info, isReady)
-                    }.sortedWith(
-                        compareByDescending<PatchTargetUiState> { it.isInstalled }.thenBy { it.name },
-                    ),
-            selectedDestination = appState.selectedDestination,
-            saveEditor = buildSaveEditorUiState(isReady),
-        )
-    }
+            HomeUiState(
+                title = "BitInstaller",
+                summary = "MonetizationVars editor",
+                backendStatus =
+                    when (snapshot.status) {
+                        ShizukuAccessStatus.UNAVAILABLE -> BackendStatus.ShizukuUnavailable
+                        ShizukuAccessStatus.PERMISSION_REQUIRED -> BackendStatus.PermissionRequired
+                        ShizukuAccessStatus.READY -> BackendStatus.Ready
+                    },
+                patchTargets =
+                    ALL_TARGETS
+                        .map { target ->
+                            val info = appInfoMap[target.packageName]
+                            buildTargetUiState(target, info, isReady)
+                        }.sortedWith(
+                            compareByDescending<PatchTargetUiState> { it.isInstalled }.thenBy { it.name },
+                        ),
+                selectedDestination = appState.selectedDestination,
+                saveEditor = buildSaveEditorUiState(isReady),
+            )
+        }
 
     private fun buildSaveEditorUiState(isReady: Boolean): SaveEditorUiState =
         ALL_TARGETS

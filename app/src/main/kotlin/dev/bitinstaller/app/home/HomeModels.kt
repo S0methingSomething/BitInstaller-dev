@@ -1,6 +1,7 @@
 package dev.bitinstaller.app.home
 
 import android.graphics.drawable.Drawable
+import androidx.compose.runtime.Stable
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 
 enum class BitInstallerDestination(
@@ -34,6 +35,7 @@ internal const val PATCH_PRESENCE_PATCHED_LABEL: String = "Patched"
 internal const val PATCH_PRESENCE_NOT_PATCHED_LABEL: String = "No patch"
 
 /** Icon representation for a target app — real drawable or fallback monogram. */
+@Stable
 class TargetIcon(
     val monogram: String,
     val drawable: Drawable? = null,
@@ -64,6 +66,7 @@ data class TargetPatchState(
  * [Drawable] with no value-equality — including it in generated
  * equals/hashCode would break Compose recomposition skipping and list diffing.
  */
+@Stable
 class PatchTargetUiState(
     val name: String,
     val packageName: String,
@@ -110,11 +113,13 @@ class PatchTargetUiState(
     }
 }
 
+@Stable
 data class SaveEditorUiState(
     val targets: List<SaveTargetUiState>,
     val selectedTarget: SaveTargetUiState?,
 )
 
+@Stable
 data class SaveTargetUiState(
     val name: String,
     val packageName: String,
@@ -132,6 +137,7 @@ data class SaveTargetUiState(
     val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
 )
 
+@Stable
 data class HomeUiState(
     val title: String,
     val summary: String,

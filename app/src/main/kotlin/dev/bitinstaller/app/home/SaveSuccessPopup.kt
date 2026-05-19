@@ -5,7 +5,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.delay
+
+private const val AUTO_DISMISS_DELAY_MS = 2000L
 
 internal data class SaveSuccessPopup(
     val path: String,
@@ -20,6 +24,10 @@ internal fun SaveEditorSuccessPopup(
     onDismiss: (SaveSuccessPopup) -> Unit,
 ) {
     val popup = selectedTarget?.saveSuccessPopup(dismissedTokens = dismissedTokens) ?: return
+    LaunchedEffect(popup) {
+        delay(AUTO_DISMISS_DELAY_MS)
+        onDismiss(popup)
+    }
     AlertDialog(
         onDismissRequest = { onDismiss(popup) },
         title = { Text(text = "Save updated") },
