@@ -28,7 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowSizeClass
 
 private const val OVERLAY_ENTER_DURATION_MS = 250
 private const val OVERLAY_EXIT_DURATION_MS = 200
@@ -131,7 +134,16 @@ private fun HomeContent(
         state.selectedDestination == BitInstallerDestination.SaveEditor &&
             state.saveEditor.selectedTarget != null
 
+    val adaptiveInfo = currentWindowAdaptiveInfo()
+    val navigationType =
+        if (!adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)) {
+            NavigationSuiteType.NavigationBar
+        } else {
+            NavigationSuiteType.NavigationRail
+        }
+
     NavigationSuiteScaffold(
+        layoutType = navigationType,
         navigationSuiteItems = {
             item(
                 selected = state.selectedDestination == BitInstallerDestination.MonetizationVars,

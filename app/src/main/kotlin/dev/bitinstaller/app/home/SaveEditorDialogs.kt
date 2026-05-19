@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,7 +27,7 @@ internal fun SaveFieldEditDialog(
     onDismissRequest: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var value by remember(draft.field.id) { mutableStateOf(draft.field.value) }
+    var value by rememberSaveable(draft.field.id) { mutableStateOf(draft.field.value) }
     val validationError = remember(value, draft.field.valueKind) { draft.field.valueKind.validateEditInput(value) }
     Dialog(
         onDismissRequest = onDismissRequest,
@@ -69,9 +70,9 @@ internal fun SaveAdvancedFieldsDialog(
     onDismissRequest: () -> Unit,
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
-    var query by remember(save.path) { mutableStateOf("") }
-    var filter by remember(save.path) { mutableStateOf(AdvancedFieldFilter.ALL) }
-    var sort by remember(save.path) { mutableStateOf(AdvancedFieldSort.RECENT_FIRST) }
+    var query by rememberSaveable(save.path) { mutableStateOf("") }
+    var filter by rememberSaveable(save.path) { mutableStateOf(AdvancedFieldFilter.ALL) }
+    var sort by rememberSaveable(save.path) { mutableStateOf(AdvancedFieldSort.RECENT_FIRST) }
     val filtered =
         remember(query, filter, sort, recentFieldIds, save.advancedFields) {
             save.advancedFields.filteredAndSorted(

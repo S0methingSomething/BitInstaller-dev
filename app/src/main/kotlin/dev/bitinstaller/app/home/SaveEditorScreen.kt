@@ -25,14 +25,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import androidx.core.graphics.drawable.toBitmap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
@@ -52,7 +55,7 @@ internal fun SaveEditorSection(
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
     var revertSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     val selectedTarget = state.selectedTarget
-    var selectedSavePath by remember(selectedTarget?.packageName) { mutableStateOf<String?>(null) }
+    var selectedSavePath by rememberSaveable(selectedTarget?.packageName) { mutableStateOf<String?>(null) }
     var dismissedSuccessTokens by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     val selectedSave = selectedTarget?.saves?.firstOrNull { save -> save.path == selectedSavePath }
     val modalState = SaveEditorModalState(selectedTarget, selectedSavePath, advancedSave, editDraft, revertSave)
@@ -361,8 +364,12 @@ private fun SaveAppGlyph(
     name: String,
 ) {
     if (icon.drawable != null) {
+        val painter =
+            remember(icon.drawable) {
+                BitmapPainter(icon.drawable.toBitmap().asImageBitmap())
+            }
         Image(
-            painter = rememberDrawablePainter(drawable = icon.drawable),
+            painter = painter,
             contentDescription = name,
             modifier =
                 Modifier

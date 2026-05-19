@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -63,7 +64,7 @@ fun PatchEditorScene(
     var rawJson by remember(target.packageName, config.initialData) {
         mutableStateOf(MonetizationCodec.toPrettyJson(currentData))
     }
-    var editorMode by remember { mutableStateOf(EditorMode.SIMPLIFIED) }
+    var editorMode by rememberSaveable { mutableStateOf(EditorMode.SIMPLIFIED) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSaving by remember { mutableStateOf(false) }
