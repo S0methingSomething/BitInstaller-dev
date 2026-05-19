@@ -1,9 +1,10 @@
 package dev.bitinstaller.app
 
-import android.content.Context
+import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
 import dev.bitinstaller.app.home.BackendStatus
 import dev.bitinstaller.app.home.HomeUiState
 import dev.bitinstaller.app.home.PATCH_PRESENCE_NOT_PATCHED_LABEL
@@ -29,7 +30,9 @@ import dev.bitinstaller.app.targets.resolveAllAppInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal class BitInstallerAppPresenter {
+internal class BitInstallerAppPresenter(
+    application: Application,
+) : AndroidViewModel(application) {
     val repository = ShizukuMonetizationRepository()
     val manifestStore = PatchManifestStore(repository)
     val operationLock = OperationLock()
@@ -40,7 +43,8 @@ internal class BitInstallerAppPresenter {
 
     private var appInfoMap by mutableStateOf(emptyMap<String, InstalledAppInfo>())
 
-    suspend fun initialize(context: Context) {
+    suspend fun initialize() {
+        val context = getApplication<Application>()
         appInfoMap = withContext(Dispatchers.IO) { resolveAllAppInfo(context) }
         appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
         recoverPresencesIfReady()

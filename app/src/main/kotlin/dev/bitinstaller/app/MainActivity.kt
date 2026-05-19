@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
 import dev.bitinstaller.app.save.SaveScanCache
@@ -46,17 +47,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun BitInstallerApp() {
     val context = LocalContext.current
-    val presenter = remember { BitInstallerAppPresenter() }
+    val presenter: BitInstallerAppPresenter = viewModel()
     val saveCache = remember(context) { SaveScanCache(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { presenter.initialize(context) }
-
-    // Recover patch presences when Shizuku transitions to READY (e.g. after
-    // permission grant), which the one-shot LaunchedEffect(Unit) may miss.
-    LaunchedEffect(presenter.appState.snapshot.status) {
-        presenter.recoverPresencesIfReady()
-    }
+    LaunchedEffect(Unit) { presenter.initialize() }
 
     BindShizukuListeners(
         repository = presenter.repository,

@@ -12,8 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -22,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -89,6 +95,7 @@ private fun BoxScope.DashboardActionButton(
             shape = DashboardActionShape,
             modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
         ) {
+            Icon(imageVector = card.icon, contentDescription = card.action)
             Text(text = card.action)
         }
     } else {
@@ -102,6 +109,7 @@ private fun BoxScope.DashboardActionButton(
             shape = DashboardActionShape,
             modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
         ) {
+            Icon(imageVector = card.icon, contentDescription = card.action)
             Text(text = card.action)
         }
     }
@@ -165,6 +173,7 @@ private data class DashboardCardState(
     val supporting: String,
     val action: String,
     val accent: Color,
+    val icon: ImageVector,
     val isQuietAction: Boolean = false,
 )
 
@@ -179,6 +188,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Not connected",
                 action = "Open Shizuku",
                 accent = MaterialTheme.colorScheme.secondary,
+                icon = Icons.Outlined.Key,
             )
         }
 
@@ -190,6 +200,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Needs approval",
                 action = "Allow",
                 accent = MaterialTheme.colorScheme.primary,
+                icon = Icons.Outlined.Shield,
             )
         }
 
@@ -201,6 +212,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Connected",
                 action = "Manage",
                 accent = MaterialTheme.colorScheme.primary,
+                icon = Icons.Outlined.Settings,
                 isQuietAction = true,
             )
         }
