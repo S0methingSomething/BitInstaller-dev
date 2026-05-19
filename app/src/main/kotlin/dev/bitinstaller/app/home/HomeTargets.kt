@@ -9,12 +9,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,8 +37,6 @@ import androidx.core.graphics.drawable.toBitmap
 
 private val TargetCardShape = RoundedCornerShape(12.dp)
 private val TargetButtonShape = RoundedCornerShape(6.dp)
-private val TargetButtonInset = 112.dp
-private val TargetMinHeight = 132.dp
 private const val INSTALLED_TARGET_CARD_ALPHA: Float = 0.02f
 private const val MISSING_TARGET_CARD_ALPHA: Float = 0.012f
 
@@ -48,7 +47,10 @@ internal fun PatchTargetsSection(
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
     ) {
         Text(
             text = "Games",
@@ -70,7 +72,6 @@ private fun PatchTargetCard(
 ) {
     val accent = targetAccentColor(target.patchState.supportState)
     val cardAlpha = if (target.isInstalled) INSTALLED_TARGET_CARD_ALPHA else MISSING_TARGET_CARD_ALPHA
-    val actionInset = if (target.isInstalled) TargetButtonInset else 0.dp
 
     Surface(
         shape = TargetCardShape,
@@ -79,20 +80,16 @@ private fun PatchTargetCard(
         shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Box(
+        Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(min = TargetMinHeight)
                     .padding(horizontal = 18.dp, vertical = 16.dp),
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.Top,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(end = actionInset),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 AppGlyph(icon = target.icon, name = target.name, accent = accent)
                 TargetTextBlock(target = target)
@@ -110,7 +107,7 @@ private fun PatchTargetCard(
                             disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                         ),
                     shape = TargetButtonShape,
-                    modifier = Modifier.align(Alignment.BottomEnd),
+                    modifier = Modifier.align(Alignment.End),
                 ) {
                     if (!target.patchState.actionEnabled && target.patchState.actionLabel == "Opening") {
                         CircularProgressIndicator(

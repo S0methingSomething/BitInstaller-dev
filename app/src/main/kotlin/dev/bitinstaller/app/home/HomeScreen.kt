@@ -1,6 +1,6 @@
 package dev.bitinstaller.app.home
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -54,7 +54,8 @@ fun HomeRoute(
     liveDictionaryPrompt: LiveDictionaryPromptUiState? = null,
     callbacks: HomeRouteCallbacks = HomeRouteCallbacks(),
 ) {
-    BackHandler(enabled = activeSession != null) {
+    PredictiveBackHandler(enabled = activeSession != null) { progress ->
+        progress.collect { /* allow system animation */ }
         callbacks.onDismissSession()
     }
 

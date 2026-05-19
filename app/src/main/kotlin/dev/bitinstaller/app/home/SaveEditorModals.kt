@@ -1,6 +1,6 @@
 package dev.bitinstaller.app.home
 
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.runtime.Composable
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
@@ -29,7 +29,8 @@ internal fun SaveEditorBackHandler(
     state: SaveEditorModalState,
     actions: SaveEditorModalActions,
 ) {
-    BackHandler(enabled = state.hasVisibleModalOrDetail()) {
+    PredictiveBackHandler(enabled = state.hasVisibleModalOrDetail()) { progress ->
+        progress.collect { /* allow system animation */ }
         when {
             state.editDraft != null -> actions.closeEdit()
             state.advancedSave != null -> actions.closeAdvanced()

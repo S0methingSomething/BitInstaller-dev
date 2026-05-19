@@ -3,8 +3,8 @@ package dev.bitinstaller.app.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -35,8 +35,6 @@ import androidx.compose.ui.unit.sp
 
 private val DashboardShape = RoundedCornerShape(12.dp)
 private val DashboardActionShape = RoundedCornerShape(6.dp)
-private val DashboardButtonInset = 124.dp
-private val DashboardMinHeight = 154.dp
 
 @Composable
 internal fun DashboardSection(
@@ -61,20 +59,16 @@ private fun DashboardCardBody(
     card: DashboardCardState,
     onActionClick: () -> Unit,
 ) {
-    Box(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = DashboardMinHeight)
                 .padding(horizontal = 18.dp, vertical = 18.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.Top,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(end = DashboardButtonInset),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             ShizukuMark(accent = card.accent)
             DashboardTextBlock(card = card)
@@ -85,7 +79,7 @@ private fun DashboardCardBody(
 }
 
 @Composable
-private fun BoxScope.DashboardActionButton(
+private fun ColumnScope.DashboardActionButton(
     card: DashboardCardState,
     onActionClick: () -> Unit,
 ) {
@@ -93,7 +87,7 @@ private fun BoxScope.DashboardActionButton(
         OutlinedButton(
             onClick = onActionClick,
             shape = DashboardActionShape,
-            modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
+            modifier = Modifier.align(Alignment.End).heightIn(min = 44.dp),
         ) {
             Icon(imageVector = card.icon, contentDescription = card.action)
             Text(text = card.action)
@@ -107,7 +101,7 @@ private fun BoxScope.DashboardActionButton(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
             shape = DashboardActionShape,
-            modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
+            modifier = Modifier.align(Alignment.End).heightIn(min = 44.dp),
         ) {
             Icon(imageVector = card.icon, contentDescription = card.action)
             Text(text = card.action)
