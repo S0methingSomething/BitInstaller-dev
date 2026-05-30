@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -154,7 +153,6 @@ private fun PatchEditorContent(
         Surface(
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 0.dp,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.11f)),
             color = MaterialTheme.colorScheme.surface,
             modifier =
                 Modifier

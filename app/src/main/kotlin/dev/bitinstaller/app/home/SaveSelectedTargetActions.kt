@@ -1,6 +1,7 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
@@ -19,6 +20,7 @@ internal fun SaveSelectedTargetContent(
     selectedSave: BitLifeSaveSummary?,
     onSaveBackClick: () -> Unit,
     actions: SaveSelectedTargetActions,
+    modifier: Modifier = Modifier,
 ) {
     if (selectedSave == null) {
         SaveTargetDetail(
@@ -29,6 +31,7 @@ internal fun SaveSelectedTargetContent(
                     onSaveOpen = actions.onSaveOpen,
                 ),
             onBackClick = actions.onChangeApp,
+            modifier = modifier,
         )
         return
     }
@@ -43,5 +46,6 @@ internal fun SaveSelectedTargetContent(
                 onAdvancedClick = { actions.onAdvancedClick(selectedSave) },
                 onSaveRevert = { actions.onSaveRevert(selectedSave) },
             ),
+        modifier = modifier,
     )
 }

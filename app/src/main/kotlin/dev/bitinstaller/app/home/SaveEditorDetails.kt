@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,8 +27,6 @@ private const val BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB
 private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 4
 private const val MAX_CHARACTER_PREVIEW_COUNT = 4
 private const val MAX_CHARACTER_FIELD_COUNT = 5
-private const val READ_ONLY_VALUE_BORDER_ALPHA = 0.16f
-private const val EDITABLE_VALUE_BORDER_ALPHA = 0.30f
 private const val SAVE_VALUE_LABEL_WEIGHT = 0.38f
 private const val SAVE_VALUE_TEXT_WEIGHT = 0.62f
 private val SaveValueRowShape = RoundedCornerShape(12.dp)
@@ -120,7 +117,6 @@ private fun SaveCharacterCompactCard(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)),
         shape = SaveValueRowShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -152,11 +148,9 @@ private fun SaveValueRowView(
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
     val field = row.field
-    val borderAlpha = if (field == null) READ_ONLY_VALUE_BORDER_ALPHA else EDITABLE_VALUE_BORDER_ALPHA
     if (field == null) {
         Surface(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha)),
             shape = SaveValueRowShape,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -168,7 +162,6 @@ private fun SaveValueRowView(
     Surface(
         onClick = { onFieldClick(field) },
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = borderAlpha)),
         shape = SaveValueRowShape,
         modifier = Modifier.fillMaxWidth(),
     ) {

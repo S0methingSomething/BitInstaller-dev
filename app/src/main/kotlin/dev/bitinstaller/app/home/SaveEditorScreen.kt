@@ -1,21 +1,23 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,17 +43,12 @@ import androidx.core.graphics.drawable.toBitmap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
-private val SaveEditorShape = RoundedCornerShape(12.dp)
-private val SaveEditorHeroShape = RoundedCornerShape(22.dp)
 private val SaveEditorButtonShape = RoundedCornerShape(6.dp)
 
 @Composable
 internal fun SaveEditorSection(
     state: SaveEditorUiState,
-    onTargetClick: (SaveTargetUiState) -> Unit,
-    onFieldEdit: (SaveTargetUiState, BitLifeSaveSummary, SaveEditableField, String) -> Unit,
-    onSaveRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit,
-    onBackClick: () -> Unit,
+    actions: SaveEditorSectionActions,
 ) {
     var advancedSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
@@ -73,15 +70,15 @@ internal fun SaveEditorSection(
                 }
             },
             submitEdit = { draft, value ->
-                onFieldEdit(draft.target, draft.save, draft.field, value)
+                actions.onFieldEdit(draft.target, draft.save, draft.field, value)
                 editDraft = null
             },
             confirmRevert = { target, save ->
-                onSaveRevert(target, save)
+                actions.onSaveRevert(target, save)
                 revertSave = null
             },
             backToSaves = { selectedSavePath = null },
-            backToTargets = onBackClick,
+            backToTargets = actions.onBackClick,
         )
 
     SaveEditorBackHandler(state = modalState, actions = modalActions)
@@ -90,46 +87,41 @@ internal fun SaveEditorSection(
         dismissedSuccessTokens = dismissedSuccessTokens + (popup.path to popup.token)
     }
 
-    if (selectedTarget != null) {
-        SaveSelectedTargetContent(
-            target = selectedTarget,
-            selectedSave = selectedSave,
-            onSaveBackClick = { selectedSavePath = null },
-            actions =
-                SaveSelectedTargetActions(
-                    onTargetClick = onTargetClick,
-                    onSaveOpen = { save -> selectedSavePath = save.path },
-                    onFieldClick = { save, field ->
-                        editDraft = SaveFieldEditDraft(target = selectedTarget, save = save, field = field)
-                    },
-                    onAdvancedClick = { save -> advancedSave = save },
-                    onSaveRevert = { save -> revertSave = save },
-                    onChangeApp = onBackClick,
-                ),
-        )
-        return
-    }
-
-    SaveEditorTargetList(targets = state.targets, onTargetClick = onTargetClick)
+    SaveEditorContent(
+        state = state,
+        selectedSave = selectedSave,
+        actions = actions,
+        callbacks =
+            SaveEditorContentCallbacks(
+                onSaveOpen = { save -> selectedSavePath = save.path },
+                onSaveBackClick = { selectedSavePath = null },
+                onFieldClick = { save, field ->
+                    selectedTarget?.let { target ->
+                        editDraft = SaveFieldEditDraft(target = target, save = save, field = field)
+                    }
+                },
+                onAdvancedClick = { save -> advancedSave = save },
+                onSaveRevert = { save -> revertSave = save },
+            ),
+    )
 }
 
 @Composable
-private fun SaveEditorTargetList(
+internal fun SaveEditorTargetList(
     targets: List<SaveTargetUiState>,
     onTargetClick: (SaveTargetUiState) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Column(
+    LazyColumn(
         verticalArrangement = Arrangement.spacedBy(18.dp),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        modifier = modifier.fillMaxWidth(),
     ) {
-        SaveEditorIntro()
+        item(contentType = "intro") { SaveEditorIntro() }
         if (targets.isEmpty()) {
-            EmptySaveTargetsCard()
+            item(contentType = "empty") { EmptySaveTargetsCard() }
         } else {
-            targets.forEach { target ->
+            items(targets, key = { target -> target.packageName }, contentType = { "target" }) { target ->
                 SaveTargetCard(
                     target = target,
                     showSaves = false,
@@ -145,13 +137,11 @@ internal fun SaveTargetDetail(
     target: SaveTargetUiState,
     actions: SaveTargetCardActions,
     onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(18.dp),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+        modifier = modifier.fillMaxSize(),
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -174,7 +164,11 @@ internal fun SaveTargetDetail(
                 Text(text = "Change app")
             }
         }
-        SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
+        SaveEditorPanel(containerAlpha = 0.04f, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+                SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
+            }
+        }
         if (target.saves == null) {
             SaveScanPrompt()
         } else {
@@ -194,12 +188,7 @@ internal data class SaveTargetCardActions(
 
 @Composable
 private fun SaveEditorIntro() {
-    Surface(
-        shape = SaveEditorShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    SaveEditorPanel(shape = SaveEditorCardShape, containerAlpha = 0.04f, modifier = Modifier.fillMaxWidth()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(horizontal = 22.dp, vertical = 20.dp),
@@ -222,12 +211,7 @@ private fun SaveEditorIntro() {
 
 @Composable
 private fun EmptySaveTargetsCard() {
-    Surface(
-        shape = SaveEditorShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.22f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    SaveEditorPanel(shape = SaveEditorCardShape, containerAlpha = 0.035f, modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "No installed BitLife apps found on this device.",
             style = MaterialTheme.typography.bodyMedium,
@@ -244,15 +228,9 @@ private fun SaveTargetCard(
     isFocused: Boolean = false,
     actions: SaveTargetCardActions,
 ) {
-    Surface(
-        shape = if (isFocused) SaveEditorHeroShape else SaveEditorShape,
-        color =
-            if (isFocused) {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f)
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f)
-            },
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = if (isFocused) 0.34f else 0.24f)),
+    SaveEditorPanel(
+        shape = if (isFocused) SaveEditorPanelShape else SaveEditorCardShape,
+        containerAlpha = if (isFocused) 0.055f else 0.04f,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -315,7 +293,7 @@ private fun SaveTargetActionButton(
                 disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             ),
         shape = SaveEditorButtonShape,
-        modifier = modifier,
+        modifier = modifier.heightIn(min = 48.dp),
     ) {
         if (target.isLoading) {
             CircularProgressIndicator(

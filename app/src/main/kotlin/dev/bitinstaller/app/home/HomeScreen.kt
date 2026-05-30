@@ -223,10 +223,13 @@ private fun DestinationPane(
                 BitInstallerDestination.SaveEditor -> {
                     SaveEditorSection(
                         state = state.saveEditor,
-                        onTargetClick = callbacks.onSaveTargetClick,
-                        onFieldEdit = callbacks.onSaveFieldEdit,
-                        onSaveRevert = callbacks.onSaveRevert,
-                        onBackClick = callbacks.onSaveEditorBack,
+                        actions =
+                            SaveEditorSectionActions(
+                                onTargetClick = callbacks.onSaveTargetClick,
+                                onFieldEdit = callbacks.onSaveFieldEdit,
+                                onSaveRevert = callbacks.onSaveRevert,
+                                onBackClick = callbacks.onSaveEditorBack,
+                            ),
                     )
                 }
             }

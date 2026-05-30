@@ -3,18 +3,20 @@
 package dev.bitinstaller.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.DeviceFontFamilyName
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val DarkColorScheme =
@@ -61,20 +63,19 @@ private val LightColorScheme =
 
 private val BaseTypography = Typography()
 
-private val BitInstallerShapes =
-    Shapes(
-        extraSmall = RoundedCornerShape(2.dp),
-        small = RoundedCornerShape(4.dp),
-        medium = RoundedCornerShape(6.dp),
-        large = RoundedCornerShape(8.dp),
-        extraLarge = RoundedCornerShape(12.dp),
+private val VariableSansSerif =
+    FontFamily(
+        Font(
+            DeviceFontFamilyName("sans-serif"),
+            variationSettings = FontVariation.Settings(FontVariation.weight(FontWeight.Normal.weight)),
+        ),
     )
 
 private val BitInstallerTypography =
     Typography(
         displayLarge =
             BaseTypography.displayLarge.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Medium,
                 fontSize = 48.sp,
                 lineHeight = 48.sp,
@@ -82,47 +83,47 @@ private val BitInstallerTypography =
             ),
         titleLarge =
             BaseTypography.titleLarge.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Normal,
                 lineHeight = 28.sp,
                 letterSpacing = (-0.3).sp,
             ),
         titleMedium =
             BaseTypography.titleMedium.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = (-0.2).sp,
             ),
         titleSmall =
             BaseTypography.titleSmall.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Medium,
                 lineHeight = 22.sp,
             ),
         bodyLarge =
             BaseTypography.bodyLarge.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 lineHeight = 25.sp,
             ),
         bodyMedium =
             BaseTypography.bodyMedium.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 lineHeight = 22.sp,
             ),
         bodySmall =
             BaseTypography.bodySmall.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 lineHeight = 19.sp,
             ),
         labelLarge =
             BaseTypography.labelLarge.copy(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.sp,
             ),
         labelMedium =
             TextStyle(
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = VariableSansSerif,
                 fontWeight = FontWeight.Medium,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
@@ -130,6 +131,7 @@ private val BitInstallerTypography =
             ),
     )
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun BitInstallerTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -137,10 +139,10 @@ fun BitInstallerTheme(
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = colorScheme,
-        shapes = BitInstallerShapes,
         typography = BitInstallerTypography,
+        motionScheme = MotionScheme.expressive(),
         content = content,
     )
 }

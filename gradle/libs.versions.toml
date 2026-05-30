@@ -7,6 +7,7 @@ kotlin = "2.3.21"
 kotlinxSerialization = "1.8.1"
 activityCompose = "1.13.0"
 composeBom = "2026.04.01"
+composeExpressiveMaterial3 = "1.5.0-alpha20"
 detekt = "1.23.8"
 spotless = "8.4.0"
 versionsPlugin = "0.54.0"
@@ -39,7 +40,7 @@ androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
-androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "composeExpressiveMaterial3" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }

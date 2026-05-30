@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,7 +109,6 @@ private fun AdvancedFieldsTopBar(state: SaveAdvancedFieldsContentState) {
 private fun AdvancedSaveSummary(save: BitLifeSaveSummary) {
     Surface(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(18.dp)) {
@@ -189,7 +187,6 @@ private fun AdvancedFieldRow(
     Surface(
         onClick = onClick,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)),
         shape = AdvancedFieldShape,
         modifier = Modifier.fillMaxWidth(),
     ) {

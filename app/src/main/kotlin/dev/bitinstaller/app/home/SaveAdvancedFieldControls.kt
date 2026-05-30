@@ -1,16 +1,14 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -102,10 +100,8 @@ private fun AdvancedFieldControlButton(
     label: String,
     onClick: () -> Unit,
 ) {
-    OutlinedButton(
+    FilledTonalButton(
         onClick = onClick,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.34f)),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(text = label, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -35,7 +34,6 @@ internal fun SaveFieldEditDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
             modifier = Modifier.fillMaxSize(),
         ) {
             SaveFieldEditContent(
@@ -88,7 +86,6 @@ internal fun SaveAdvancedFieldsDialog(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.background,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
             modifier = Modifier.fillMaxSize(),
         ) {
             SaveAdvancedFieldsContent(

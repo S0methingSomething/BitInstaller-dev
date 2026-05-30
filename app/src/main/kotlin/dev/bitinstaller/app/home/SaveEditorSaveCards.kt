@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,8 +55,7 @@ private fun SaveSlotSummaryCard(
     Surface(
         onClick = onOpen,
         shape = SaveCardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f)),
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
@@ -105,13 +103,12 @@ private fun SaveSlotSummaryHeader(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        OutlinedButton(
+        FilledTonalButton(
             enabled = !isWorking,
             onClick = {},
             shape = RoundedCornerShape(999.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f)),
             colors =
-                ButtonDefaults.outlinedButtonColors(
+                ButtonDefaults.filledTonalButtonColors(
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
@@ -148,7 +145,6 @@ private fun SaveSlotMetric(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.40f)),
         shape = SaveMetricShape,
         modifier = modifier,
     ) {
@@ -185,7 +181,6 @@ internal fun SaveSlotStatus(
     val color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     Surface(
         color = color.copy(alpha = if (isError) 0.12f else 0.06f),
-        border = BorderStroke(1.dp, color.copy(alpha = if (isError) 0.40f else 0.30f)),
         shape = SaveMetricShape,
         modifier = modifier.fillMaxWidth(),
     ) {

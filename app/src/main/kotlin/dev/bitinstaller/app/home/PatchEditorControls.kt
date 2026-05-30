@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,7 +61,6 @@ internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
             onClick = onUnlockAll,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
             contentColor = MaterialTheme.colorScheme.onSurface,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
             shadowElevation = 0.dp,
             tonalElevation = 0.dp,
             shape = EditorControlShape,
@@ -96,28 +94,6 @@ internal fun PatchEditorFooter(
     onSave: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = "Close")
-            }
-            OutlinedButton(
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
-                colors =
-                    ButtonDefaults.outlinedButtonColors(
-                        containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                onClick = onExportRawJson,
-                shape = EditorControlShape,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(text = "Export JSON")
-            }
-        }
         Button(
             enabled = !isSaving,
             onClick = onSave,
@@ -137,6 +113,16 @@ internal fun PatchEditorFooter(
             } else {
                 Text(text = "Save encrypted file")
             }
+        }
+        FilledTonalButton(
+            onClick = onExportRawJson,
+            shape = EditorControlShape,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+        ) {
+            Text(text = "Export JSON")
+        }
+        TextButton(onClick = onDismissRequest, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
+            Text(text = "Close")
         }
     }
 }
@@ -162,13 +148,12 @@ private fun EditorModeButton(
             Text(text = label)
         }
     } else {
-        OutlinedButton(
+        FilledTonalButton(
             colors =
-                ButtonDefaults.outlinedButtonColors(
+                ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
             onClick = onClick,
             shape = EditorControlShape,
             modifier = modifier.heightIn(min = 44.dp),

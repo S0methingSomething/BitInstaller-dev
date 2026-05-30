@@ -16,8 +16,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "BitInstaller"
 
+val useLocalNrbf4j = providers.gradleProperty("bitinstaller.useLocalNrbf4j").orNull == "true"
 val localNrbf4j = file("../Nrbf4j")
-if (localNrbf4j.isDirectory) {
+if (useLocalNrbf4j && localNrbf4j.isDirectory) {
     includeBuild(localNrbf4j) {
         dependencySubstitution {
             substitute(module("io.github.s0methingsomething:nrbf4j")).using(project(":lib"))

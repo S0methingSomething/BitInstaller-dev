@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -107,7 +106,6 @@ private fun SaveFieldEditTip(draft: SaveFieldEditDraft) {
     val title = explanation?.category ?: "Value type: ${draft.field.valueKind.inputLabel()}"
     Surface(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.30f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(18.dp)) {
