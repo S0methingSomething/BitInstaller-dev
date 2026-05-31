@@ -1,50 +1,45 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowSizeClass
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 
-private const val OVERLAY_ENTER_DURATION_MS = 250
-private const val OVERLAY_EXIT_DURATION_MS = 200
-private const val DESTINATION_CROSSFADE_DURATION_MS = 300
-private const val SLIDE_IN_OFFSET_DIVISOR = 4
-private const val SLIDE_OUT_OFFSET_DIVISOR = 2
+private data class HomeNavigationState(
+    val navController: NavHostController,
+    val selectedDestination: BitInstallerDestination,
+)
 
 @Composable
 fun HomeRoute(
@@ -60,41 +55,8 @@ fun HomeRoute(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        HomeContent(state = state, callbacks = callbacks)
-
-        AnimatedVisibility(
-            visible = activeSession != null,
-            enter =
-                fadeIn(animationSpec = tween(durationMillis = OVERLAY_ENTER_DURATION_MS)) +
-                    slideInVertically(
-                        animationSpec = tween(durationMillis = OVERLAY_ENTER_DURATION_MS),
-                    ) { it / SLIDE_IN_OFFSET_DIVISOR },
-            exit =
-                fadeOut(animationSpec = tween(durationMillis = OVERLAY_EXIT_DURATION_MS)) +
-                    slideOutVertically(
-                        animationSpec = tween(durationMillis = OVERLAY_EXIT_DURATION_MS),
-                    ) { it / SLIDE_OUT_OFFSET_DIVISOR },
-        ) {
-            activeSession?.let { session ->
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.52f)),
-                ) {
-                    PatchEditorScene(
-                        target = session.target,
-                        contentAlpha = 1f,
-                        onDismissRequest = callbacks.onDismissSession,
-                        config =
-                            PatchEditorSceneConfig(
-                                initialData = session.initialData,
-                                saveData = { data -> callbacks.onSaveSession(session, data) },
-                            ),
-                    )
-                }
-            }
-        }
+        HomeBackground(activeSession = activeSession, state = state, callbacks = callbacks)
+        PatchEditorOverlay(activeSession = activeSession, callbacks = callbacks)
 
         liveDictionaryPrompt?.let { prompt ->
             LiveDictionaryPrompt(
@@ -125,9 +87,8 @@ private fun LiveDictionaryPrompt(
     )
 }
 
-@OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
-private fun HomeContent(
+internal fun HomeContent(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
 ) {
@@ -135,70 +96,81 @@ private fun HomeContent(
         state.selectedDestination == BitInstallerDestination.SaveEditor &&
             state.saveEditor.selectedTarget != null
 
-    val adaptiveInfo = currentWindowAdaptiveInfo()
-    val navigationType =
-        if (!adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)) {
-            NavigationSuiteType.NavigationBar
-        } else {
-            NavigationSuiteType.NavigationRail
-        }
+    val navigationState = rememberHomeNavigationState(state.selectedDestination)
 
-    NavigationSuiteScaffold(
-        layoutType = navigationType,
-        navigationSuiteItems = {
-            item(
-                selected = state.selectedDestination == BitInstallerDestination.MonetizationVars,
-                onClick = {
-                    callbacks.onDestinationSelected(BitInstallerDestination.MonetizationVars)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Tune,
-                        contentDescription = "MonetizationVars",
-                    )
-                },
-                label = { Text(text = "Patches") },
-            )
-            item(
-                selected = state.selectedDestination == BitInstallerDestination.SaveEditor,
-                onClick = {
-                    callbacks.onDestinationSelected(BitInstallerDestination.SaveEditor)
-                },
-                icon = {
-                    Icon(
-                        imageVector = Icons.Outlined.Edit,
-                        contentDescription = "Save Editor",
-                    )
-                },
-                label = { Text(text = "Saves") },
-            )
-        },
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        HomeAmbientGlow()
         DestinationPane(
+            navController = navigationState.navController,
             state = state,
             isFocusedSaveEditor = isFocusedSaveEditor,
             callbacks = callbacks,
+        )
+
+        HomeBottomNavigation(
+            selectedDestination = navigationState.selectedDestination,
+            onDestinationSelected = { destination ->
+                callbacks.onDestinationSelected(destination)
+                navigationState.navController.navigateToDestination(destination)
+            },
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
         )
     }
 }
 
 @Composable
+private fun rememberHomeNavigationState(selectedDestination: BitInstallerDestination): HomeNavigationState {
+    val navController = rememberNavController()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    LaunchedEffect(selectedDestination, currentRoute) {
+        val targetRoute = selectedDestination.route
+        if (currentRoute != null && currentRoute != targetRoute) {
+            navController.navigateToDestination(selectedDestination)
+        }
+    }
+
+    return HomeNavigationState(
+        navController = navController,
+        selectedDestination = currentRoute.toBitInstallerDestination() ?: selectedDestination,
+    )
+}
+
+private fun NavHostController.navigateToDestination(destination: BitInstallerDestination) {
+    navigate(destination.route) {
+        launchSingleTop = true
+        restoreState = true
+        popUpTo(BitInstallerDestination.MonetizationVars.route) {
+            saveState = true
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
 private fun DestinationPane(
+    navController: NavHostController,
     state: HomeUiState,
     isFocusedSaveEditor: Boolean,
     callbacks: HomeRouteCallbacks,
 ) {
+    val effectsDestinationSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+
     Column(
         modifier =
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(horizontal = 16.dp),
     ) {
         if (!isFocusedSaveEditor) {
-            HeroSection(state = state)
-            Spacer(modifier = Modifier.height(8.dp))
+            HomeHeader(state = state)
+            Spacer(modifier = Modifier.height(12.dp))
             DashboardSection(
                 status = state.backendStatus,
                 onActionClick = callbacks.onDashboardActionClick,
@@ -206,55 +178,66 @@ private fun DestinationPane(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Crossfade(
-            targetState = state.selectedDestination,
-            animationSpec = tween(durationMillis = DESTINATION_CROSSFADE_DURATION_MS),
-            label = "destination",
+        NavHost(
+            navController = navController,
+            startDestination = BitInstallerDestination.MonetizationVars.route,
             modifier = Modifier.weight(1f),
-        ) { destination ->
-            when (destination) {
-                BitInstallerDestination.MonetizationVars -> {
-                    PatchTargetsSection(
-                        targets = state.patchTargets,
-                        onPatchClick = callbacks.onPatchClick,
-                    )
-                }
+            enterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
+            exitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
+            popEnterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
+            popExitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
+        ) {
+            composable(BitInstallerDestination.MonetizationVars.route) {
+                PatchTargetsSection(
+                    targets = state.patchTargets,
+                    onPatchClick = callbacks.onPatchClick,
+                )
+            }
 
-                BitInstallerDestination.SaveEditor -> {
-                    SaveEditorSection(
-                        state = state.saveEditor,
-                        actions =
-                            SaveEditorSectionActions(
-                                onTargetClick = callbacks.onSaveTargetClick,
-                                onFieldEdit = callbacks.onSaveFieldEdit,
-                                onSaveRevert = callbacks.onSaveRevert,
-                                onBackClick = callbacks.onSaveEditorBack,
-                            ),
-                    )
-                }
+            composable(BitInstallerDestination.SaveEditor.route) {
+                SaveEditorSection(
+                    state = state.saveEditor,
+                    actions =
+                        SaveEditorSectionActions(
+                            onTargetClick = callbacks.onSaveTargetClick,
+                            onFieldEdit = callbacks.onSaveFieldEdit,
+                            onSaveRevert = callbacks.onSaveRevert,
+                            onBackClick = callbacks.onSaveEditorBack,
+                        ),
+                )
             }
         }
     }
 }
 
+private fun String?.toBitInstallerDestination(): BitInstallerDestination? =
+    BitInstallerDestination.entries.firstOrNull { destination -> destination.route == this }
+
 @Composable
-private fun HeroSection(state: HomeUiState) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+private fun HomeHeader(state: HomeUiState) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 18.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = state.title,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = state.summary,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Column {
+            Text(
+                text = state.title,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Start,
+            )
+            Text(
+                text = state.summary.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp,
+            )
+        }
+        HomeBeacon(modifier = Modifier.size(36.dp))
     }
 }

@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,7 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val EditorControlShape = RoundedCornerShape(6.dp)
+private const val EDITOR_SUBTLE_SURFACE_ALPHA = 0.05f
+private val EditorControlShape = RoundedCornerShape(16.dp)
 
 @Composable
 internal fun PatchEditorToolbar(
@@ -59,7 +61,7 @@ internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
         EditorSectionLabel(text = "Bulk patch")
         Surface(
             onClick = onUnlockAll,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = EDITOR_SUBTLE_SURFACE_ALPHA),
             contentColor = MaterialTheme.colorScheme.onSurface,
             shadowElevation = 0.dp,
             tonalElevation = 0.dp,
@@ -86,6 +88,7 @@ internal fun EditorContentLabel() {
     EditorSectionLabel(text = "Unlock flags")
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PatchEditorFooter(
     isSaving: Boolean,
@@ -109,7 +112,10 @@ internal fun PatchEditorFooter(
                     .heightIn(min = 58.dp),
         ) {
             if (isSaving) {
-                CircularProgressIndicator(modifier = Modifier.sizeIn(maxWidth = 18.dp, maxHeight = 18.dp))
+                LoadingIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
             } else {
                 Text(text = "Save encrypted file")
             }
@@ -151,7 +157,7 @@ private fun EditorModeButton(
         FilledTonalButton(
             colors =
                 ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
+                    containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = EDITOR_SUBTLE_SURFACE_ALPHA),
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             onClick = onClick,

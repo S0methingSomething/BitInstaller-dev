@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -35,6 +37,9 @@ import dev.bitinstaller.app.crypto.MonetizationData
 import kotlinx.coroutines.launch
 
 private const val EDITOR_CONTENT_RISE_DP: Float = 42f
+private const val PATCH_EDITOR_CONTAINER_COLOR_ARGB = 0xF5050505
+private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.85f
+private val PatchEditorShape = RoundedCornerShape(24.dp)
 
 data class PatchEditorSceneConfig(
     val initialData: MonetizationData = buildPreviewData(),
@@ -151,12 +156,13 @@ private fun PatchEditorContent(
                 .padding(horizontal = 20.dp, vertical = 18.dp),
     ) {
         Surface(
-            shape = RoundedCornerShape(12.dp),
+            shape = PatchEditorShape,
             tonalElevation = 0.dp,
-            color = MaterialTheme.colorScheme.surface,
+            color = Color(PATCH_EDITOR_CONTAINER_COLOR_ARGB),
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .fillMaxHeight(PATCH_EDITOR_HEIGHT_FRACTION)
                     .sizeIn(maxHeight = 760.dp)
                     .graphicsLayer {
                         alpha = chrome.contentAlpha
@@ -166,50 +172,68 @@ private fun PatchEditorContent(
             Column(
                 modifier =
                     Modifier
-                        .verticalScroll(rememberScrollState())
+                        .fillMaxSize()
                         .padding(horizontal = 18.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                PatchEditorToolbar(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
-                Spacer(modifier = Modifier.height(14.dp))
-                BulkPatchPanel(onUnlockAll = actions.onUnlockAll)
-                Spacer(modifier = Modifier.height(16.dp))
-                PatchEditorBody(uiState = uiState, actions = actions)
+                PatchEditorHeaderSection(uiState = uiState, actions = actions)
+                PatchEditorBodySection(
+                    uiState = uiState,
+                    actions = actions,
+                    modifier = Modifier.weight(1f),
+                )
+                PatchEditorFooter(
+                    isSaving = uiState.isSaving,
+                    onDismissRequest = actions.onDismissRequest,
+                    onExportRawJson = actions.onExportRawJson,
+                    onSave = actions.onSave,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PatchEditorBody(
+private fun PatchEditorHeaderSection(
     uiState: PatchEditorUiState,
     actions: PatchEditorActions,
 ) {
-    if (uiState.editorMode == EditorMode.SIMPLIFIED) {
-        EditorContentLabel()
-        Spacer(modifier = Modifier.height(8.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+        PatchEditorToolbar(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
+        BulkPatchPanel(onUnlockAll = actions.onUnlockAll)
     }
+}
 
-    if (uiState.editorMode == EditorMode.SIMPLIFIED) {
-        SimplifiedEditor(
-            draftValues = uiState.draftValues,
-            originalData = uiState.currentData,
-            onBooleanChanged = actions.onBooleanChanged,
-            onTextChanged = actions.onTextChanged,
-        )
-    } else {
-        RawEditor(rawJson = uiState.rawJson, onRawJsonChanged = actions.onRawJsonChanged)
+@Composable
+private fun PatchEditorBodySection(
+    uiState: PatchEditorUiState,
+    actions: PatchEditorActions,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+    ) {
+        if (uiState.editorMode == EditorMode.SIMPLIFIED) {
+            EditorContentLabel()
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (uiState.editorMode == EditorMode.SIMPLIFIED) {
+            SimplifiedEditor(
+                draftValues = uiState.draftValues,
+                originalData = uiState.currentData,
+                onBooleanChanged = actions.onBooleanChanged,
+                onTextChanged = actions.onTextChanged,
+            )
+        } else {
+            RawEditor(rawJson = uiState.rawJson, onRawJsonChanged = actions.onRawJsonChanged)
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(12.dp))
+        PatchEditorStatus(errorMessage = uiState.errorMessage, statusMessage = uiState.statusMessage)
     }
-
-    Spacer(modifier = Modifier.height(12.dp))
-    HorizontalDivider()
-    Spacer(modifier = Modifier.height(12.dp))
-    PatchEditorStatus(errorMessage = uiState.errorMessage, statusMessage = uiState.statusMessage)
-    PatchEditorFooter(
-        isSaving = uiState.isSaving,
-        onDismissRequest = actions.onDismissRequest,
-        onExportRawJson = actions.onExportRawJson,
-        onSave = actions.onSave,
-    )
 }
 
 @Composable

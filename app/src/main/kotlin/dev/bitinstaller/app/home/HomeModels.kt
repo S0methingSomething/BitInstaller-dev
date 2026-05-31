@@ -6,9 +6,10 @@ import dev.bitinstaller.app.save.BitLifeSaveSummary
 
 enum class BitInstallerDestination(
     val label: String,
+    val route: String,
 ) {
-    MonetizationVars("MonetizationVars"),
-    SaveEditor("Save Editor"),
+    MonetizationVars(label = "MonetizationVars", route = "patches"),
+    SaveEditor(label = "Save Editor", route = "saves"),
 }
 
 sealed interface BackendStatus {

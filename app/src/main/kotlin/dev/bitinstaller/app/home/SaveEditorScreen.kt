@@ -20,7 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -276,6 +277,7 @@ private fun SaveTargetCardHeader(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SaveTargetActionButton(
     target: SaveTargetUiState,
@@ -296,9 +298,8 @@ private fun SaveTargetActionButton(
         modifier = modifier.heightIn(min = 48.dp),
     ) {
         if (target.isLoading) {
-            CircularProgressIndicator(
+            LoadingIndicator(
                 modifier = Modifier.size(18.dp),
-                strokeWidth = 2.dp,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
             Spacer(modifier = Modifier.width(8.dp))
