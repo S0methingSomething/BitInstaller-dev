@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,11 +59,9 @@ internal fun SaveAdvancedFieldsContent(
     Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = modifier) {
         AdvancedFieldsTopBar(state = state)
         AdvancedSaveSummary(save = state.save)
-        OutlinedTextField(
+        SaveAdvancedSearch(
             value = state.query,
             onValueChange = actions.onQueryChange,
-            label = { Text(text = "Search names, stats, money, flags...") },
-            singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
         SaveAdvancedFieldControls(

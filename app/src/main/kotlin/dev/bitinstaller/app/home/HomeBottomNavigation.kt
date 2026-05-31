@@ -70,12 +70,17 @@ private fun HomeBottomNavigationItem(
         animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
         label = "home_nav_content",
     )
+    val textWeight by animateExpressiveFontWeight(
+        isActive = selected,
+        restWeight = FontWeight.Medium.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
 
     Text(
         text = destination.label,
         color = contentColor,
         fontSize = 13.sp,
-        fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+        fontWeight = FontWeight(textWeight),
         modifier =
             Modifier
                 .clip(CircleShape)

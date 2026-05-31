@@ -112,6 +112,11 @@ private fun PatchTargetCard(
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "target_card_scale",
     )
+    val textWeight by animateExpressiveFontWeight(
+        isActive = isPressed && target.patchState.actionEnabled,
+        restWeight = FontWeight.SemiBold.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(TARGET_CARD_COLOR_ARGB)),
@@ -138,13 +143,14 @@ private fun PatchTargetCard(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 AppGlyph(icon = target.icon, name = target.name, accent = accent)
-                TargetTextBlock(target = target)
+                TargetTextBlock(target = target, titleWeight = textWeight)
             }
 
             if (target.isInstalled) {
                 TargetActionButton(
                     target = target,
                     interactionSource = interactionSource,
+                    textWeight = textWeight,
                     onClick = { onPatchClick(target) },
                 )
             }
@@ -157,6 +163,7 @@ private fun PatchTargetCard(
 private fun TargetActionButton(
     target: PatchTargetUiState,
     interactionSource: MutableInteractionSource,
+    textWeight: Int,
     onClick: () -> Unit,
 ) {
     val isSolid = target.patchState.presenceState != PatchPresenceState.PATCHED
@@ -207,7 +214,7 @@ private fun TargetActionButton(
                         else -> Color.White
                     },
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight(textWeight),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -216,7 +223,10 @@ private fun TargetActionButton(
 }
 
 @Composable
-private fun TargetTextBlock(target: PatchTargetUiState) {
+private fun TargetTextBlock(
+    target: PatchTargetUiState,
+    titleWeight: Int,
+) {
     val statusAccent = patchPresenceColor(target.patchState.presenceState)
 
     Column(
@@ -227,7 +237,7 @@ private fun TargetTextBlock(target: PatchTargetUiState) {
             text = target.name,
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
-            fontWeight = FontWeight.Black,
+            fontWeight = FontWeight(titleWeight),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

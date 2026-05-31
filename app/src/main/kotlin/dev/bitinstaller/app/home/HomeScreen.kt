@@ -1,6 +1,8 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +43,7 @@ private data class HomeNavigationState(
     val selectedDestination: BitInstallerDestination,
 )
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun HomeRoute(
     state: HomeUiState,
@@ -54,16 +57,18 @@ fun HomeRoute(
         callbacks.onDismissSession()
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        HomeBackground(activeSession = activeSession, state = state, callbacks = callbacks)
-        PatchEditorOverlay(activeSession = activeSession, callbacks = callbacks)
+    SharedTransitionLayout(modifier = modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HomeBackground(activeSession = activeSession, state = state, callbacks = callbacks)
+            PatchEditorOverlay(activeSession = activeSession, callbacks = callbacks)
 
-        liveDictionaryPrompt?.let { prompt ->
-            LiveDictionaryPrompt(
-                prompt = prompt,
-                onDismissRequest = callbacks.onDismissLiveDictionaryPrompt,
-                onConfirm = callbacks.onConfirmLiveDictionaryFix,
-            )
+            liveDictionaryPrompt?.let { prompt ->
+                LiveDictionaryPrompt(
+                    prompt = prompt,
+                    onDismissRequest = callbacks.onDismissLiveDictionaryPrompt,
+                    onConfirm = callbacks.onConfirmLiveDictionaryFix,
+                )
+            }
         }
     }
 }
