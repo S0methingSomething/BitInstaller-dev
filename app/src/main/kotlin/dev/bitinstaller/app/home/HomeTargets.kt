@@ -1,5 +1,7 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -66,6 +68,8 @@ private const val TARGET_MONOGRAM_ACCENT_ALPHA = 0.14f
 internal fun PatchTargetsSection(
     targets: List<PatchTargetUiState>,
     onPatchClick: (PatchTargetUiState) -> Unit,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -93,6 +97,8 @@ internal fun PatchTargetsSection(
             PatchTargetCard(
                 target = target,
                 onPatchClick = onPatchClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
             )
         }
     }
@@ -103,6 +109,8 @@ internal fun PatchTargetsSection(
 private fun PatchTargetCard(
     target: PatchTargetUiState,
     onPatchClick: (PatchTargetUiState) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
 ) {
     val accent = targetAccentColor(target.patchState.supportState)
     val interactionSource = remember { MutableInteractionSource() }
@@ -117,7 +125,6 @@ private fun PatchTargetCard(
         restWeight = FontWeight.SemiBold.weight,
         activeWeight = FontWeight.Black.weight,
     )
-
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(TARGET_CARD_COLOR_ARGB)),
         border = BorderStroke(1.dp, Color(TARGET_CARD_BORDER_COLOR_ARGB)),
@@ -125,7 +132,11 @@ private fun PatchTargetCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .graphicsLayer {
+                .patchTargetSharedBounds(
+                    target = target,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                ).graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                 },

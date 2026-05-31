@@ -57,6 +57,7 @@ fun PatchEditorScene(
     target: PatchTargetUiState,
     contentAlpha: Float,
     onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
     config: PatchEditorSceneConfig = PatchEditorSceneConfig(),
 ) {
     var currentData by remember(target.packageName, config.initialData) {
@@ -107,7 +108,7 @@ fun PatchEditorScene(
                 onDismissRequest = onDismissRequest,
                 config = config,
             ),
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier,
     )
 }
 
@@ -149,7 +150,7 @@ private fun PatchEditorContent(
     Box(
         contentAlignment = Alignment.Center,
         modifier =
-            modifier
+            Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
@@ -164,6 +165,7 @@ private fun PatchEditorContent(
                     .fillMaxWidth()
                     .fillMaxHeight(PATCH_EDITOR_HEIGHT_FRACTION)
                     .sizeIn(maxHeight = 760.dp)
+                    .then(modifier)
                     .graphicsLayer {
                         alpha = chrome.contentAlpha
                         translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP

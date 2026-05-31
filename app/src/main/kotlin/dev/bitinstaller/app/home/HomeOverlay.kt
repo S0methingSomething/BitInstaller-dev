@@ -3,6 +3,9 @@ package dev.bitinstaller.app.home
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -31,9 +34,10 @@ internal fun HomeBackground(
     activeSession: PatchEditorSession?,
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     Box(modifier = Modifier.fillMaxSize().patchEditorBlur(activeSession != null)) {
-        HomeContent(state = state, callbacks = callbacks)
+        HomeContent(state = state, callbacks = callbacks, sharedTransitionScope = sharedTransitionScope)
     }
 }
 
@@ -57,6 +61,7 @@ private fun Modifier.patchEditorBlur(isBlurred: Boolean): Modifier {
 internal fun PatchEditorOverlay(
     activeSession: PatchEditorSession?,
     callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
@@ -71,16 +76,36 @@ internal fun PatchEditorOverlay(
                 slideOutVertically(animationSpec = spatialIntSpec) { it / SLIDE_OUT_OFFSET_DIVISOR },
     ) {
         activeSession?.let { session ->
-            PatchEditorScrim(session = session, callbacks = callbacks)
+            PatchEditorScrim(
+                session = session,
+                callbacks = callbacks,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = this,
+            )
         }
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 private fun PatchEditorScrim(
     session: PatchEditorSession,
     callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    val sharedBoundsModifier =
+        if (sharedTransitionScope != null) {
+            with(sharedTransitionScope) {
+                Modifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState(key = patchEditorSharedKey(session.packageName)),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                )
+            }
+        } else {
+            Modifier
+        }
+
     Box(
         modifier =
             Modifier
@@ -91,6 +116,7 @@ private fun PatchEditorScrim(
             target = session.target,
             contentAlpha = 1f,
             onDismissRequest = callbacks.onDismissSession,
+            modifier = sharedBoundsModifier,
             config =
                 PatchEditorSceneConfig(
                     initialData = session.initialData,

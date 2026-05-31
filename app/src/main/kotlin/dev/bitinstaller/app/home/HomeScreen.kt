@@ -3,6 +3,7 @@ package dev.bitinstaller.app.home
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
@@ -59,8 +60,17 @@ fun HomeRoute(
 
     SharedTransitionLayout(modifier = modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
-            HomeBackground(activeSession = activeSession, state = state, callbacks = callbacks)
-            PatchEditorOverlay(activeSession = activeSession, callbacks = callbacks)
+            HomeBackground(
+                activeSession = activeSession,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = this@SharedTransitionLayout,
+            )
+            PatchEditorOverlay(
+                activeSession = activeSession,
+                callbacks = callbacks,
+                sharedTransitionScope = this@SharedTransitionLayout,
+            )
 
             liveDictionaryPrompt?.let { prompt ->
                 LiveDictionaryPrompt(
@@ -96,6 +106,7 @@ private fun LiveDictionaryPrompt(
 internal fun HomeContent(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     val isFocusedSaveEditor =
         state.selectedDestination == BitInstallerDestination.SaveEditor &&
@@ -110,6 +121,7 @@ internal fun HomeContent(
             state = state,
             isFocusedSaveEditor = isFocusedSaveEditor,
             callbacks = callbacks,
+            sharedTransitionScope = sharedTransitionScope,
         )
 
         HomeBottomNavigation(
@@ -163,6 +175,7 @@ private fun DestinationPane(
     state: HomeUiState,
     isFocusedSaveEditor: Boolean,
     callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope?,
 ) {
     val effectsDestinationSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
@@ -196,6 +209,8 @@ private fun DestinationPane(
                 PatchTargetsSection(
                     targets = state.patchTargets,
                     onPatchClick = callbacks.onPatchClick,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = this,
                 )
             }
 
