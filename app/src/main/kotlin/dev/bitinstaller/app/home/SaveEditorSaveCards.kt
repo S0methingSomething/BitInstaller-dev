@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ internal fun SaveFileList(
     target: SaveTargetUiState,
     saves: List<BitLifeSaveSummary>,
     onSaveOpen: (BitLifeSaveSummary) -> Unit,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         saves.forEach { save ->
@@ -40,6 +42,7 @@ internal fun SaveFileList(
                 isWorking = target.editingSavePath == save.path,
                 error = target.editErrors[save.path] ?: save.errorMessage,
                 onOpen = { onSaveOpen(save) },
+                sharedTransitionState = sharedTransitionState,
             )
         }
     }
@@ -51,12 +54,16 @@ private fun SaveSlotSummaryCard(
     isWorking: Boolean,
     error: String?,
     onOpen: () -> Unit,
+    sharedTransitionState: SaveEditorSharedTransitionState,
 ) {
     Surface(
         onClick = onOpen,
         shape = SaveCardShape,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .saveSlotSharedBounds(save = save, transitionState = sharedTransitionState),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -77,6 +84,12 @@ private fun SaveSlotSummaryHeader(
     save: BitLifeSaveSummary,
     isWorking: Boolean,
 ) {
+    val titleWeight by animateExpressiveFontWeight(
+        isActive = !isWorking,
+        restWeight = FontWeight.SemiBold.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     Row(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -90,7 +103,7 @@ private fun SaveSlotSummaryHeader(
             Text(
                 text = save.heroName,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+                fontWeight = FontWeight(titleWeight),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -116,7 +129,7 @@ private fun SaveSlotSummaryHeader(
             Text(
                 text = if (isWorking) "Working" else "Open",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight(titleWeight),
             )
         }
     }

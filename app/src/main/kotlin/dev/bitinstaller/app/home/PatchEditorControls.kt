@@ -18,6 +18,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -96,6 +97,12 @@ internal fun PatchEditorFooter(
     onExportRawJson: () -> Unit,
     onSave: () -> Unit,
 ) {
+    val primaryWeight by animateExpressiveFontWeight(
+        isActive = !isSaving,
+        restWeight = FontWeight.SemiBold.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = !isSaving,
@@ -117,7 +124,7 @@ internal fun PatchEditorFooter(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
-                Text(text = "Save encrypted file")
+                Text(text = "Save encrypted file", fontWeight = FontWeight(primaryWeight))
             }
         }
         FilledTonalButton(
@@ -140,6 +147,12 @@ private fun EditorModeButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textWeight by animateExpressiveFontWeight(
+        isActive = selected,
+        restWeight = FontWeight.Medium.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     if (selected) {
         Button(
             colors =
@@ -151,7 +164,7 @@ private fun EditorModeButton(
             shape = EditorControlShape,
             modifier = modifier.heightIn(min = 44.dp),
         ) {
-            Text(text = label)
+            Text(text = label, fontWeight = FontWeight(textWeight))
         }
     } else {
         FilledTonalButton(
@@ -164,7 +177,7 @@ private fun EditorModeButton(
             shape = EditorControlShape,
             modifier = modifier.heightIn(min = 44.dp),
         ) {
-            Text(text = label)
+            Text(text = label, fontWeight = FontWeight(textWeight))
         }
     }
 }

@@ -9,12 +9,13 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
@@ -25,6 +26,7 @@ import dev.bitinstaller.app.crypto.MonetizationData
 import dev.bitinstaller.app.crypto.MonetizationValue
 
 private const val EDITOR_ROW_ALPHA: Float = 0.58f
+private val BooleanToggleShape = RoundedCornerShape(999.dp)
 
 @Composable
 internal fun SimplifiedEditor(
@@ -89,6 +91,12 @@ private fun BooleanEditorRow(
     value: Boolean,
     onBooleanChanged: (String, Boolean) -> Unit,
 ) {
+    val toggleWeight by animateExpressiveFontWeight(
+        isActive = value,
+        restWeight = FontWeight.Medium.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -105,10 +113,15 @@ private fun BooleanEditorRow(
                     .weight(1f)
                     .padding(end = 12.dp),
         )
-        Switch(
-            checked = value,
-            onCheckedChange = { checked -> onBooleanChanged(keyName, checked) },
-        )
+        FilledTonalButton(
+            onClick = { onBooleanChanged(keyName, !value) },
+            shape = BooleanToggleShape,
+        ) {
+            Text(
+                text = if (value) "Enabled" else "Disabled",
+                fontWeight = FontWeight(toggleWeight),
+            )
+        }
     }
 }
 

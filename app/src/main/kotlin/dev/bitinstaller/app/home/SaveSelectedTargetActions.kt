@@ -12,15 +12,16 @@ internal data class SaveSelectedTargetActions(
     val onAdvancedClick: (BitLifeSaveSummary) -> Unit,
     val onSaveRevert: (BitLifeSaveSummary) -> Unit,
     val onChangeApp: () -> Unit,
+    val onSaveBackClick: () -> Unit,
 )
 
 @Composable
 internal fun SaveSelectedTargetContent(
     target: SaveTargetUiState,
     selectedSave: BitLifeSaveSummary?,
-    onSaveBackClick: () -> Unit,
     actions: SaveSelectedTargetActions,
     modifier: Modifier = Modifier,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     if (selectedSave == null) {
         SaveTargetDetail(
@@ -32,6 +33,7 @@ internal fun SaveSelectedTargetContent(
                 ),
             onBackClick = actions.onChangeApp,
             modifier = modifier,
+            sharedTransitionState = sharedTransitionState,
         )
         return
     }
@@ -41,11 +43,12 @@ internal fun SaveSelectedTargetContent(
         save = selectedSave,
         actions =
             SaveSlotEditorDetailActions(
-                onBackClick = onSaveBackClick,
+                onBackClick = actions.onSaveBackClick,
                 onFieldClick = { field -> actions.onFieldClick(selectedSave, field) },
                 onAdvancedClick = { actions.onAdvancedClick(selectedSave) },
                 onSaveRevert = { actions.onSaveRevert(selectedSave) },
             ),
         modifier = modifier,
+        sharedTransitionState = sharedTransitionState,
     )
 }

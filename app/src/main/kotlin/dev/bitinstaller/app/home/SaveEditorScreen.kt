@@ -44,12 +44,13 @@ import androidx.core.graphics.drawable.toBitmap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
-private val SaveEditorButtonShape = RoundedCornerShape(6.dp)
+private val SaveEditorButtonShape = SaveEditorControlShape
 
 @Composable
 internal fun SaveEditorSection(
     state: SaveEditorUiState,
     actions: SaveEditorSectionActions,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     var advancedSave by remember { mutableStateOf<BitLifeSaveSummary?>(null) }
     var editDraft by remember { mutableStateOf<SaveFieldEditDraft?>(null) }
@@ -92,6 +93,7 @@ internal fun SaveEditorSection(
         state = state,
         selectedSave = selectedSave,
         actions = actions,
+        sharedTransitionState = sharedTransitionState,
         callbacks =
             SaveEditorContentCallbacks(
                 onSaveOpen = { save -> selectedSavePath = save.path },
@@ -112,6 +114,7 @@ internal fun SaveEditorTargetList(
     targets: List<SaveTargetUiState>,
     onTargetClick: (SaveTargetUiState) -> Unit,
     modifier: Modifier = Modifier,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -127,6 +130,7 @@ internal fun SaveEditorTargetList(
                     target = target,
                     showSaves = false,
                     actions = SaveTargetCardActions(onTargetClick = onTargetClick),
+                    sharedTransitionState = sharedTransitionState,
                 )
             }
         }
@@ -139,6 +143,7 @@ internal fun SaveTargetDetail(
     actions: SaveTargetCardActions,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -165,7 +170,13 @@ internal fun SaveTargetDetail(
                 Text(text = "Change app")
             }
         }
-        SaveEditorPanel(containerAlpha = 0.04f, modifier = Modifier.fillMaxWidth()) {
+        SaveEditorPanel(
+            containerAlpha = 0.04f,
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .saveTargetSharedBounds(target = target, transitionState = sharedTransitionState),
+        ) {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
                 SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
             }
@@ -177,6 +188,7 @@ internal fun SaveTargetDetail(
                 target = target,
                 saves = target.saves,
                 onSaveOpen = actions.onSaveOpen,
+                sharedTransitionState = sharedTransitionState,
             )
         }
     }
@@ -228,11 +240,15 @@ private fun SaveTargetCard(
     showSaves: Boolean,
     isFocused: Boolean = false,
     actions: SaveTargetCardActions,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     SaveEditorPanel(
         shape = if (isFocused) SaveEditorPanelShape else SaveEditorCardShape,
         containerAlpha = if (isFocused) 0.055f else 0.04f,
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .saveTargetSharedBounds(target = target, transitionState = sharedTransitionState),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -284,6 +300,12 @@ private fun SaveTargetActionButton(
     onTargetClick: (SaveTargetUiState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val textWeight by animateExpressiveFontWeight(
+        isActive = target.actionEnabled && !target.isLoading,
+        restWeight = FontWeight.Medium.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     Button(
         enabled = target.actionEnabled,
         onClick = { onTargetClick(target) },
@@ -304,12 +326,18 @@ private fun SaveTargetActionButton(
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
-        Text(text = target.actionLabel)
+        Text(text = target.actionLabel, fontWeight = FontWeight(textWeight))
     }
 }
 
 @Composable
 private fun SaveTargetTextBlock(target: SaveTargetUiState) {
+    val titleWeight by animateExpressiveFontWeight(
+        isActive = target.actionEnabled,
+        restWeight = FontWeight.SemiBold.weight,
+        activeWeight = FontWeight.Black.weight,
+    )
+
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -317,7 +345,7 @@ private fun SaveTargetTextBlock(target: SaveTargetUiState) {
         Text(
             text = target.name,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Normal,
+            fontWeight = FontWeight(titleWeight),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

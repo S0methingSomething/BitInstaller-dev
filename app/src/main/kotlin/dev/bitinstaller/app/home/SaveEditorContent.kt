@@ -27,6 +27,7 @@ internal fun SaveEditorContent(
     state: SaveEditorUiState,
     selectedSave: BitLifeSaveSummary?,
     actions: SaveEditorSectionActions,
+    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
     callbacks: SaveEditorContentCallbacks,
 ) {
     val selectedTarget = state.selectedTarget
@@ -35,6 +36,7 @@ internal fun SaveEditorContent(
             targets = state.targets,
             onTargetClick = actions.onTargetClick,
             modifier = Modifier.fillMaxSize(),
+            sharedTransitionState = sharedTransitionState,
         )
         return
     }
@@ -43,7 +45,6 @@ internal fun SaveEditorContent(
         SaveSelectedTargetContent(
             target = selectedTarget,
             selectedSave = selectedSave,
-            onSaveBackClick = callbacks.onSaveBackClick,
             actions =
                 SaveSelectedTargetActions(
                     onTargetClick = actions.onTargetClick,
@@ -52,8 +53,10 @@ internal fun SaveEditorContent(
                     onAdvancedClick = callbacks.onAdvancedClick,
                     onSaveRevert = callbacks.onSaveRevert,
                     onChangeApp = actions.onBackClick,
+                    onSaveBackClick = callbacks.onSaveBackClick,
                 ),
             modifier = Modifier.fillMaxSize(),
+            sharedTransitionState = sharedTransitionState,
         )
     }
 }

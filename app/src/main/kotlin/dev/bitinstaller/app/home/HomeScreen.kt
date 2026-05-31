@@ -217,6 +217,11 @@ private fun DestinationPane(
             composable(BitInstallerDestination.SaveEditor.route) {
                 SaveEditorSection(
                     state = state.saveEditor,
+                    sharedTransitionState =
+                        SaveEditorSharedTransitionState(
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = this,
+                        ),
                     actions =
                         SaveEditorSectionActions(
                             onTargetClick = callbacks.onSaveTargetClick,
