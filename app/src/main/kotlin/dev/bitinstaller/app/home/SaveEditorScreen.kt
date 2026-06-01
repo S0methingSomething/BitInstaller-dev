@@ -144,33 +144,22 @@ internal fun SaveTargetDetail(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-        modifier = modifier.fillMaxSize().padding(horizontal = SaveEditorHorizontalPadding, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = SaveEditorHorizontalPadding, vertical = 12.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Save slots",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = "${target.name} · pick the life ID you want to edit",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = "Pick a life ID to edit",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                fontWeight = FontWeight.Bold,
+            )
             TextButton(onClick = onBackClick) {
                 Text(text = "Change app")
-            }
-        }
-        SaveEditorPanel(containerAlpha = 0.04f, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
-                SaveTargetCardHeader(target = target, onTargetClick = actions.onTargetClick)
             }
         }
         if (target.saves == null) {

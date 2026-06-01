@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ private const val SAVE_EDITOR_DIVIDER_ARGB = 0x14FFFFFF
 private const val SAVE_EDITOR_LABEL_ALPHA = 0.35f
 private const val SAVE_EDITOR_HEADER_LETTER_SPACING = 2f
 internal val SaveEditorHorizontalPadding = 24.dp
+private val SaveEditorHeaderPadding = 24.dp
 
 @Composable
 internal fun SaveEditorFullscreenFrame(
@@ -41,10 +43,9 @@ internal fun SaveEditorFullscreenFrame(
         modifier =
             Modifier
                 .fillMaxSize()
-                .background(Color(SAVE_EDITOR_SCREEN_BACKGROUND_ARGB))
-                .navigationBarsPadding(),
+                .background(Color(SAVE_EDITOR_SCREEN_BACKGROUND_ARGB)),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             SaveEditorHeaderSection(
                 title = selectedTarget?.name ?: "Save Editor",
                 subtitle =
@@ -55,7 +56,7 @@ internal fun SaveEditorFullscreenFrame(
                     },
             )
             HorizontalDivider(
-                modifier = Modifier.padding(horizontal = SaveEditorHorizontalPadding),
+                modifier = Modifier.padding(horizontal = SaveEditorHeaderPadding),
                 color = Color(SAVE_EDITOR_DIVIDER_ARGB),
             )
             content()
@@ -82,7 +83,7 @@ private fun SaveEditorHeaderSection(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = SaveEditorHorizontalPadding, vertical = 20.dp),
+                .padding(horizontal = SaveEditorHeaderPadding, vertical = 20.dp),
     ) {
         Text(
             text = title,

@@ -106,17 +106,19 @@ internal fun HomeContent(
             sharedTransitionScope = sharedTransitionScope,
         )
 
-        HomeBottomNavigation(
-            selectedDestination = navigationManager.selectedDestination,
-            onDestinationSelected = { destination ->
-                navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
-            },
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp),
-        )
+        if (!isFocusedSaveEditor) {
+            HomeBottomNavigation(
+                selectedDestination = navigationManager.selectedDestination,
+                onDestinationSelected = { destination ->
+                    navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
+                },
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp),
+            )
+        }
     }
 }
 
@@ -128,13 +130,17 @@ private fun DestinationPane(
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope?,
 ) {
-    Column(
-        modifier =
+    val paneModifier =
+        if (isFocusedSaveEditor) {
+            Modifier.fillMaxSize()
+        } else {
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp),
-    ) {
+                .padding(horizontal = 16.dp)
+        }
+
+    Column(modifier = paneModifier) {
         if (!isFocusedSaveEditor) {
             HomeHeader(state = state)
             Spacer(modifier = Modifier.height(12.dp))

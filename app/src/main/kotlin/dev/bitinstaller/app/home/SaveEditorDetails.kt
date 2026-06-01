@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,6 +30,9 @@ private const val MAX_CHARACTER_PREVIEW_COUNT = 4
 private const val MAX_CHARACTER_FIELD_COUNT = 5
 private const val SAVE_VALUE_LABEL_WEIGHT = 0.38f
 private const val SAVE_VALUE_TEXT_WEIGHT = 0.62f
+private const val SAVE_DETAIL_ROW_ALPHA = 0.06f
+private const val SAVE_DETAIL_VALUE_ALPHA = 0.035f
+private const val SAVE_DETAIL_LABEL_ALPHA = 0.4f
 private val SaveValueRowShape = RoundedCornerShape(12.dp)
 
 @Composable
@@ -46,7 +50,7 @@ internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
                 fontFamily = FontFamily.Monospace,
                 letterSpacing = 0.2.sp,
             ),
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
     )
 }
 
@@ -116,7 +120,7 @@ private fun SaveCharacterCompactCard(
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f),
+        color = Color.White.copy(alpha = SAVE_DETAIL_ROW_ALPHA),
         shape = SaveValueRowShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -124,11 +128,12 @@ private fun SaveCharacterCompactCard(
             Text(
                 text = character.role.uppercase(Locale.US),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
             )
             Text(
                 text = character.characterLabel(),
                 style = MaterialTheme.typography.titleSmall,
+                color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -150,7 +155,7 @@ private fun SaveValueRowView(
     val field = row.field
     if (field == null) {
         Surface(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+            color = Color.White.copy(alpha = SAVE_DETAIL_VALUE_ALPHA),
             shape = SaveValueRowShape,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -161,7 +166,7 @@ private fun SaveValueRowView(
 
     Surface(
         onClick = { onFieldClick(field) },
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        color = Color.White.copy(alpha = SAVE_DETAIL_VALUE_ALPHA),
         shape = SaveValueRowShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -180,17 +185,22 @@ private fun SaveValueRowContent(row: SaveValueRow) {
             Text(
                 text = row.label.uppercase(Locale.US),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             if (row.field != null) {
-                Text(text = "Edit", style = MaterialTheme.typography.labelSmall)
+                Text(
+                    text = "Edit",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
+                )
             }
         }
         Text(
             text = row.value,
             style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(SAVE_VALUE_TEXT_WEIGHT),

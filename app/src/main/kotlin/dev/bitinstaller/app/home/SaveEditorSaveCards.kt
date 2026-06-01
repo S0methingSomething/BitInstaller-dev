@@ -1,16 +1,22 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -18,14 +24,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import java.util.Locale
 
-private val SaveCardShape = RoundedCornerShape(16.dp)
+private val SaveCardShape = RoundedCornerShape(18.dp)
 private val SaveMetricShape = RoundedCornerShape(12.dp)
+private val SaveActionShape = RoundedCornerShape(12.dp)
+private const val SAVE_CARD_CONTAINER_ARGB = 0x0EFFFFFF
+private const val SAVE_CARD_BADGE_ALPHA = 0.08f
+private const val SAVE_CARD_SECONDARY_ALPHA = 0.4f
+private const val SAVE_CARD_METRIC_ALPHA = 0.06f
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
@@ -38,10 +51,19 @@ internal fun SaveFileList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
         modifier = modifier,
     ) {
+        item(contentType = "save-count") {
+            Text(
+                text = "Found ${saves.size} game save records",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White.copy(alpha = SAVE_CARD_SECONDARY_ALPHA),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+        }
         items(saves, key = { save -> save.path }, contentType = { BitLifeSaveSummary::class }) { save ->
             SaveSlotSummaryCard(
                 save = save,
@@ -60,38 +82,44 @@ private fun SaveSlotSummaryCard(
     error: String?,
     onOpen: () -> Unit,
 ) {
-    Surface(
+    Card(
         onClick = onOpen,
         shape = SaveCardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
+        colors = CardDefaults.cardColors(containerColor = Color(SAVE_CARD_CONTAINER_ARGB)),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(18.dp),
         ) {
-            SaveSlotSummaryHeader(save = save, isWorking = isWorking, onOpen = onOpen)
+            SaveSlotSummaryHeader(save = save)
             if (error != null) {
                 SaveSlotStatus(text = error, isError = true)
             } else {
                 SaveSlotMetrics(save = save)
+            }
+            Button(
+                enabled = !isWorking,
+                onClick = onOpen,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                shape = SaveActionShape,
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+            ) {
+                Text(text = if (isWorking) "Working" else "Open Editor", fontWeight = FontWeight.Black)
             }
         }
     }
 }
 
 @Composable
-private fun SaveSlotSummaryHeader(
-    save: BitLifeSaveSummary,
-    isWorking: Boolean,
-    onOpen: () -> Unit,
-) {
+private fun SaveSlotSummaryHeader(save: BitLifeSaveSummary) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        SaveSlotBadge(slotName = save.slotName)
+        SaveSlotBubble(slotName = save.slotName)
         Column(
             verticalArrangement = Arrangement.spacedBy(3.dp),
             modifier = Modifier.weight(1f),
@@ -100,33 +128,45 @@ private fun SaveSlotSummaryHeader(
                 text = save.heroName,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = remember(save) { save.identityLine() },
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                color = Color.White.copy(alpha = SAVE_CARD_SECONDARY_ALPHA),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        FilledTonalButton(
-            enabled = !isWorking,
-            onClick = onOpen,
-            shape = RoundedCornerShape(999.dp),
-            colors =
-                ButtonDefaults.filledTonalButtonColors(
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+    }
+}
+
+@Composable
+internal fun SaveSlotBubble(
+    slotName: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            modifier
+                .size(36.dp),
+    ) {
+        Surface(
+            color = Color.White.copy(alpha = SAVE_CARD_BADGE_ALPHA),
+            shape = CircleShape,
+            modifier = Modifier.size(36.dp),
         ) {
-            Text(
-                text = if (isWorking) "Working" else "Open",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = slotName.uppercase(Locale.US),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
@@ -153,7 +193,7 @@ private fun SaveSlotMetric(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
+        color = Color.White.copy(alpha = SAVE_CARD_METRIC_ALPHA),
         shape = SaveMetricShape,
         modifier = modifier,
     ) {
@@ -164,7 +204,7 @@ private fun SaveSlotMetric(
             Text(
                 text = label.uppercase(Locale.US),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.50f),
+                color = Color.White.copy(alpha = SAVE_CARD_SECONDARY_ALPHA),
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -172,7 +212,7 @@ private fun SaveSlotMetric(
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
