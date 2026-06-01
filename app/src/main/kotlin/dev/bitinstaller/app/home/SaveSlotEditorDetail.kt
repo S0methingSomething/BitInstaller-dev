@@ -4,13 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -29,16 +27,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
-private const val SAVE_DETAIL_TAB_STATS = "stats"
-private const val SAVE_DETAIL_TAB_PEOPLE = "people"
-private const val SAVE_DETAIL_TAB_ADVANCED = "advanced"
-private const val SAVE_DETAIL_TAB_ACTIVE_ALPHA = 0.08f
-private const val SAVE_DETAIL_TAB_INACTIVE_ALPHA = 0.4f
-private const val SAVE_DETAIL_SECTION_LETTER_SPACING_SP = 1f
+internal const val SAVE_DETAIL_TAB_STATS = "stats"
+internal const val SAVE_DETAIL_TAB_PEOPLE = "people"
+internal const val SAVE_DETAIL_TAB_ADVANCED = "advanced"
+internal const val SAVE_DETAIL_TAB_ACTIVE_ALPHA = 0.08f
+internal const val SAVE_DETAIL_TAB_INACTIVE_ALPHA = 0.4f
 
 @Composable
 internal fun SaveSlotEditorDetail(
@@ -176,102 +172,6 @@ private fun SaveSlotTabItem(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
-        }
-    }
-}
-
-@Composable
-private fun SaveSlotTabBody(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-    modifier: Modifier = Modifier,
-) {
-    val target = state.target
-    val save = state.save
-    val statusText = target.editErrors[save.path] ?: save.errorMessage
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        if (target.editingSavePath == save.path) {
-            item(contentType = "status") { SaveSlotStatus(text = "Working on save...", isError = false) }
-        } else if (statusText != null) {
-            item(contentType = "status") { SaveSlotStatus(text = statusText, isError = true) }
-        }
-
-        if (save.errorMessage == null) {
-            when (state.selectedTab) {
-                SAVE_DETAIL_TAB_STATS -> {
-                    item(contentType = "stats") {
-                        SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
-                            SaveFactRows(save = save, onFieldClick = actions.onFieldClick)
-                            SaveAttributeRows(attributes = save.attributes, onFieldClick = actions.onFieldClick)
-                        }
-                    }
-                }
-
-                SAVE_DETAIL_TAB_PEOPLE -> {
-                    item(contentType = "people") {
-                        SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
-                            SaveCharacterRows(characters = save.characters, onFieldClick = actions.onFieldClick)
-                        }
-                    }
-                }
-
-                SAVE_DETAIL_TAB_ADVANCED -> {
-                    item(contentType = "advanced") {
-                        SaveDetailPanel(title = "ADVANCED VARIABLES") {
-                            Text(
-                                text = "Open the complete registry-style variable stream for this save.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
-                            )
-                            Button(
-                                onClick = actions.onAdvancedClick,
-                                shape = SaveEditorControlShape,
-                                colors =
-                                    ButtonDefaults.buttonColors(
-                                        containerColor = Color.White,
-                                        contentColor = Color.Black,
-                                    ),
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
-                            ) {
-                                Text(text = "Open Advanced Editor", fontWeight = FontWeight.Black)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-private data class SaveSlotTabBodyState(
-    val target: SaveTargetUiState,
-    val save: BitLifeSaveSummary,
-    val selectedTab: String,
-)
-
-private data class SaveSlotTabBodyActions(
-    val onFieldClick: (SaveEditableField) -> Unit,
-    val onAdvancedClick: () -> Unit,
-)
-
-@Composable
-private fun SaveDetailPanel(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    SaveEditorPanel(containerAlpha = 0.04f, shape = SaveEditorControlShape, modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
-                fontWeight = FontWeight.Bold,
-                letterSpacing = SAVE_DETAIL_SECTION_LETTER_SPACING_SP.sp,
-            )
-            content()
         }
     }
 }

@@ -1,9 +1,14 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,8 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+private const val HOME_NAV_EXIT_SLIDE_DIVISOR = 2
+private const val HOME_CHROME_SLIDE_DIVISOR = 3
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -88,6 +98,7 @@ private fun LiveDictionaryPrompt(
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 internal fun HomeContent(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
@@ -95,6 +106,8 @@ internal fun HomeContent(
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
     val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomeAmbientGlow()
@@ -106,23 +119,32 @@ internal fun HomeContent(
             sharedTransitionScope = sharedTransitionScope,
         )
 
-        if (!isFocusedSaveEditor) {
+        AnimatedVisibility(
+            visible = !isFocusedSaveEditor,
+            enter =
+                fadeIn(animationSpec = effectsFloatSpec) +
+                    slideInVertically(animationSpec = spatialIntSpec) { it / HOME_NAV_EXIT_SLIDE_DIVISOR },
+            exit =
+                fadeOut(animationSpec = effectsFloatSpec) +
+                    slideOutVertically(animationSpec = spatialIntSpec) { it / HOME_NAV_EXIT_SLIDE_DIVISOR },
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 16.dp),
+        ) {
             HomeBottomNavigation(
                 selectedDestination = navigationManager.selectedDestination,
                 onDestinationSelected = { destination ->
                     navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
                 },
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomCenter)
-                        .navigationBarsPadding()
-                        .padding(bottom = 16.dp),
             )
         }
     }
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun DestinationPane(
     navigationManager: HomeNavigationManager,
     state: HomeUiState,
@@ -130,6 +152,8 @@ private fun DestinationPane(
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope?,
 ) {
+    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     val paneModifier =
         if (isFocusedSaveEditor) {
             Modifier.fillMaxSize()
@@ -141,14 +165,24 @@ private fun DestinationPane(
         }
 
     Column(modifier = paneModifier) {
-        if (!isFocusedSaveEditor) {
-            HomeHeader(state = state)
-            Spacer(modifier = Modifier.height(12.dp))
-            DashboardSection(
-                status = state.backendStatus,
-                onActionClick = callbacks.onDashboardActionClick,
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+        AnimatedVisibility(
+            visible = !isFocusedSaveEditor,
+            enter =
+                fadeIn(animationSpec = effectsFloatSpec) +
+                    slideInVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
+            exit =
+                fadeOut(animationSpec = effectsFloatSpec) +
+                    slideOutVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
+        ) {
+            Column {
+                HomeHeader(state = state)
+                Spacer(modifier = Modifier.height(12.dp))
+                DashboardSection(
+                    status = state.backendStatus,
+                    onActionClick = callbacks.onDashboardActionClick,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
 
         Box(
