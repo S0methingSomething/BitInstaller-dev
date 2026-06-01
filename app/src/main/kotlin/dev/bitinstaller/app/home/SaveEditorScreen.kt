@@ -45,6 +45,7 @@ import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
 private val SaveEditorButtonShape = SaveEditorControlShape
+private const val SAVE_TARGET_HINT_ALPHA = 0.4f
 
 @Composable
 internal fun SaveEditorSection(
@@ -147,30 +148,35 @@ internal fun SaveTargetDetail(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier.fillMaxSize().padding(horizontal = SaveEditorHorizontalPadding, vertical = 12.dp),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                text = "Pick a life ID to edit",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                fontWeight = FontWeight.Bold,
-            )
-            TextButton(onClick = onBackClick) {
-                Text(text = "Change app")
+        Text(
+            text = "Pick a life ID to edit",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = SAVE_TARGET_HINT_ALPHA),
+            fontWeight = FontWeight.Bold,
+        )
+        when {
+            target.isLoading -> {
+                SaveLoadingStateView(message = "Analyzing save files...", modifier = Modifier.weight(1f))
+            }
+
+            target.saves == null -> {
+                SaveScanPrompt()
+            }
+
+            else -> {
+                SaveFileList(
+                    target = target,
+                    saves = target.saves,
+                    onSaveOpen = actions.onSaveOpen,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
-        if (target.saves == null) {
-            SaveScanPrompt()
-        } else {
-            SaveFileList(
-                target = target,
-                saves = target.saves,
-                onSaveOpen = actions.onSaveOpen,
-                modifier = Modifier.weight(1f),
-            )
+        TextButton(
+            onClick = onBackClick,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+        ) {
+            Text(text = "Close")
         }
     }
 }

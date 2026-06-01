@@ -14,6 +14,7 @@ data class HomeRouteCallbacks(
     val onSaveRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit = { _, _ -> },
     val onSaveEditorBack: () -> Unit = {},
     val onDismissSession: () -> Unit = {},
+    val onDismissNotice: () -> Unit = {},
     val onDismissLiveDictionaryPrompt: () -> Unit = {},
     val onConfirmLiveDictionaryFix: () -> Unit = {},
     val onSaveSession: suspend (PatchEditorSession, MonetizationData) -> String = { _, data ->

@@ -139,6 +139,12 @@ data class SaveTargetUiState(
 )
 
 @Stable
+data class HomeNoticeUiState(
+    val token: Int,
+    val message: String,
+)
+
+@Stable
 data class HomeUiState(
     val title: String,
     val summary: String,
@@ -146,6 +152,7 @@ data class HomeUiState(
     val patchTargets: List<PatchTargetUiState>,
     val selectedDestination: BitInstallerDestination,
     val saveEditor: SaveEditorUiState,
+    val notice: HomeNoticeUiState? = null,
 )
 
 fun previewHomeUiState(): HomeUiState =

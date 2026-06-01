@@ -30,7 +30,10 @@ internal fun CoroutineScope.launchSaveScan(
     appState: BitInstallerAppState,
     saveCache: SaveScanCache,
 ) {
-    if (!operationLock.tryAcquire()) return
+    if (!operationLock.tryAcquire()) {
+        appState.showBusyNotice(appState.busyMessageForSaveScan(target.name))
+        return
+    }
     launch {
         try {
             appState.scanSaveFiles(
@@ -51,7 +54,10 @@ internal fun CoroutineScope.launchSaveFieldEdit(
     appState: BitInstallerAppState,
     saveCache: SaveScanCache,
 ) {
-    if (!operationLock.tryAcquire()) return
+    if (!operationLock.tryAcquire()) {
+        appState.showBusyNotice(appState.busyMessageForSaveEdit(request.save.heroName))
+        return
+    }
     launch {
         try {
             appState.editSaveField(request = request, repository = repository, saveCache = saveCache)
@@ -68,7 +74,10 @@ internal fun CoroutineScope.launchSaveRevert(
     appState: BitInstallerAppState,
     saveCache: SaveScanCache,
 ) {
-    if (!operationLock.tryAcquire()) return
+    if (!operationLock.tryAcquire()) {
+        appState.showBusyNotice(appState.busyMessageForSaveEdit(request.save.heroName))
+        return
+    }
     launch {
         try {
             appState.revertSaveFile(request = request, repository = repository, saveCache = saveCache)

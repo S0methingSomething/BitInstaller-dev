@@ -74,6 +74,15 @@ fun HomeRoute(
                     onConfirm = callbacks.onConfirmLiveDictionaryFix,
                 )
             }
+
+            HomeNoticePopup(
+                notice = state.notice,
+                onDismiss = callbacks.onDismissNotice,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 28.dp),
+            )
         }
     }
 }
@@ -105,7 +114,9 @@ internal fun HomeContent(
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
-    val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    val isFocusedSaveEditor =
+        navigationManager.selectedDestination == BitInstallerDestination.SaveEditor &&
+            state.saveEditor.selectedTarget != null
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 

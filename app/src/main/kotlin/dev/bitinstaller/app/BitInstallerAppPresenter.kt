@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import dev.bitinstaller.app.home.BackendStatus
+import dev.bitinstaller.app.home.HomeNoticeUiState
 import dev.bitinstaller.app.home.HomeUiState
 import dev.bitinstaller.app.home.PATCH_PRESENCE_NOT_PATCHED_LABEL
 import dev.bitinstaller.app.home.PATCH_PRESENCE_PATCHED_LABEL
@@ -92,6 +93,10 @@ internal class BitInstallerAppPresenter(
                         ),
                 selectedDestination = appState.selectedDestination,
                 saveEditor = buildSaveEditorUiState(isReady),
+                notice =
+                    appState.noticeMessage?.let { message ->
+                        HomeNoticeUiState(token = appState.noticeToken, message = message)
+                    },
             )
         }
 

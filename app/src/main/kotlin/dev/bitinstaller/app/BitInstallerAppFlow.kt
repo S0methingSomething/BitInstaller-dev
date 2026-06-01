@@ -52,6 +52,8 @@ internal class BitInstallerAppState(
     var saveEditMessageTokens by mutableStateOf(mapOf<String, Int>())
     var saveRecentEditFieldIds by mutableStateOf(mapOf<String, List<String>>())
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
+    var noticeMessage by mutableStateOf<String?>(null)
+    var noticeToken by mutableStateOf(0)
 }
 
 internal class AppFlowDeps(
@@ -98,6 +100,7 @@ internal fun buildHomeRouteCallbacks(
             },
             onSaveEditorBack = { appState.selectedSaveTargetId = null },
             onDismissSession = { appState.activeSession = null },
+            onDismissNotice = { appState.noticeMessage = null },
             onDismissLiveDictionaryPrompt = {
                 appState.liveDictionaryPrompt = null
                 appState.pendingLiveDictionaryTarget = null
@@ -143,7 +146,10 @@ private fun CoroutineScope.launchPatchSession(
     operationLock: OperationLock,
     appState: BitInstallerAppState,
 ) {
-    if (!operationLock.tryAcquire()) return
+    if (!operationLock.tryAcquire()) {
+        appState.showBusyNotice(appState.busyMessageForPatch(target.name))
+        return
+    }
     launch {
         try {
             appState.loadSession(
@@ -164,7 +170,10 @@ private fun CoroutineScope.launchLiveDictionaryFix(
     appState: BitInstallerAppState,
 ) {
     val target = appState.pendingLiveDictionaryTarget ?: return
-    if (!operationLock.tryAcquire()) return
+    if (!operationLock.tryAcquire()) {
+        appState.showBusyNotice("Patch setup is already running. Wait for it to finish before fixing LiveDictionary.")
+        return
+    }
     launch {
         try {
             appState.isLoading = true

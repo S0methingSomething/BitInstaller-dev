@@ -49,7 +49,7 @@ internal fun SaveSlotEditorDetail(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 18.dp),
     ) {
-        SaveSlotEditorHeader(save = save, onBackClick = actions.onBackClick)
+        SaveSlotEditorHeader(save = save)
         SaveSlotCategoryTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
         SaveSlotTabBody(
             state = SaveSlotTabBodyState(target = target, save = save, selectedTab = selectedTab),
@@ -66,7 +66,15 @@ internal fun SaveSlotEditorDetail(
                 enabled = target.editingSavePath != save.path,
                 onAdvancedClick = actions.onAdvancedClick,
                 onSaveRevert = actions.onSaveRevert,
+                onBackClick = actions.onBackClick,
             )
+        } else {
+            TextButton(
+                onClick = actions.onBackClick,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+            ) {
+                Text(text = "Back to save slots")
+            }
         }
     }
 }
@@ -79,14 +87,8 @@ internal data class SaveSlotEditorDetailActions(
 )
 
 @Composable
-private fun SaveSlotEditorHeader(
-    save: BitLifeSaveSummary,
-    onBackClick: () -> Unit,
-) {
+private fun SaveSlotEditorHeader(save: BitLifeSaveSummary) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        TextButton(onClick = onBackClick, modifier = Modifier.fillMaxWidth()) {
-            Text(text = "Back to save slots")
-        }
         SaveEditorPanel(containerAlpha = 0.055f, shape = SaveEditorControlShape, modifier = Modifier.fillMaxWidth()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -182,6 +184,7 @@ private fun SaveDetailActions(
     enabled: Boolean,
     onAdvancedClick: () -> Unit,
     onSaveRevert: () -> Unit,
+    onBackClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
@@ -204,6 +207,12 @@ private fun SaveDetailActions(
             modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
         ) {
             Text(text = "Revert from backup", textAlign = TextAlign.Center)
+        }
+        TextButton(
+            onClick = onBackClick,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+        ) {
+            Text(text = "Back to save slots", textAlign = TextAlign.Center)
         }
     }
 }

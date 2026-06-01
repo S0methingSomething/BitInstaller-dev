@@ -1,6 +1,7 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -17,20 +19,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.explanation
 import java.util.Locale
 
 private val AdvancedFieldShape = RoundedCornerShape(10.dp)
-private const val ADVANCED_SUMMARY_LABEL_WEIGHT = 0.35f
-private const val ADVANCED_SUMMARY_VALUE_WEIGHT = 0.65f
 private const val ADVANCED_FIELD_VALUE_WEIGHT = 0.45f
+private const val ADVANCED_SURFACE_ALPHA = 0.06f
+private const val ADVANCED_VALUE_ALPHA = 0.08f
+private const val ADVANCED_SECONDARY_ALPHA = 0.4f
+private const val ADVANCED_LABEL_ALPHA = 0.3f
+private const val ADVANCED_LABEL_LETTER_SPACING_SP = 1f
 
 internal data class SaveAdvancedFieldsContentState(
     val targetName: String,
@@ -56,19 +63,19 @@ internal fun SaveAdvancedFieldsContent(
     actions: SaveAdvancedFieldsContentActions,
     modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(18.dp), modifier = modifier) {
-        AdvancedFieldsTopBar(state = state)
-        AdvancedSaveSummary(save = state.save)
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = modifier) {
+        AdvancedSaveHeader(state = state)
+        Text(
+            text = "ADVANCED VARIABLES",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White.copy(alpha = ADVANCED_LABEL_ALPHA),
+            fontWeight = FontWeight.Bold,
+            letterSpacing = ADVANCED_LABEL_LETTER_SPACING_SP.sp,
+        )
         SaveAdvancedSearch(
             value = state.query,
             onValueChange = actions.onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-        )
-        SaveAdvancedFieldControls(
-            filter = state.filter,
-            sort = state.sort,
-            onFilterChange = actions.onFilterChange,
-            onSortChange = actions.onSortChange,
         )
         AdvancedFieldList(
             fields = state.fields,
@@ -76,81 +83,48 @@ internal fun SaveAdvancedFieldsContent(
             onFieldClick = actions.onFieldClick,
             modifier = Modifier.weight(1f),
         )
-        Button(onClick = actions.onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp)) {
-            Text(text = "Save and close")
+        Button(
+            onClick = actions.onClose,
+            shape = SaveEditorControlShape,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp),
+        ) {
+            Text(text = "Close", fontWeight = FontWeight.Black)
         }
     }
 }
 
 @Composable
-private fun AdvancedFieldsTopBar(state: SaveAdvancedFieldsContentState) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = state.targetName,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = "${state.save.slotName} · ${state.fields.size}/${state.save.advancedFields.size} values",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun AdvancedSaveSummary(save: BitLifeSaveSummary) {
+private fun AdvancedSaveHeader(state: SaveAdvancedFieldsContentState) {
     Surface(
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        color = Color.White.copy(alpha = ADVANCED_SURFACE_ALPHA),
+        shape = SaveEditorControlShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(18.dp)) {
-            Text(
-                text = save.heroName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            AdvancedSummaryLine(label = "Character", value = save.heroName)
-            save.bankBalance?.let { balance ->
-                AdvancedSummaryLine(label = "Bank", value = formatAdvancedMoney(balance))
-            }
-            save.age?.let { age -> AdvancedSummaryLine(label = "Age", value = age.toString()) }
-            remember(save) { save.occupation() }?.let { occupation ->
-                AdvancedSummaryLine(label = "Occupation", value = occupation)
-            }
-            remember(save) { save.characterNames() }.takeIf { it.isNotBlank() }?.let { names ->
-                AdvancedSummaryLine(label = "Names", value = names, maxLines = 2)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 12.dp),
+        ) {
+            SaveSlotBubble(slotName = state.save.slotName)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = state.save.heroName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "${state.targetName} · ${state.fields.size}/${state.save.advancedFields.size} values",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = ADVANCED_SECONDARY_ALPHA),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun AdvancedSummaryLine(
-    label: String,
-    value: String,
-    maxLines: Int = 1,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(ADVANCED_SUMMARY_LABEL_WEIGHT),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(ADVANCED_SUMMARY_VALUE_WEIGHT),
-            maxLines = maxLines,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
 
@@ -162,7 +136,7 @@ private fun AdvancedFieldList(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier,
     ) {
         items(fields, key = { field -> field.id }, contentType = { SaveEditableField::class }) { field ->
@@ -183,34 +157,54 @@ private fun AdvancedFieldRow(
 ) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f),
+        color = Color.White.copy(alpha = ADVANCED_SURFACE_ALPHA),
         shape = AdvancedFieldShape,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
-                Text(text = field.label, style = MaterialTheme.typography.titleMedium)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    text = field.label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 AdvancedFieldMeta(field = field, isRecent = isRecent)
                 Text(
                     text = field.path,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    color = Color.White.copy(alpha = ADVANCED_SECONDARY_ALPHA),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                text = field.value.ifBlank { "empty" },
-                style = MaterialTheme.typography.titleSmall.copy(fontFamily = FontFamily.Monospace),
-                textAlign = TextAlign.End,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(ADVANCED_FIELD_VALUE_WEIGHT),
-            )
+            Box(
+                contentAlignment = Alignment.CenterEnd,
+                modifier =
+                    Modifier
+                        .weight(ADVANCED_FIELD_VALUE_WEIGHT),
+            ) {
+                Surface(
+                    color = Color.White.copy(alpha = ADVANCED_VALUE_ALPHA),
+                    shape = AdvancedFieldShape,
+                ) {
+                    Text(
+                        text = field.value.ifBlank { "empty" },
+                        style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+                        color = Color.White,
+                        textAlign = TextAlign.End,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    )
+                }
+            }
         }
     }
 }
@@ -240,14 +234,3 @@ private fun AdvancedFieldMeta(
         )
     }
 }
-
-private fun BitLifeSaveSummary.occupation(): String? =
-    facts.firstOrNull { fact -> fact.label.contains("Occupation", ignoreCase = true) }?.value
-
-private fun BitLifeSaveSummary.characterNames(): String =
-    characters
-        .map { character -> character.name.takeUnless { it == "Unnamed life" } ?: character.role }
-        .distinct()
-        .joinToString(" · ")
-
-private fun formatAdvancedMoney(value: Double): String = String.format(Locale.US, "$%,.0f", value)

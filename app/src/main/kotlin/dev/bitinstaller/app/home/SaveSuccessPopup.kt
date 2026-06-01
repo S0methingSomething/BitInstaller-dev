@@ -127,3 +127,44 @@ internal fun SaveTargetUiState.saveSuccessPopup(dismissedTokens: Map<String, Int
             SaveSuccessPopup(path = path, token = token, message = message)
                 .takeUnless { popup -> dismissedTokens[popup.path] == popup.token }
         }.firstOrNull()
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun HomeNoticePopup(
+    notice: HomeNoticeUiState?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LaunchedEffect(notice?.token) {
+        if (notice != null) {
+            delay(AUTO_DISMISS_DELAY_MS)
+            onDismiss()
+        }
+    }
+    AnimatedVisibility(
+        visible = notice != null,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideInVertically(
+                    initialOffsetY = { TOAST_ENTER_OFFSET_Y },
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                ) +
+                scaleIn(
+                    initialScale = TOAST_ENTER_SCALE,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                ),
+        exit =
+            fadeOut(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideOutVertically(
+                    targetOffsetY = { TOAST_EXIT_OFFSET_Y },
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                ) +
+                scaleOut(
+                    targetScale = TOAST_EXIT_SCALE,
+                    animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+                ),
+        modifier = modifier,
+    ) {
+        SaveEditorToast(message = notice?.message.orEmpty())
+    }
+}
