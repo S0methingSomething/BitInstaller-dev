@@ -112,22 +112,30 @@ internal fun HomeContent(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope? = null,
+    backgroundMotionEnabled: Boolean = true,
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
     val isFocusedSaveEditor =
         navigationManager.selectedDestination == BitInstallerDestination.SaveEditor &&
             state.saveEditor.selectedTarget != null
+    val chromeMotionEnabled = backgroundMotionEnabled && !isFocusedSaveEditor
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        HomeAmbientGlow()
+        if (chromeMotionEnabled) {
+            HomeAmbientGlow()
+        }
         DestinationPane(
-            navigationManager = navigationManager,
+            paneState =
+                HomePaneState(
+                    navigationManager = navigationManager,
+                    isFocusedSaveEditor = isFocusedSaveEditor,
+                    backgroundMotionEnabled = chromeMotionEnabled,
+                    sharedTransitionScope = sharedTransitionScope,
+                ),
             state = state,
-            isFocusedSaveEditor = isFocusedSaveEditor,
             callbacks = callbacks,
-            sharedTransitionScope = sharedTransitionScope,
         )
 
         AnimatedVisibility(
@@ -157,16 +165,14 @@ internal fun HomeContent(
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun DestinationPane(
-    navigationManager: HomeNavigationManager,
+    paneState: HomePaneState,
     state: HomeUiState,
-    isFocusedSaveEditor: Boolean,
     callbacks: HomeRouteCallbacks,
-    sharedTransitionScope: SharedTransitionScope?,
 ) {
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     val paneModifier =
-        if (isFocusedSaveEditor) {
+        if (paneState.isFocusedSaveEditor) {
             Modifier.fillMaxSize()
         } else {
             Modifier
@@ -177,7 +183,7 @@ private fun DestinationPane(
 
     Column(modifier = paneModifier) {
         AnimatedVisibility(
-            visible = !isFocusedSaveEditor,
+            visible = !paneState.isFocusedSaveEditor,
             enter =
                 fadeIn(animationSpec = effectsFloatSpec) +
                     slideInVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
@@ -186,7 +192,7 @@ private fun DestinationPane(
                     slideOutVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
         ) {
             Column {
-                HomeHeader(state = state)
+                HomeHeader(state = state, motionEnabled = paneState.backgroundMotionEnabled)
                 Spacer(modifier = Modifier.height(12.dp))
                 DashboardSection(
                     status = state.backendStatus,
@@ -200,17 +206,27 @@ private fun DestinationPane(
             modifier = Modifier.weight(1f),
         ) {
             HomeDestinationHost(
-                navigationManager = navigationManager,
+                navigationManager = paneState.navigationManager,
                 state = state,
                 callbacks = callbacks,
-                sharedTransitionScope = sharedTransitionScope,
+                sharedTransitionScope = paneState.sharedTransitionScope,
             )
         }
     }
 }
 
+private data class HomePaneState(
+    val navigationManager: HomeNavigationManager,
+    val isFocusedSaveEditor: Boolean,
+    val backgroundMotionEnabled: Boolean,
+    val sharedTransitionScope: SharedTransitionScope?,
+)
+
 @Composable
-private fun HomeHeader(state: HomeUiState) {
+private fun HomeHeader(
+    state: HomeUiState,
+    motionEnabled: Boolean,
+) {
     Row(
         modifier =
             Modifier
@@ -234,6 +250,10 @@ private fun HomeHeader(state: HomeUiState) {
                 letterSpacing = 3.sp,
             )
         }
-        HomeBeacon(modifier = Modifier.size(36.dp))
+        if (motionEnabled) {
+            HomeBeacon(modifier = Modifier.size(36.dp))
+        } else {
+            StaticHomeBeacon(modifier = Modifier.size(36.dp))
+        }
     }
 }

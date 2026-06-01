@@ -3,21 +3,16 @@ package dev.bitinstaller.app.home
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-
-private const val SAVE_ROUTE_SLIDE_DIVISOR = 4
 
 internal data class HomeNavigationManager(
     val navController: NavHostController,
@@ -60,36 +55,14 @@ internal fun HomeDestinationHost(
     sharedTransitionScope: SharedTransitionScope?,
 ) {
     val effectsDestinationSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialDestinationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     NavHost(
         navController = navigationManager.navController,
         startDestination = BitInstallerDestination.MonetizationVars.route,
-        enterTransition = {
-            if (targetState.destination.route == BitInstallerDestination.SaveEditor.route) {
-                slideInVertically(animationSpec = spatialDestinationSpec) { it / SAVE_ROUTE_SLIDE_DIVISOR } +
-                    fadeIn(animationSpec = effectsDestinationSpec)
-            } else {
-                fadeIn(animationSpec = effectsDestinationSpec)
-            }
-        },
-        exitTransition = {
-            if (initialState.destination.route == BitInstallerDestination.SaveEditor.route) {
-                slideOutVertically(animationSpec = spatialDestinationSpec) { it / SAVE_ROUTE_SLIDE_DIVISOR } +
-                    fadeOut(animationSpec = effectsDestinationSpec)
-            } else {
-                fadeOut(animationSpec = effectsDestinationSpec)
-            }
-        },
+        enterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
+        exitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
         popEnterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
-        popExitTransition = {
-            if (initialState.destination.route == BitInstallerDestination.SaveEditor.route) {
-                slideOutVertically(animationSpec = spatialDestinationSpec) { it / SAVE_ROUTE_SLIDE_DIVISOR } +
-                    fadeOut(animationSpec = effectsDestinationSpec)
-            } else {
-                fadeOut(animationSpec = effectsDestinationSpec)
-            }
-        },
+        popExitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
     ) {
         composable(BitInstallerDestination.MonetizationVars.route) {
             PatchTargetsSection(

@@ -4,8 +4,10 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -37,7 +40,12 @@ internal fun HomeBackground(
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     Box(modifier = Modifier.fillMaxSize().patchEditorBlur(activeSession != null)) {
-        HomeContent(state = state, callbacks = callbacks, sharedTransitionScope = sharedTransitionScope)
+        HomeContent(
+            state = state,
+            callbacks = callbacks,
+            sharedTransitionScope = sharedTransitionScope,
+            backgroundMotionEnabled = activeSession == null,
+        )
     }
 }
 
@@ -94,6 +102,11 @@ private fun PatchEditorScrim(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
+    val contentProgress by animatedVisibilityScope.transition.animateFloat(
+        label = "patch_editor_content_progress",
+    ) { state ->
+        if (state == EnterExitState.Visible) 1f else 0f
+    }
     val sharedBoundsModifier =
         if (sharedTransitionScope != null) {
             with(sharedTransitionScope) {
@@ -114,7 +127,7 @@ private fun PatchEditorScrim(
     ) {
         PatchEditorScene(
             target = session.target,
-            contentAlpha = 1f,
+            contentAlpha = contentProgress,
             onDismissRequest = callbacks.onDismissSession,
             modifier = sharedBoundsModifier,
             config =

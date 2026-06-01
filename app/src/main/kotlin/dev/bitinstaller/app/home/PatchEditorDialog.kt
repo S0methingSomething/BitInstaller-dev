@@ -37,6 +37,8 @@ import dev.bitinstaller.app.crypto.MonetizationData
 import kotlinx.coroutines.launch
 
 private const val EDITOR_CONTENT_RISE_DP: Float = 42f
+private const val EDITOR_CONTENT_REST_SCALE = 1f
+private const val EDITOR_CONTENT_START_SCALE = 0.92f
 private const val PATCH_EDITOR_CONTAINER_COLOR_ARGB = 0xF5050505
 private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.85f
 private val PatchEditorShape = RoundedCornerShape(24.dp)
@@ -167,7 +169,12 @@ private fun PatchEditorContent(
                     .sizeIn(maxHeight = 760.dp)
                     .then(modifier)
                     .graphicsLayer {
+                        val scale =
+                            EDITOR_CONTENT_START_SCALE +
+                                ((EDITOR_CONTENT_REST_SCALE - EDITOR_CONTENT_START_SCALE) * chrome.contentAlpha)
                         alpha = chrome.contentAlpha
+                        scaleX = scale
+                        scaleY = scale
                         translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP
                     },
         ) {

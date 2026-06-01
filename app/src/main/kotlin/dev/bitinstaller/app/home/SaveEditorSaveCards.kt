@@ -1,5 +1,8 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,14 +20,17 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +45,7 @@ private const val SAVE_CARD_CONTAINER_ARGB = 0x0EFFFFFF
 private const val SAVE_CARD_BADGE_ALPHA = 0.08f
 private const val SAVE_CARD_SECONDARY_ALPHA = 0.4f
 private const val SAVE_CARD_METRIC_ALPHA = 0.06f
+private const val SAVE_CARD_PRESSED_SCALE = 0.985f
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
@@ -75,6 +82,7 @@ internal fun SaveFileList(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SaveSlotSummaryCard(
     save: BitLifeSaveSummary,
@@ -82,11 +90,26 @@ private fun SaveSlotSummaryCard(
     error: String?,
     onOpen: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed && !isWorking) SAVE_CARD_PRESSED_SCALE else 1f,
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        label = "save_slot_card_press_scale",
+    )
+
     Card(
         onClick = onOpen,
+        interactionSource = interactionSource,
         shape = SaveCardShape,
         colors = CardDefaults.cardColors(containerColor = Color(SAVE_CARD_CONTAINER_ARGB)),
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                },
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(14.dp),
