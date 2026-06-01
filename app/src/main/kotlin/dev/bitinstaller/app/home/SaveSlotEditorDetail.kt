@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,9 +60,7 @@ internal fun SaveSlotEditorDetail(
         )
         if (save.errorMessage == null) {
             SaveDetailActions(
-                fieldCount = save.advancedFields.size,
                 enabled = target.editingSavePath != save.path,
-                onAdvancedClick = actions.onAdvancedClick,
                 onSaveRevert = actions.onSaveRevert,
                 onBackClick = actions.onBackClick,
             )
@@ -180,26 +176,11 @@ private fun SaveSlotTabItem(
 
 @Composable
 private fun SaveDetailActions(
-    fieldCount: Int,
     enabled: Boolean,
-    onAdvancedClick: () -> Unit,
     onSaveRevert: () -> Unit,
     onBackClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Button(
-            enabled = enabled,
-            onClick = onAdvancedClick,
-            shape = SaveEditorControlShape,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-        ) {
-            Text(
-                text = "Open Advanced Editor · $fieldCount",
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-            )
-        }
         FilledTonalButton(
             enabled = enabled,
             onClick = onSaveRevert,

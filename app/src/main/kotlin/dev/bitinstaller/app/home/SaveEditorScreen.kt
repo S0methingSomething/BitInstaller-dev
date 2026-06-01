@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,9 @@ import dev.bitinstaller.app.save.SaveEditableField
 
 private val SaveEditorButtonShape = SaveEditorControlShape
 private const val SAVE_TARGET_HINT_ALPHA = 0.4f
+private const val SAVE_TARGET_SECONDARY_ALPHA = 0.45f
+private const val SAVE_TARGET_DISABLED_ALPHA = 0.08f
+private const val SAVE_TARGET_DISABLED_TEXT_ALPHA = 0.5f
 
 @Composable
 internal fun SaveEditorSection(
@@ -265,10 +269,10 @@ private fun SaveTargetActionButton(
         onClick = { onTargetClick(target) },
         colors =
             ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
-                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                disabledContainerColor = Color.White.copy(alpha = SAVE_TARGET_DISABLED_ALPHA),
+                disabledContentColor = Color.White.copy(alpha = SAVE_TARGET_DISABLED_TEXT_ALPHA),
             ),
         shape = SaveEditorButtonShape,
         modifier = modifier.heightIn(min = 48.dp),
@@ -276,7 +280,7 @@ private fun SaveTargetActionButton(
         if (target.isLoading) {
             LoadingIndicator(
                 modifier = Modifier.size(18.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = Color.Black,
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -301,7 +305,7 @@ private fun SaveTargetTextBlock(target: SaveTargetUiState) {
             Text(
                 text = "v${target.versionLabel}",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = SAVE_TARGET_SECONDARY_ALPHA),
             )
         }
         Row(
@@ -316,7 +320,7 @@ private fun SaveTargetTextBlock(target: SaveTargetUiState) {
             Text(
                 text = target.statusLabel,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.White.copy(alpha = SAVE_TARGET_SECONDARY_ALPHA),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )

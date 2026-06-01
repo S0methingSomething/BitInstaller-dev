@@ -115,9 +115,7 @@ internal fun HomeContent(
     backgroundMotionEnabled: Boolean = true,
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
-    val isFocusedSaveEditor =
-        navigationManager.selectedDestination == BitInstallerDestination.SaveEditor &&
-            state.saveEditor.selectedTarget != null
+    val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
     val chromeMotionEnabled = backgroundMotionEnabled && !isFocusedSaveEditor
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
