@@ -2,9 +2,12 @@ package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -12,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,16 +35,19 @@ internal fun SaveFileList(
     target: SaveTargetUiState,
     saves: List<BitLifeSaveSummary>,
     onSaveOpen: (BitLifeSaveSummary) -> Unit,
-    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        saves.forEach { save ->
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        modifier = modifier,
+    ) {
+        items(saves, key = { save -> save.path }, contentType = { BitLifeSaveSummary::class }) { save ->
             SaveSlotSummaryCard(
                 save = save,
                 isWorking = target.editingSavePath == save.path,
                 error = target.editErrors[save.path] ?: save.errorMessage,
                 onOpen = { onSaveOpen(save) },
-                sharedTransitionState = sharedTransitionState,
             )
         }
     }
@@ -54,22 +59,18 @@ private fun SaveSlotSummaryCard(
     isWorking: Boolean,
     error: String?,
     onOpen: () -> Unit,
-    sharedTransitionState: SaveEditorSharedTransitionState,
 ) {
     Surface(
         onClick = onOpen,
         shape = SaveCardShape,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.045f),
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .saveSlotSharedBounds(save = save, transitionState = sharedTransitionState),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(18.dp),
         ) {
-            SaveSlotSummaryHeader(save = save, isWorking = isWorking)
+            SaveSlotSummaryHeader(save = save, isWorking = isWorking, onOpen = onOpen)
             if (error != null) {
                 SaveSlotStatus(text = error, isError = true)
             } else {
@@ -83,13 +84,8 @@ private fun SaveSlotSummaryCard(
 private fun SaveSlotSummaryHeader(
     save: BitLifeSaveSummary,
     isWorking: Boolean,
+    onOpen: () -> Unit,
 ) {
-    val titleWeight by animateExpressiveFontWeight(
-        isActive = !isWorking,
-        restWeight = FontWeight.SemiBold.weight,
-        activeWeight = FontWeight.Black.weight,
-    )
-
     Row(
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -103,7 +99,7 @@ private fun SaveSlotSummaryHeader(
             Text(
                 text = save.heroName,
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight(titleWeight),
+                fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -118,7 +114,7 @@ private fun SaveSlotSummaryHeader(
         }
         FilledTonalButton(
             enabled = !isWorking,
-            onClick = {},
+            onClick = onOpen,
             shape = RoundedCornerShape(999.dp),
             colors =
                 ButtonDefaults.filledTonalButtonColors(
@@ -129,7 +125,7 @@ private fun SaveSlotSummaryHeader(
             Text(
                 text = if (isWorking) "Working" else "Open",
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight(titleWeight),
+                fontWeight = FontWeight.Bold,
             )
         }
     }

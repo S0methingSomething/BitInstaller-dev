@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -31,17 +30,12 @@ internal fun SaveSlotEditorDetail(
     save: BitLifeSaveSummary,
     actions: SaveSlotEditorDetailActions,
     modifier: Modifier = Modifier,
-    sharedTransitionState: SaveEditorSharedTransitionState = SaveEditorSharedTransitionState.Empty,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(18.dp),
         modifier = modifier.fillMaxSize(),
     ) {
-        SaveSlotEditorHeader(
-            save = save,
-            onBackClick = actions.onBackClick,
-            sharedTransitionState = sharedTransitionState,
-        )
+        SaveSlotEditorHeader(save = save, onBackClick = actions.onBackClick)
         Column(
             verticalArrangement = Arrangement.spacedBy(18.dp),
             modifier =
@@ -87,15 +81,8 @@ internal data class SaveSlotEditorDetailActions(
 private fun SaveSlotEditorHeader(
     save: BitLifeSaveSummary,
     onBackClick: () -> Unit,
-    sharedTransitionState: SaveEditorSharedTransitionState,
 ) {
-    SaveEditorPanel(
-        containerAlpha = 0.055f,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .saveSlotSharedBounds(save = save, transitionState = sharedTransitionState),
-    ) {
+    SaveEditorPanel(containerAlpha = 0.055f, modifier = Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(18.dp)) {
             TextButton(onClick = onBackClick, modifier = Modifier.fillMaxWidth()) {
                 Text(text = "Back to save slots")
@@ -139,12 +126,6 @@ private fun SaveDetailActions(
     onAdvancedClick: () -> Unit,
     onSaveRevert: () -> Unit,
 ) {
-    val primaryWeight by animateExpressiveFontWeight(
-        isActive = enabled,
-        restWeight = FontWeight.SemiBold.weight,
-        activeWeight = FontWeight.Black.weight,
-    )
-
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = enabled,
@@ -155,7 +136,7 @@ private fun SaveDetailActions(
         ) {
             Text(
                 text = "Open Advanced Editor · $fieldCount",
-                fontWeight = FontWeight(primaryWeight),
+                fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
             )
         }

@@ -4,8 +4,6 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,29 +18,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
-
-private data class HomeNavigationState(
-    val navController: NavHostController,
-    val selectedDestination: BitInstallerDestination,
-)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -108,16 +93,13 @@ internal fun HomeContent(
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
-    val isFocusedSaveEditor =
-        state.selectedDestination == BitInstallerDestination.SaveEditor &&
-            state.saveEditor.selectedTarget != null
-
-    val navigationState = rememberHomeNavigationState(state.selectedDestination)
+    val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
+    val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
 
     Box(modifier = Modifier.fillMaxSize()) {
         HomeAmbientGlow()
         DestinationPane(
-            navController = navigationState.navController,
+            navigationManager = navigationManager,
             state = state,
             isFocusedSaveEditor = isFocusedSaveEditor,
             callbacks = callbacks,
@@ -125,10 +107,9 @@ internal fun HomeContent(
         )
 
         HomeBottomNavigation(
-            selectedDestination = navigationState.selectedDestination,
+            selectedDestination = navigationManager.selectedDestination,
             onDestinationSelected = { destination ->
-                callbacks.onDestinationSelected(destination)
-                navigationState.navController.navigateToDestination(destination)
+                navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
             },
             modifier =
                 Modifier
@@ -140,45 +121,13 @@ internal fun HomeContent(
 }
 
 @Composable
-private fun rememberHomeNavigationState(selectedDestination: BitInstallerDestination): HomeNavigationState {
-    val navController = rememberNavController()
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
-
-    LaunchedEffect(selectedDestination, currentRoute) {
-        val targetRoute = selectedDestination.route
-        if (currentRoute != null && currentRoute != targetRoute) {
-            navController.navigateToDestination(selectedDestination)
-        }
-    }
-
-    return HomeNavigationState(
-        navController = navController,
-        selectedDestination = currentRoute.toBitInstallerDestination() ?: selectedDestination,
-    )
-}
-
-private fun NavHostController.navigateToDestination(destination: BitInstallerDestination) {
-    navigate(destination.route) {
-        launchSingleTop = true
-        restoreState = true
-        popUpTo(BitInstallerDestination.MonetizationVars.route) {
-            saveState = true
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
 private fun DestinationPane(
-    navController: NavHostController,
+    navigationManager: HomeNavigationManager,
     state: HomeUiState,
     isFocusedSaveEditor: Boolean,
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope?,
 ) {
-    val effectsDestinationSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-
     Column(
         modifier =
             Modifier
@@ -196,47 +145,18 @@ private fun DestinationPane(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        NavHost(
-            navController = navController,
-            startDestination = BitInstallerDestination.MonetizationVars.route,
+        Box(
             modifier = Modifier.weight(1f),
-            enterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
-            exitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
-            popEnterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
-            popExitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
         ) {
-            composable(BitInstallerDestination.MonetizationVars.route) {
-                PatchTargetsSection(
-                    targets = state.patchTargets,
-                    onPatchClick = callbacks.onPatchClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = this,
-                )
-            }
-
-            composable(BitInstallerDestination.SaveEditor.route) {
-                SaveEditorSection(
-                    state = state.saveEditor,
-                    sharedTransitionState =
-                        SaveEditorSharedTransitionState(
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = this,
-                        ),
-                    actions =
-                        SaveEditorSectionActions(
-                            onTargetClick = callbacks.onSaveTargetClick,
-                            onFieldEdit = callbacks.onSaveFieldEdit,
-                            onSaveRevert = callbacks.onSaveRevert,
-                            onBackClick = callbacks.onSaveEditorBack,
-                        ),
-                )
-            }
+            HomeDestinationHost(
+                navigationManager = navigationManager,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = sharedTransitionScope,
+            )
         }
     }
 }
-
-private fun String?.toBitInstallerDestination(): BitInstallerDestination? =
-    BitInstallerDestination.entries.firstOrNull { destination -> destination.route == this }
 
 @Composable
 private fun HomeHeader(state: HomeUiState) {

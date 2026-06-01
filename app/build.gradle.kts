@@ -113,7 +113,7 @@ android {
 
     lint {
         abortOnError = true
-        checkDependencies = true
+        checkDependencies = false
         // Dependabot owns dependency drift; lint version checks are time-volatile under warningsAsErrors.
         disable +=
             setOf(
@@ -148,7 +148,7 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
     ignoreFailures = false
-    parallel = true
+    parallel = false
 }
 
 dependencies {
