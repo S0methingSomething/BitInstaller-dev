@@ -25,7 +25,7 @@ import java.util.Locale
 
 private const val BYTES_PER_KIB = 1024f
 private const val BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB
-private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 4
+private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 8
 private const val MAX_CHARACTER_PREVIEW_COUNT = 4
 private const val MAX_CHARACTER_FIELD_COUNT = 5
 private const val SAVE_VALUE_LABEL_WEIGHT = 0.38f
@@ -74,13 +74,18 @@ internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
     onFieldClick: (SaveEditableField) -> Unit,
 ) {
-    val rows =
-        attributes
-            .take(MAX_ATTRIBUTE_PREVIEW_COUNT)
-            .map { attribute ->
-                SaveValueRow(attribute.label, String.format(Locale.US, "%.0f", attribute.value), attribute.field)
-            }
-    CompactValueRows(rows = rows, onFieldClick = onFieldClick)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
+            SaveAttributeMeterRow(attribute = attribute, onFieldClick = onFieldClick)
+        }
+        if (attributes.size > MAX_ATTRIBUTE_PREVIEW_COUNT) {
+            Text(
+                text = "+${attributes.size - MAX_ATTRIBUTE_PREVIEW_COUNT} more attributes in Advanced Editor",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
+            )
+        }
+    }
 }
 
 @Composable

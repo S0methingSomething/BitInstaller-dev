@@ -1,9 +1,16 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 internal data class SaveEditorModalState(
     val selectedTarget: SaveTargetUiState?,
@@ -24,13 +31,19 @@ internal data class SaveEditorModalActions(
     val backToTargets: () -> Unit,
 )
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun SaveEditorBackHandler(
+internal fun rememberSaveEditorBackHandler(
     state: SaveEditorModalState,
     actions: SaveEditorModalActions,
-) {
-    PredictiveBackHandler(enabled = state.hasVisibleModalOrDetail()) { progress ->
-        progress.collect { /* allow system animation */ }
+): Animatable<Float, *> {
+    val scope = rememberCoroutineScope()
+    val backProgress = remember { Animatable(0f) }
+    val spatialFloatSpec = MaterialTheme.motionScheme.defaultSpatialSpec<Float>()
+    val enabled = state.hasVisibleModalOrDetail()
+    PredictiveBackHandler(enabled = enabled) { backEvent ->
+        scope.launch { backEvent.collectLatest { backProgress.snapTo(it.progress) } }
+        scope.launch { backProgress.animateTo(0f, animationSpec = spatialFloatSpec) }
         when {
             state.editDraft != null -> actions.closeEdit()
             state.advancedSave != null -> actions.closeAdvanced()
@@ -39,6 +52,7 @@ internal fun SaveEditorBackHandler(
             state.selectedTarget != null -> actions.backToTargets()
         }
     }
+    return backProgress
 }
 
 @Composable

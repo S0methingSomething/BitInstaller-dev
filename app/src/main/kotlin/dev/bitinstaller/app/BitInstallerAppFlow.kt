@@ -2,6 +2,7 @@ package dev.bitinstaller.app
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.bitinstaller.app.crypto.MonetizationCodec
@@ -53,7 +54,7 @@ internal class BitInstallerAppState(
     var saveRecentEditFieldIds by mutableStateOf(mapOf<String, List<String>>())
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
     var noticeMessage by mutableStateOf<String?>(null)
-    var noticeToken by mutableStateOf(0)
+    var noticeToken by mutableIntStateOf(0)
 }
 
 internal class AppFlowDeps(

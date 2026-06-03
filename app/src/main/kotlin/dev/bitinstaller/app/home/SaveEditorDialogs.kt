@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +21,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
+
+private const val ADVANCED_SEARCH_DEBOUNCE_MS = 250L
 
 @Composable
 internal fun SaveFieldEditDialog(
@@ -71,15 +75,23 @@ internal fun SaveAdvancedFieldsDialog(
     var query by rememberSaveable(save.path) { mutableStateOf("") }
     var filter by rememberSaveable(save.path) { mutableStateOf(AdvancedFieldFilter.ALL) }
     var sort by rememberSaveable(save.path) { mutableStateOf(AdvancedFieldSort.RECENT_FIRST) }
-    val filtered =
-        remember(query, filter, sort, recentFieldIds, save.advancedFields) {
+
+    var debouncedQuery by remember { mutableStateOf("") }
+    LaunchedEffect(query) {
+        kotlinx.coroutines.delay(ADVANCED_SEARCH_DEBOUNCE_MS)
+        debouncedQuery = query
+    }
+
+    val filtered by remember(debouncedQuery, filter, sort, recentFieldIds, save.advancedFields) {
+        derivedStateOf {
             save.advancedFields.filteredAndSorted(
-                query = query,
+                query = debouncedQuery,
                 recentFieldIds = recentFieldIds,
                 filter = filter,
                 sort = sort,
             )
         }
+    }
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),

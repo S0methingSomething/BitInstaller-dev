@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,14 +30,25 @@ private const val SAVE_EDITOR_SCREEN_BACKGROUND_ALPHA = 0.60f
 private const val SAVE_EDITOR_DIVIDER_ARGB = 0x14FFFFFF
 private const val SAVE_EDITOR_LABEL_ALPHA = 0.35f
 private const val SAVE_EDITOR_HEADER_LETTER_SPACING = 2f
+private const val BACK_TRANSLATION_FRACTION = 0.25f
+private const val BACK_SCALE_FACTOR = 0.06f
+private const val BACK_SCALE_OFFSET = 0.94f
+private const val BACK_ALPHA_OFFSET = 0.30f
+private const val BACK_ALPHA_MIN = 0.70f
+
+internal data class SaveEditorFrameConfig(
+    val selectedTarget: SaveTargetUiState?,
+    val selectedSave: BitLifeSaveSummary?,
+    val successPopup: SaveSuccessPopup?,
+    val backProgress: Float = 0f,
+)
+
 internal val SaveEditorHorizontalPadding = 24.dp
 private val SaveEditorHeaderPadding = 24.dp
 
 @Composable
 internal fun SaveEditorFullscreenFrame(
-    selectedTarget: SaveTargetUiState?,
-    selectedSave: BitLifeSaveSummary?,
-    successPopup: SaveSuccessPopup?,
+    config: SaveEditorFrameConfig,
     onDismissPopup: (SaveSuccessPopup) -> Unit,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -53,14 +65,21 @@ internal fun SaveEditorFullscreenFrame(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .navigationBarsPadding(),
+                    .navigationBarsPadding()
+                    .graphicsLayer {
+                        val progress = 1f - config.backProgress
+                        translationX = size.width * config.backProgress * BACK_TRANSLATION_FRACTION
+                        scaleX = progress * BACK_SCALE_FACTOR + BACK_SCALE_OFFSET
+                        scaleY = progress * BACK_SCALE_FACTOR + BACK_SCALE_OFFSET
+                        alpha = progress * BACK_ALPHA_OFFSET + BACK_ALPHA_MIN
+                    },
         ) {
             SaveEditorHeaderSection(
-                title = selectedTarget?.name ?: "Save Editor",
+                title = config.selectedTarget?.name ?: "Save Editor",
                 subtitle =
                     when {
-                        selectedSave != null -> "SLOT EDITOR"
-                        selectedTarget != null -> "SAVE SLOTS"
+                        config.selectedSave != null -> "SLOT EDITOR"
+                        config.selectedTarget != null -> "SAVE SLOTS"
                         else -> "SAVE EDITOR"
                     },
             )
@@ -71,7 +90,7 @@ internal fun SaveEditorFullscreenFrame(
             content()
         }
         SaveEditorSuccessPopup(
-            popup = successPopup,
+            popup = config.successPopup,
             onDismiss = onDismissPopup,
             modifier =
                 Modifier
