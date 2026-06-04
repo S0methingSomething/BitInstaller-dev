@@ -177,14 +177,13 @@ dependencies {
     implementation(libs.compose.animation.core)
     implementation(libs.compose.material.icons.core)
     implementation(libs.lifecycle.viewmodel)
-    implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.common)
     implementation(libs.navigation.compose)
     implementation(libs.navigation.runtime)
     implementation(libs.compose.icons.extended)
     lintChecks(libs.slackhq.compose.lints)
 
-    debugImplementation(libs.leakcanary)
+    debugRuntimeOnly(libs.leakcanary)
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
