@@ -53,7 +53,8 @@ internal fun SaveSlotEditorDetail(
             state = SaveSlotTabBodyState(target = target, save = save, selectedTab = selectedTab),
             actions =
                 SaveSlotTabBodyActions(
-                    onFieldClick = actions.onFieldClick,
+                    onFieldChange = actions.onFieldChange,
+                    onAttributeChange = actions.onAttributeChange,
                     onAdvancedClick = actions.onAdvancedClick,
                 ),
             modifier = Modifier.weight(1f),
@@ -77,7 +78,8 @@ internal fun SaveSlotEditorDetail(
 
 internal data class SaveSlotEditorDetailActions(
     val onBackClick: () -> Unit,
-    val onFieldClick: (SaveEditableField) -> Unit,
+    val onFieldChange: (SaveEditableField, String) -> Unit,
+    val onAttributeChange: (SaveEditableField, Float) -> Unit,
     val onAdvancedClick: () -> Unit,
     val onSaveRevert: () -> Unit,
 )

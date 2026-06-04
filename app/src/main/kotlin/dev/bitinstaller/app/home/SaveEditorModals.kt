@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import dev.bitinstaller.app.save.BitLifeSaveSummary
-import dev.bitinstaller.app.save.SaveEditableField
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -16,16 +15,12 @@ internal data class SaveEditorModalState(
     val selectedTarget: SaveTargetUiState?,
     val selectedSavePath: String?,
     val advancedSave: BitLifeSaveSummary?,
-    val editDraft: SaveFieldEditDraft?,
     val revertSave: BitLifeSaveSummary?,
 )
 
 internal data class SaveEditorModalActions(
     val closeAdvanced: () -> Unit,
-    val closeEdit: () -> Unit,
     val closeRevert: () -> Unit,
-    val openEditFromAdvanced: (BitLifeSaveSummary, SaveEditableField) -> Unit,
-    val submitEdit: (SaveFieldEditDraft, String) -> Unit,
     val confirmRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit,
     val backToSaves: () -> Unit,
     val backToTargets: () -> Unit,
@@ -45,7 +40,6 @@ internal fun rememberSaveEditorBackHandler(
         scope.launch { backEvent.collectLatest { backProgress.snapTo(it.progress) } }
         scope.launch { backProgress.animateTo(0f, animationSpec = spatialFloatSpec) }
         when {
-            state.editDraft != null -> actions.closeEdit()
             state.advancedSave != null -> actions.closeAdvanced()
             state.revertSave != null -> actions.closeRevert()
             state.selectedSavePath != null -> actions.backToSaves()
@@ -70,14 +64,7 @@ internal fun SaveEditorModals(
                     ?.get(save.path)
                     .orEmpty(),
             onDismissRequest = actions.closeAdvanced,
-            onFieldClick = { field -> actions.openEditFromAdvanced(save, field) },
-        )
-    }
-    state.editDraft?.let { draft ->
-        SaveFieldEditDialog(
-            draft = draft,
-            onDismissRequest = actions.closeEdit,
-            onConfirm = { value -> actions.submitEdit(draft, value) },
+            onFieldClick = {},
         )
     }
     state.revertSave?.let { save ->
@@ -91,8 +78,7 @@ internal fun SaveEditorModals(
 }
 
 private fun SaveEditorModalState.hasVisibleModalOrDetail(): Boolean =
-    editDraft != null ||
-        advancedSave != null ||
+    advancedSave != null ||
         revertSave != null ||
         selectedSavePath != null ||
         selectedTarget != null

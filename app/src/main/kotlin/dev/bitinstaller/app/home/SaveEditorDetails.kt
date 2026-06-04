@@ -2,19 +2,14 @@ package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
@@ -27,13 +22,7 @@ private const val BYTES_PER_KIB = 1024f
 private const val BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB
 private const val MAX_ATTRIBUTE_PREVIEW_COUNT = 8
 private const val MAX_CHARACTER_PREVIEW_COUNT = 4
-private const val MAX_CHARACTER_FIELD_COUNT = 5
-private const val SAVE_VALUE_LABEL_WEIGHT = 0.38f
-private const val SAVE_VALUE_TEXT_WEIGHT = 0.62f
-private const val SAVE_DETAIL_ROW_ALPHA = 0.06f
-private const val SAVE_DETAIL_VALUE_ALPHA = 0.035f
 private const val SAVE_DETAIL_LABEL_ALPHA = 0.4f
-private val SaveValueRowShape = RoundedCornerShape(12.dp)
 
 @Composable
 internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
@@ -57,26 +46,38 @@ internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
 @Composable
 internal fun SaveFactRows(
     save: BitLifeSaveSummary,
-    onFieldClick: (SaveEditableField) -> Unit,
+    onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
-    val facts =
-        buildList {
-            save.bankBalance?.let { balance ->
-                add(SaveValueRow("Bank", String.format(Locale.US, "$%,.0f", balance), save.bankBalanceField))
-            }
-            save.facts.forEach { fact -> add(SaveValueRow(fact.label, fact.value, fact.field)) }
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        save.bankBalanceField?.let { field ->
+            SaveInlineTextField(
+                label = "BANK",
+                value = save.bankBalance?.let { String.format(Locale.US, "$%,.0f", it) } ?: "",
+                onValueChange = { onFieldChange(field, it) },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
-    CompactValueRows(rows = facts, onFieldClick = onFieldClick)
+        save.facts.forEach { fact ->
+            if (fact.field != null) {
+                SaveInlineTextField(
+                    label = fact.label,
+                    value = fact.value,
+                    onValueChange = { onFieldChange(fact.field, it) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
 }
 
 @Composable
 internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
-    onFieldClick: (SaveEditableField) -> Unit,
+    onFieldChange: (SaveEditableField, Float) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
-            SaveAttributeMeterRow(attribute = attribute, onFieldClick = onFieldClick)
+            SaveAttributeMeterRow(attribute = attribute, onFieldChange = onFieldChange)
         }
         if (attributes.size > MAX_ATTRIBUTE_PREVIEW_COUNT) {
             Text(
@@ -91,133 +92,59 @@ internal fun SaveAttributeRows(
 @Composable
 internal fun SaveCharacterRows(
     characters: List<SaveCharacterSummary>,
-    onFieldClick: (SaveEditableField) -> Unit,
+    onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     if (characters.isEmpty()) return
 
+    val immediateFamily = listOf("FATHER", "MOTHER", "BROTHER", "SISTER")
+    val partners = listOf("PARTNER", "HUSBAND", "WIFE", "BOYFRIEND", "GIRLFRIEND")
+    val children = listOf("SON", "DAUGHTER", "CHILD")
+
+    val partitioned = linkedMapOf<String, List<SaveCharacterSummary>>()
+    val immed = characters.filter { it.role in immediateFamily }
+    val prt = characters.filter { it.role in partners }
+    val chld = characters.filter { it.role in children }
+    val other =
+        characters.filter {
+            it.role !in immediateFamily && it.role !in partners && it.role !in children
+        }
+
+    if (immed.isNotEmpty()) partitioned["IMMEDIATE FAMILY"] = immed
+    if (prt.isNotEmpty()) partitioned["PARTNERS & SPOUSES"] = prt
+    if (chld.isNotEmpty()) partitioned["CHILDREN"] = chld
+    if (other.isNotEmpty()) partitioned["OTHERS"] = other
+
+    var count = 0
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        characters.take(MAX_CHARACTER_PREVIEW_COUNT).forEach { character ->
-            SaveCharacterCompactCard(character = character, onFieldClick = onFieldClick)
-        }
-        if (characters.size > MAX_CHARACTER_PREVIEW_COUNT) {
-            Text(
-                text = "+${characters.size - MAX_CHARACTER_PREVIEW_COUNT} more people in Advanced Editor",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompactValueRows(
-    rows: List<SaveValueRow>,
-    onFieldClick: (SaveEditableField) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { row -> SaveValueRowView(row = row, onFieldClick = onFieldClick) }
-    }
-}
-
-@Composable
-private fun SaveCharacterCompactCard(
-    character: SaveCharacterSummary,
-    onFieldClick: (SaveEditableField) -> Unit,
-) {
-    Surface(
-        color = Color.White.copy(alpha = SAVE_DETAIL_ROW_ALPHA),
-        shape = SaveValueRowShape,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = character.role.uppercase(Locale.US),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
-            )
-            Text(
-                text = character.characterLabel(),
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            character.fields.take(MAX_CHARACTER_FIELD_COUNT).forEach { field ->
-                SaveValueRowView(
-                    row = SaveValueRow(field.label, field.value, field),
-                    onFieldClick = onFieldClick,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SaveValueRowView(
-    row: SaveValueRow,
-    onFieldClick: (SaveEditableField) -> Unit,
-) {
-    val field = row.field
-    if (field == null) {
-        Surface(
-            color = Color.White.copy(alpha = SAVE_DETAIL_VALUE_ALPHA),
-            shape = SaveValueRowShape,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            SaveValueRowContent(row = row)
-        }
-        return
-    }
-
-    Surface(
-        onClick = { onFieldClick(field) },
-        color = Color.White.copy(alpha = SAVE_DETAIL_VALUE_ALPHA),
-        shape = SaveValueRowShape,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        SaveValueRowContent(row = row)
-    }
-}
-
-@Composable
-private fun SaveValueRowContent(row: SaveValueRow) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-    ) {
-        Column(modifier = Modifier.weight(SAVE_VALUE_LABEL_WEIGHT)) {
-            Text(
-                text = row.label.uppercase(Locale.US),
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (row.field != null) {
+        for ((categoryName, categoryPeople) in partitioned) {
+            count += categoryPeople.size
+            if (count > MAX_CHARACTER_PREVIEW_COUNT) {
                 Text(
-                    text = "Edit",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "+${characters.size - MAX_CHARACTER_PREVIEW_COUNT} more people in Advanced Editor",
+                    style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = SAVE_DETAIL_LABEL_ALPHA),
                 )
+                return
+            }
+            Text(
+                text = categoryName,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = RELATIONSHIP_CATEGORY_ALPHA),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = RELATIONSHIP_CATEGORY_LETTER_SPACING.sp,
+            )
+            for (character in categoryPeople) {
+                RelationshipCard(
+                    character = character,
+                    onFieldChange = onFieldChange,
+                    maxFieldCount = MAX_CHARACTER_FIELD_COUNT,
+                )
             }
         }
-        Text(
-            text = row.value,
-            style = MaterialTheme.typography.titleSmall,
-            color = Color.White,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(SAVE_VALUE_TEXT_WEIGHT),
-        )
     }
 }
 
-private data class SaveValueRow(
-    val label: String,
-    val value: String,
-    val field: SaveEditableField?,
-)
+internal const val MAX_CHARACTER_FIELD_COUNT = 5
 
 private fun formatBytes(sizeBytes: Int): String =
     when {
@@ -225,11 +152,3 @@ private fun formatBytes(sizeBytes: Int): String =
         sizeBytes >= BYTES_PER_MIB -> String.format(Locale.US, "%.1f MB", sizeBytes / BYTES_PER_MIB)
         else -> String.format(Locale.US, "%.0f KB", sizeBytes / BYTES_PER_KIB)
     }
-
-private fun SaveCharacterSummary.characterLabel(): String =
-    listOfNotNull(
-        name.takeUnless { it == "Unnamed life" },
-        age?.let { "Age $it" },
-        relationship?.let { String.format(Locale.US, "%.0f relationship", it) },
-        isAlive?.let { alive -> if (alive) "Alive" else "Dead" },
-    ).joinToString(" · ").ifBlank { name }

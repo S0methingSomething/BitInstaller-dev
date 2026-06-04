@@ -1,7 +1,6 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -23,46 +22,6 @@ import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
 private const val ADVANCED_SEARCH_DEBOUNCE_MS = 250L
-
-@Composable
-internal fun SaveFieldEditDialog(
-    draft: SaveFieldEditDraft,
-    onDismissRequest: () -> Unit,
-    onConfirm: (String) -> Unit,
-) {
-    var value by rememberSaveable(draft.field.id) { mutableStateOf(draft.field.value) }
-    val validationError = remember(value, draft.field.valueKind) { draft.field.valueKind.validateEditInput(value) }
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
-        Surface(
-            color = MaterialTheme.colorScheme.background,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            SaveFieldEditContent(
-                state =
-                    SaveFieldEditContentState(
-                        draft = draft,
-                        value = value,
-                        validationError = validationError,
-                    ),
-                actions =
-                    SaveFieldEditContentActions(
-                        onValueChange = { value = it },
-                        onDismissRequest = onDismissRequest,
-                        onConfirm = { onConfirm(value) },
-                    ),
-                modifier =
-                    Modifier
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                        .imePadding()
-                        .padding(horizontal = 24.dp, vertical = 22.dp),
-            )
-        }
-    }
-}
 
 @Composable
 internal fun SaveAdvancedFieldsDialog(

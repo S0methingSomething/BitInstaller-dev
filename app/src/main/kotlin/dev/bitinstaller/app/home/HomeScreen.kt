@@ -1,14 +1,9 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,9 +30,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-private const val HOME_NAV_EXIT_SLIDE_DIVISOR = 2
-private const val HOME_CHROME_SLIDE_DIVISOR = 3
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -107,7 +99,6 @@ private fun LiveDictionaryPrompt(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 internal fun HomeContent(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
@@ -116,93 +107,56 @@ internal fun HomeContent(
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
     val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
-    val chromeMotionEnabled = backgroundMotionEnabled && !isFocusedSaveEditor
-    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (chromeMotionEnabled) {
-            HomeAmbientGlow()
-        }
+        HomeAmbientGlow()
         DestinationPane(
             paneState =
                 HomePaneState(
                     navigationManager = navigationManager,
                     isFocusedSaveEditor = isFocusedSaveEditor,
-                    backgroundMotionEnabled = chromeMotionEnabled,
+                    backgroundMotionEnabled = backgroundMotionEnabled,
                     sharedTransitionScope = sharedTransitionScope,
                 ),
             state = state,
             callbacks = callbacks,
         )
-
-        AnimatedVisibility(
-            visible = !isFocusedSaveEditor,
-            enter =
-                fadeIn(animationSpec = effectsFloatSpec) +
-                    slideInVertically(animationSpec = spatialIntSpec) { it / HOME_NAV_EXIT_SLIDE_DIVISOR },
-            exit =
-                fadeOut(animationSpec = effectsFloatSpec) +
-                    slideOutVertically(animationSpec = spatialIntSpec) { it / HOME_NAV_EXIT_SLIDE_DIVISOR },
+        HomeBottomNavigation(
+            selectedDestination = navigationManager.selectedDestination,
+            onDestinationSelected = { destination ->
+                navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
+            },
             modifier =
                 Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = 16.dp),
-        ) {
-            HomeBottomNavigation(
-                selectedDestination = navigationManager.selectedDestination,
-                onDestinationSelected = { destination ->
-                    navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
-                },
-            )
-        }
+        )
     }
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun DestinationPane(
     paneState: HomePaneState,
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
 ) {
-    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     val paneModifier =
-        if (paneState.isFocusedSaveEditor) {
-            Modifier.fillMaxSize()
-        } else {
-            Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 16.dp)
-        }
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
 
     Column(modifier = paneModifier) {
-        AnimatedVisibility(
-            visible = !paneState.isFocusedSaveEditor,
-            enter =
-                fadeIn(animationSpec = effectsFloatSpec) +
-                    slideInVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
-            exit =
-                fadeOut(animationSpec = effectsFloatSpec) +
-                    slideOutVertically(animationSpec = spatialIntSpec) { -it / HOME_CHROME_SLIDE_DIVISOR },
-        ) {
-            Column {
-                HomeHeader(state = state, motionEnabled = paneState.backgroundMotionEnabled)
-                Spacer(modifier = Modifier.height(12.dp))
-                DashboardSection(
-                    status = state.backendStatus,
-                    onActionClick = callbacks.onDashboardActionClick,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
+        HomeHeader(state = state, motionEnabled = paneState.backgroundMotionEnabled)
+        Spacer(modifier = Modifier.height(12.dp))
+        DashboardSection(
+            status = state.backendStatus,
+            onActionClick = callbacks.onDashboardActionClick,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Box(
-            modifier = Modifier.weight(1f),
-        ) {
+        Box(modifier = Modifier.weight(1f)) {
             HomeDestinationHost(
                 navigationManager = paneState.navigationManager,
                 state = state,

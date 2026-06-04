@@ -78,7 +78,8 @@ internal data class SaveSlotTabBodyState(
 )
 
 internal data class SaveSlotTabBodyActions(
-    val onFieldClick: (SaveEditableField) -> Unit,
+    val onFieldChange: (SaveEditableField, String) -> Unit,
+    val onAttributeChange: (SaveEditableField, Float) -> Unit,
     val onAdvancedClick: () -> Unit,
 )
 
@@ -109,8 +110,8 @@ private fun LazyListScope.saveStatsTab(
 ) {
     item(contentType = "stats") {
         SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
-            SaveFactRows(save = state.save, onFieldClick = actions.onFieldClick)
-            SaveAttributeRows(attributes = state.save.attributes, onFieldClick = actions.onFieldClick)
+            SaveFactRows(save = state.save, onFieldChange = actions.onFieldChange)
+            SaveAttributeRows(attributes = state.save.attributes, onFieldChange = actions.onAttributeChange)
         }
     }
 }
@@ -121,7 +122,7 @@ private fun LazyListScope.savePeopleTab(
 ) {
     item(contentType = "people") {
         SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
-            SaveCharacterRows(characters = state.save.characters, onFieldClick = actions.onFieldClick)
+            SaveCharacterRows(characters = state.save.characters, onFieldChange = actions.onFieldChange)
         }
     }
 }

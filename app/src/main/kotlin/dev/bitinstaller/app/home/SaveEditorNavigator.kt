@@ -38,13 +38,21 @@ internal fun SaveEditorNavigator(
         return
     }
 
+    val onFieldChange: (SaveEditableField, String) -> Unit = { field, value ->
+        actions.onFieldEdit(selectedTarget, selectedSave, field, value)
+    }
+    val onAttributeChange: (SaveEditableField, Float) -> Unit = { field, value ->
+        actions.onFieldEdit(selectedTarget, selectedSave, field, value.toString())
+    }
+
     SaveSlotEditorDetail(
         target = selectedTarget,
         save = selectedSave,
         actions =
             SaveSlotEditorDetailActions(
                 onBackClick = callbacks.onSaveBackClick,
-                onFieldClick = { field -> callbacks.onFieldClick(selectedSave, field) },
+                onFieldChange = onFieldChange,
+                onAttributeChange = onAttributeChange,
                 onAdvancedClick = { callbacks.onAdvancedClick(selectedSave) },
                 onSaveRevert = { callbacks.onSaveRevert(selectedSave) },
             ),
@@ -62,7 +70,6 @@ internal data class SaveEditorSectionActions(
 internal data class SaveEditorNavigatorCallbacks(
     val onSaveOpen: (BitLifeSaveSummary) -> Unit,
     val onSaveBackClick: () -> Unit,
-    val onFieldClick: (BitLifeSaveSummary, SaveEditableField) -> Unit,
     val onAdvancedClick: (BitLifeSaveSummary) -> Unit,
     val onSaveRevert: (BitLifeSaveSummary) -> Unit,
 )
