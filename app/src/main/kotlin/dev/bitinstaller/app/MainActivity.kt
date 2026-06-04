@@ -17,6 +17,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import dev.bitinstaller.app.debug.DebugMenu
+import dev.bitinstaller.app.debug.DebugScenarioRunner
+import dev.bitinstaller.app.debug.DebugState
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
 import dev.bitinstaller.app.save.SaveScanCache
@@ -52,6 +55,8 @@ private fun BitInstallerApp(presenter: BitInstallerAppPresenter) {
     val context = LocalContext.current
     val saveCache = remember(context) { SaveScanCache(context) }
     val coroutineScope = rememberCoroutineScope()
+    val debug = remember { DebugState() }
+    val scenarioRunner = remember(debug, coroutineScope) { DebugScenarioRunner(debug, coroutineScope) }
 
     LaunchedEffect(Unit) { presenter.initialize() }
 
@@ -60,24 +65,28 @@ private fun BitInstallerApp(presenter: BitInstallerAppPresenter) {
         onSnapshotChanged = { presenter.appState.snapshot = it },
     )
 
-    HomeRoute(
-        state = presenter.homeUiState.value,
-        activeSession = presenter.appState.activeSession,
-        liveDictionaryPrompt = presenter.appState.liveDictionaryPrompt,
-        callbacks =
-            buildHomeRouteCallbacks(
-                context = context,
-                deps =
-                    AppFlowDeps(
-                        repository = presenter.repository,
-                        manifestStore = presenter.manifestStore,
-                        operationLock = presenter.operationLock,
-                        coroutineScope = coroutineScope,
-                        appState = presenter.appState,
-                        saveCache = saveCache,
-                    ),
-            ),
-    )
+    val callbacks =
+        buildHomeRouteCallbacks(
+            context = context,
+            deps =
+                AppFlowDeps(
+                    repository = presenter.repository,
+                    manifestStore = presenter.manifestStore,
+                    operationLock = presenter.operationLock,
+                    coroutineScope = coroutineScope,
+                    appState = presenter.appState,
+                    saveCache = saveCache,
+                ),
+        )
+
+    DebugMenu(debug = debug, scenarioRunner = scenarioRunner) {
+        HomeRoute(
+            state = presenter.homeUiState.value,
+            activeSession = presenter.appState.activeSession,
+            liveDictionaryPrompt = presenter.appState.liveDictionaryPrompt,
+            callbacks = callbacks,
+        )
+    }
 }
 
 @Composable

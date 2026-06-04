@@ -19,6 +19,7 @@ shizuku = "13.1.5"
 accompanist = "0.37.3"
 slackhq-compose-lints = "1.5.0"
 nrbf4j = "0.2.0"
+leakcanary = "2.14"
 lifecycle = "2.10.0"
 navigation = "2.9.6"
 material3-adaptive = "1.2.0"
@@ -69,6 +70,7 @@ material3-adaptive = { module = "androidx.compose.material3.adaptive:adaptive", 
 material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "material3-adaptive" }
 material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "material3-adaptive" }
 window-core = { module = "androidx.window:window-core", version.ref = "windowCore" }
+leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
