@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,7 +17,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
 import dev.bitinstaller.app.save.SaveScanCache
@@ -29,6 +29,8 @@ import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
+    private val presenter: BitInstallerAppPresenter by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -38,7 +40,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    BitInstallerApp()
+                    BitInstallerApp(presenter = presenter)
                 }
             }
         }
@@ -46,9 +48,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BitInstallerApp() {
+private fun BitInstallerApp(presenter: BitInstallerAppPresenter) {
     val context = LocalContext.current
-    val presenter: BitInstallerAppPresenter = viewModel()
     val saveCache = remember(context) { SaveScanCache(context) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -122,7 +123,7 @@ private fun BindShizukuListeners(
 
 @Preview(showBackground = true)
 @Composable
-fun BitInstallerPreview() {
+internal fun BitInstallerPreview() {
     BitInstallerTheme {
         HomeRoute(state = previewHomeUiState())
     }

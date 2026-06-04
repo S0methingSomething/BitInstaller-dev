@@ -1,5 +1,8 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -27,6 +30,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,10 +44,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
+import kotlinx.coroutines.delay
 
 private val SaveEditorButtonShape = SaveEditorControlShape
 private const val SAVE_TARGET_HINT_ALPHA = 0.4f
@@ -51,6 +57,10 @@ private const val SAVE_TARGET_SECONDARY_ALPHA = 0.45f
 private const val SAVE_TARGET_DISABLED_ALPHA = 0.08f
 private const val SAVE_TARGET_DISABLED_TEXT_ALPHA = 0.5f
 
+private const val SAVE_TARGET_ENTRANCE_SLIDE_DIVISOR = 4
+private const val SAVE_TARGET_ENTRANCE_STAGGER_MS = 35L
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SaveEditorTargetList(
     targets: List<SaveTargetUiState>,
@@ -65,12 +75,34 @@ internal fun SaveEditorTargetList(
         if (targets.isEmpty()) {
             item(contentType = "empty") { EmptySaveTargetsCard() }
         } else {
-            items(targets, key = { target -> target.packageName }, contentType = { "target" }) { target ->
-                SaveTargetCard(
-                    target = target,
-                    showSaves = false,
-                    actions = SaveTargetCardActions(onTargetClick = onTargetClick),
-                )
+            itemsIndexed(targets, key = {
+                _,
+                target,
+                ->
+                target.packageName
+            }, contentType = { _, _ -> "target" }) { index, target ->
+                var visible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    delay(index * SAVE_TARGET_ENTRANCE_STAGGER_MS)
+                    visible = true
+                }
+                AnimatedVisibility(
+                    visible = visible,
+                    enter =
+                        fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                            slideInVertically(
+                                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>(),
+                            ) {
+                                it / SAVE_TARGET_ENTRANCE_SLIDE_DIVISOR
+                            },
+                    modifier = Modifier.animateItem(),
+                ) {
+                    SaveTargetCard(
+                        target = target,
+                        showSaves = false,
+                        actions = SaveTargetCardActions(onTargetClick = onTargetClick),
+                    )
+                }
             }
         }
     }
@@ -141,8 +173,8 @@ private fun EmptySaveTargetsCard() {
 private fun SaveTargetCard(
     target: SaveTargetUiState,
     showSaves: Boolean,
-    isFocused: Boolean = false,
     actions: SaveTargetCardActions,
+    isFocused: Boolean = false,
 ) {
     SaveEditorPanel(
         shape = if (isFocused) SaveEditorPanelShape else SaveEditorCardShape,

@@ -74,12 +74,23 @@ internal fun RelationshipCard(
         }
         RelationshipMetaLine(character = character)
         for (field in character.fields.take(maxFieldCount)) {
-            SaveInlineTextField(
-                label = field.label,
-                value = field.value,
-                onValueChange = { onFieldChange(field, it) },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (field.label.equals("Alive", ignoreCase = true)) {
+                SaveInlineToggleField(
+                    label = field.label,
+                    checked = field.value.equals("True", ignoreCase = true),
+                    onCheckedChange = { checked ->
+                        onFieldChange(field, if (checked) "True" else "False")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                SaveInlineTextField(
+                    label = field.label,
+                    value = field.value,
+                    onValueChange = { onFieldChange(field, it) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

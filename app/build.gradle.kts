@@ -182,6 +182,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.navigation.runtime)
     implementation(libs.compose.icons.extended)
+    lintChecks(libs.slackhq.compose.lints)
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)

@@ -8,6 +8,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -86,9 +87,13 @@ internal data class SaveSlotTabBodyActions(
 private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
     val statusText = state.target.editErrors[state.save.path] ?: state.save.errorMessage
     if (state.target.editingSavePath == state.save.path) {
-        item(contentType = "status") { SaveSlotStatus(text = "Working on save...", isError = false) }
+        item(contentType = "status") {
+            SaveSlotStatus(text = "Working on save...", isError = false, modifier = Modifier.animateItem())
+        }
     } else if (statusText != null) {
-        item(contentType = "status") { SaveSlotStatus(text = statusText, isError = true) }
+        item(
+            contentType = "status",
+        ) { SaveSlotStatus(text = statusText, isError = true, modifier = Modifier.animateItem()) }
     }
 }
 
@@ -97,52 +102,53 @@ private fun LazyListScope.saveSlotTabItems(
     actions: SaveSlotTabBodyActions,
 ) {
     if (state.save.errorMessage != null) return
-    when (state.selectedTab) {
-        SAVE_DETAIL_TAB_STATS -> saveStatsTab(state = state, actions = actions)
-        SAVE_DETAIL_TAB_PEOPLE -> savePeopleTab(state = state, actions = actions)
-        SAVE_DETAIL_TAB_ADVANCED -> saveAdvancedTab(actions = actions)
-    }
-}
-
-private fun LazyListScope.saveStatsTab(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-) {
-    item(contentType = "stats") {
-        SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
-            SaveFactRows(save = state.save, onFieldChange = actions.onFieldChange)
-            SaveAttributeRows(attributes = state.save.attributes, onFieldChange = actions.onAttributeChange)
-        }
-    }
-}
-
-private fun LazyListScope.savePeopleTab(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-) {
-    item(contentType = "people") {
-        SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
-            SaveCharacterRows(characters = state.save.characters, onFieldChange = actions.onFieldChange)
-        }
-    }
-}
-
-private fun LazyListScope.saveAdvancedTab(actions: SaveSlotTabBodyActions) {
-    item(contentType = "advanced") {
-        SaveDetailPanel(title = "ADVANCED VARIABLES") {
-            Text(
-                text = "Open the complete registry-style variable stream for this save.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
-            )
-            Button(
-                onClick = actions.onAdvancedClick,
-                shape = SaveEditorControlShape,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
-            ) {
-                Text(text = "Open Advanced Editor", fontWeight = FontWeight.Black)
+    item(contentType = "tab-content") {
+        Box(Modifier.animateItem()) {
+            when (state.selectedTab) {
+                SAVE_DETAIL_TAB_STATS -> SaveStatsTabContent(state = state, actions = actions)
+                SAVE_DETAIL_TAB_PEOPLE -> SavePeopleTabContent(state = state, actions = actions)
+                SAVE_DETAIL_TAB_ADVANCED -> SaveAdvancedTabContent(actions = actions)
             }
+        }
+    }
+}
+
+@Composable
+private fun SaveStatsTabContent(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+) {
+    SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
+        SaveFactRows(save = state.save, onFieldChange = actions.onFieldChange)
+        SaveAttributeRows(attributes = state.save.attributes, onFieldChange = actions.onAttributeChange)
+    }
+}
+
+@Composable
+private fun SavePeopleTabContent(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+) {
+    SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
+        SaveCharacterRows(characters = state.save.characters, onFieldChange = actions.onFieldChange)
+    }
+}
+
+@Composable
+private fun SaveAdvancedTabContent(actions: SaveSlotTabBodyActions) {
+    SaveDetailPanel(title = "ADVANCED VARIABLES") {
+        Text(
+            text = "Open the complete registry-style variable stream for this save.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
+        )
+        Button(
+            onClick = actions.onAdvancedClick,
+            shape = SaveEditorControlShape,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
+        ) {
+            Text(text = "Open Advanced Editor", fontWeight = FontWeight.Black)
         }
     }
 }

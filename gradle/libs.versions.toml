@@ -17,6 +17,7 @@ junit4 = "4.13.2"
 coroutines = "1.10.2"
 shizuku = "13.1.5"
 accompanist = "0.37.3"
+slackhq-compose-lints = "1.5.0"
 nrbf4j = "0.2.0"
 lifecycle = "2.10.0"
 navigation = "2.9.6"
@@ -51,6 +52,7 @@ shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
 accompanist-drawablepainter = { module = "com.google.accompanist:accompanist-drawablepainter", version.ref = "accompanist" }
 nrbf4j = { module = "io.github.s0methingsomething:nrbf4j", version.ref = "nrbf4j" }
+slackhq-compose-lints = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "slackhq-compose-lints" }
 lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "lifecycle" }
 navigation-common = { module = "androidx.navigation:navigation-common", version.ref = "navigation" }

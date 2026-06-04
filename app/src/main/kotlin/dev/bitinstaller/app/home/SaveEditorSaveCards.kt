@@ -1,6 +1,9 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -25,8 +29,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,8 +41,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import kotlinx.coroutines.delay
 import java.util.Locale
 
 private val SaveCardShape = RoundedCornerShape(18.dp)
@@ -46,10 +55,13 @@ private const val SAVE_CARD_BADGE_ALPHA = 0.08f
 private const val SAVE_CARD_SECONDARY_ALPHA = 0.4f
 private const val SAVE_CARD_METRIC_ALPHA = 0.06f
 private const val SAVE_CARD_PRESSED_SCALE = 0.985f
+private const val SAVE_CARD_ENTRANCE_SLIDE_DIVISOR = 4
+private const val SAVE_CARD_ENTRANCE_STAGGER_MS = 35L
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SaveFileList(
     target: SaveTargetUiState,
@@ -71,13 +83,33 @@ internal fun SaveFileList(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
-        items(saves, key = { save -> save.path }, contentType = { BitLifeSaveSummary::class }) { save ->
-            SaveSlotSummaryCard(
-                save = save,
-                isWorking = target.editingSavePath == save.path,
-                error = target.editErrors[save.path] ?: save.errorMessage,
-                onOpen = { onSaveOpen(save) },
-            )
+        itemsIndexed(saves, key = {
+            _,
+            save,
+            ->
+            save.path
+        }, contentType = { _, _ -> BitLifeSaveSummary::class }) { index, save ->
+            var visible by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                delay(index * SAVE_CARD_ENTRANCE_STAGGER_MS)
+                visible = true
+            }
+            AnimatedVisibility(
+                visible = visible,
+                enter =
+                    fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                        slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
+                            it / SAVE_CARD_ENTRANCE_SLIDE_DIVISOR
+                        },
+                modifier = Modifier.animateItem(),
+            ) {
+                SaveSlotSummaryCard(
+                    save = save,
+                    isWorking = target.editingSavePath == save.path,
+                    error = target.editErrors[save.path] ?: save.errorMessage,
+                    onOpen = { onSaveOpen(save) },
+                )
+            }
         }
     }
 }
