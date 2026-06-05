@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -55,16 +56,25 @@ internal fun SaveSlotTabBody(
                 } + fadeOut(animationSpec = effectsFloatSpec)
             enter togetherWith exit
         },
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
         label = "save_slot_tab_transition",
     ) { selectedTab ->
         val tabState = state.copy(selectedTab = selectedTab)
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            saveSlotStatusItem(state = tabState)
-            saveSlotTabItems(state = tabState, actions = actions)
+        if (selectedTab == SAVE_DETAIL_TAB_ADVANCED && state.save.errorMessage == null) {
+            SaveAdvancedInlineTab(
+                save = tabState.save,
+                draft = tabState.draft,
+                onDraftChange = actions.onDraftChange,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                saveSlotStatusItem(state = tabState)
+                saveSlotTabItems(state = tabState, actions = actions)
+            }
         }
     }
 }
@@ -103,7 +113,6 @@ private fun LazyListScope.saveSlotTabItems(
             when (state.selectedTab) {
                 SAVE_DETAIL_TAB_STATS -> SaveStatsTabContent(state = state, actions = actions)
                 SAVE_DETAIL_TAB_PEOPLE -> SavePeopleTabContent(state = state, actions = actions)
-                SAVE_DETAIL_TAB_ADVANCED -> SaveAdvancedTabContent(state = state, actions = actions)
             }
         }
     }
@@ -135,16 +144,6 @@ private fun SavePeopleTabContent(
             draft = state.draft,
             onFieldChange = actions.onDraftChange,
         )
-    }
-}
-
-@Composable
-private fun SaveAdvancedTabContent(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-) {
-    SaveDetailPanel(title = "ADVANCED VARIABLES") {
-        SaveAdvancedInlineTab(save = state.save, draft = state.draft, onDraftChange = actions.onDraftChange)
     }
 }
 

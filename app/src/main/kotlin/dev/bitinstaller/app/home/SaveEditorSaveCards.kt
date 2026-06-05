@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -33,6 +32,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,8 +55,8 @@ private const val SAVE_CARD_BADGE_ALPHA = 0.08f
 private const val SAVE_CARD_SECONDARY_ALPHA = 0.4f
 private const val SAVE_CARD_METRIC_ALPHA = 0.06f
 private const val SAVE_CARD_PRESSED_SCALE = 0.985f
-private const val SAVE_CARD_ENTRANCE_SLIDE_DIVISOR = 4
-private const val SAVE_CARD_ENTRANCE_STAGGER_MS = 35L
+private const val SAVE_CARD_ENTRANCE_SLIDE_DIVISOR = 10
+private const val SAVE_CARD_ENTRANCE_STAGGER_MS = 12L
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
@@ -70,6 +70,7 @@ internal fun SaveFileList(
     modifier: Modifier = Modifier,
     transitionState: SaveSlotSharedTransitionState = SaveSlotSharedTransitionState(),
 ) {
+    val entranceOrder = remember(saves) { saves.mapIndexed { index, save -> save.path to index }.toMap() }
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -84,16 +85,15 @@ internal fun SaveFileList(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
-        itemsIndexed(saves, key = {
-            _,
-            save,
-            ->
+        items(saves, key = { save ->
             save.path
-        }, contentType = { _, _ -> BitLifeSaveSummary::class }) { index, save ->
-            var visible by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) {
-                delay(index * SAVE_CARD_ENTRANCE_STAGGER_MS)
-                visible = true
+        }, contentType = { BitLifeSaveSummary::class }) { save ->
+            var visible by rememberSaveable(save.path) { mutableStateOf(false) }
+            LaunchedEffect(visible) {
+                if (!visible) {
+                    delay((entranceOrder[save.path] ?: 0) * SAVE_CARD_ENTRANCE_STAGGER_MS)
+                    visible = true
+                }
             }
             AnimatedVisibility(
                 visible = visible,
@@ -105,9 +105,12 @@ internal fun SaveFileList(
                 modifier = Modifier.animateItem(),
             ) {
                 SaveSlotSummaryCard(
-                    save = save,
-                    isWorking = target.editingSavePath == save.path,
-                    error = target.editErrors[save.path] ?: save.errorMessage,
+                    state =
+                        SaveSlotSummaryCardState(
+                            save = save,
+                            isWorking = target.editingSavePath == save.path,
+                            error = target.editErrors[save.path] ?: save.errorMessage,
+                        ),
                     onOpen = { onSaveOpen(save) },
                     transitionState = transitionState,
                 )
@@ -119,16 +122,15 @@ internal fun SaveFileList(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun SaveSlotSummaryCard(
-    save: BitLifeSaveSummary,
-    isWorking: Boolean,
-    error: String?,
+    state: SaveSlotSummaryCardState,
     onOpen: () -> Unit,
     transitionState: SaveSlotSharedTransitionState,
+    modifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed && !isWorking) SAVE_CARD_PRESSED_SCALE else 1f,
+        targetValue = if (isPressed && !state.isWorking) SAVE_CARD_PRESSED_SCALE else 1f,
         animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "save_slot_card_press_scale",
     )
@@ -139,10 +141,10 @@ private fun SaveSlotSummaryCard(
         shape = SaveCardShape,
         colors = CardDefaults.cardColors(containerColor = Color(SAVE_CARD_CONTAINER_ARGB)),
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .saveSlotSharedBounds(
-                    save = save,
+                    save = state.save,
                     transitionState = transitionState,
                 ).graphicsLayer {
                     scaleX = scale
@@ -153,25 +155,31 @@ private fun SaveSlotSummaryCard(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             modifier = Modifier.padding(18.dp),
         ) {
-            SaveSlotSummaryHeader(save = save)
-            if (error != null) {
-                SaveSlotStatus(text = error, isError = true)
+            SaveSlotSummaryHeader(save = state.save)
+            if (state.error != null) {
+                SaveSlotStatus(text = state.error, isError = true)
             } else {
-                SaveSlotMetrics(save = save)
+                SaveSlotMetrics(save = state.save)
             }
             Button(
-                enabled = !isWorking,
+                enabled = !state.isWorking,
                 onClick = onOpen,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 shape = SaveActionShape,
                 contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp),
                 modifier = Modifier.fillMaxWidth().height(44.dp),
             ) {
-                Text(text = if (isWorking) "Working" else "Open Editor", fontWeight = FontWeight.Black)
+                Text(text = if (state.isWorking) "Working" else "Open Editor", fontWeight = FontWeight.Black)
             }
         }
     }
 }
+
+private data class SaveSlotSummaryCardState(
+    val save: BitLifeSaveSummary,
+    val isWorking: Boolean,
+    val error: String?,
+)
 
 @Composable
 private fun SaveSlotSummaryHeader(save: BitLifeSaveSummary) {

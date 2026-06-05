@@ -52,6 +52,7 @@ internal fun SaveSlotEditorDetail(
     var showDiscardPrompt by remember(save.path) { mutableStateOf(false) }
     LaunchedEffect(target.editMessageTokens[save.path]) { draft = SaveSlotEditDraft() }
     BackHandler(enabled = draft.isDirty) { showDiscardPrompt = true }
+    BackHandler(enabled = !draft.isDirty) { actions.onBackClick() }
 
     SaveDiscardPrompt(
         visible = showDiscardPrompt,

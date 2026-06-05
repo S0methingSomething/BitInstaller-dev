@@ -1,5 +1,6 @@
 package dev.bitinstaller.app.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
@@ -39,6 +40,9 @@ internal fun SaveEditorNavigator(
 ) {
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    BackHandler(enabled = state.selectedTarget != null && selectedSave == null) {
+        actions.onBackClick()
+    }
     LaunchedEffect(state.selectedTarget?.packageName, selectedSave?.path, currentBackStackEntry?.destination?.route) {
         val targetRoute = state.targetRoute(selectedSave)
         if (currentBackStackEntry?.destination?.route != targetRoute) {

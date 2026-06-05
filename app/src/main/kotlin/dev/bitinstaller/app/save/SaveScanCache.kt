@@ -35,6 +35,13 @@ internal class SaveScanCache(
             }
         }
 
+    suspend fun warm(packageNames: Collection<String>): Map<String, List<BitLifeSaveSummary>> =
+        withContext(Dispatchers.IO) {
+            packageNames
+                .mapNotNull { packageName -> read(packageName)?.let { saves -> packageName to saves } }
+                .toMap()
+        }
+
     suspend fun write(
         packageName: String,
         saves: List<BitLifeSaveSummary>,

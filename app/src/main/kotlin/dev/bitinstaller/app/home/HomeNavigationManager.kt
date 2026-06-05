@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -53,12 +54,14 @@ internal fun HomeDestinationHost(
     state: HomeUiState,
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope?,
+    modifier: Modifier = Modifier,
 ) {
     val effectsDestinationSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
     NavHost(
         navController = navigationManager.navController,
         startDestination = BitInstallerDestination.MonetizationVars.route,
+        modifier = modifier,
         enterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },
         exitTransition = { fadeOut(animationSpec = effectsDestinationSpec) },
         popEnterTransition = { fadeIn(animationSpec = effectsDestinationSpec) },

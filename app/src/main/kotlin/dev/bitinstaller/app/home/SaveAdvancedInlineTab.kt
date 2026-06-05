@@ -1,8 +1,11 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -25,6 +28,7 @@ internal fun SaveAdvancedInlineTab(
     save: BitLifeSaveSummary,
     draft: SaveSlotEditDraft,
     onDraftChange: (SaveEditableField, String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var query by rememberSaveable(save.path) { mutableStateOf("") }
     var debouncedQuery by remember { mutableStateOf("") }
@@ -43,10 +47,25 @@ internal fun SaveAdvancedInlineTab(
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SaveAdvancedSearch(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth())
-        fields.forEach { field ->
-            SaveAdvancedDraftField(field = field, draft = draft, onDraftChange = onDraftChange)
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = 18.dp),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        item(contentType = "advanced-search") {
+            SaveAdvancedSearch(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth())
+        }
+        items(
+            items = fields,
+            key = { field -> field.id },
+            contentType = { field -> field.valueKind },
+        ) { field ->
+            SaveAdvancedDraftField(
+                field = field,
+                draft = draft,
+                onDraftChange = onDraftChange,
+                modifier = Modifier.animateItem(),
+            )
         }
     }
 }
@@ -56,20 +75,21 @@ private fun SaveAdvancedDraftField(
     field: SaveEditableField,
     draft: SaveSlotEditDraft,
     onDraftChange: (SaveEditableField, String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     if (field.valueKind == SaveEditableValueKind.BOOLEAN) {
         SaveInlineToggleField(
             label = field.label,
             checked = draft.valueFor(field).equals("true", ignoreCase = true),
             onCheckedChange = { checked -> onDraftChange(field, if (checked) "True" else "False") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
         )
     } else {
         SaveInlineTextField(
             label = field.label,
             value = draft.valueFor(field),
             onValueChange = { value -> onDraftChange(field, value) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(),
         )
     }
 }

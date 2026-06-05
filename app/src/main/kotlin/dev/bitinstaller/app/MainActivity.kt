@@ -58,7 +58,10 @@ private fun BitInstallerApp(presenter: BitInstallerAppPresenter) {
     val debug = remember { DebugState() }
     val scenarioRunner = remember(debug, coroutineScope) { DebugScenarioRunner(debug, coroutineScope) }
 
-    LaunchedEffect(Unit) { presenter.initialize() }
+    LaunchedEffect(saveCache) {
+        presenter.initialize()
+        presenter.warmSaveScanCache(saveCache)
+    }
 
     BindShizukuListeners(
         repository = presenter.repository,

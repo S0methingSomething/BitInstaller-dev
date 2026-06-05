@@ -1,5 +1,6 @@
 package dev.bitinstaller.app.home
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -106,32 +107,46 @@ internal fun HomeContent(
     backgroundMotionEnabled: Boolean = true,
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
-    val isFocusedSaveEditor = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    val isSaveEditorRoute = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    BackHandler(enabled = isSaveEditorRoute && state.saveEditor.selectedTarget == null) {
+        navigationManager.navigateTo(BitInstallerDestination.MonetizationVars, callbacks.onDestinationSelected)
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        HomeAmbientGlow()
-        DestinationPane(
-            paneState =
-                HomePaneState(
-                    navigationManager = navigationManager,
-                    isFocusedSaveEditor = isFocusedSaveEditor,
-                    backgroundMotionEnabled = backgroundMotionEnabled,
-                    sharedTransitionScope = sharedTransitionScope,
-                ),
-            state = state,
-            callbacks = callbacks,
-        )
-        HomeBottomNavigation(
-            selectedDestination = navigationManager.selectedDestination,
-            onDestinationSelected = { destination ->
-                navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
-            },
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp),
-        )
+        if (isSaveEditorRoute) {
+            HomeDestinationHost(
+                navigationManager = navigationManager,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = sharedTransitionScope,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            if (backgroundMotionEnabled) {
+                HomeAmbientGlow()
+            }
+            DestinationPane(
+                paneState =
+                    HomePaneState(
+                        navigationManager = navigationManager,
+                        backgroundMotionEnabled = backgroundMotionEnabled,
+                        sharedTransitionScope = sharedTransitionScope,
+                    ),
+                state = state,
+                callbacks = callbacks,
+            )
+            HomeBottomNavigation(
+                selectedDestination = navigationManager.selectedDestination,
+                onDestinationSelected = { destination ->
+                    navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
+                },
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp),
+            )
+        }
     }
 }
 
@@ -169,7 +184,6 @@ private fun DestinationPane(
 
 private data class HomePaneState(
     val navigationManager: HomeNavigationManager,
-    val isFocusedSaveEditor: Boolean,
     val backgroundMotionEnabled: Boolean,
     val sharedTransitionScope: SharedTransitionScope?,
 )

@@ -22,6 +22,7 @@ import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.home.TargetIcon
 import dev.bitinstaller.app.home.TargetPatchState
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveScanCache
 import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuAccessStatus
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
@@ -51,6 +52,22 @@ internal class BitInstallerAppPresenter(
         appInfoMap = withContext(Dispatchers.IO) { resolveAllAppInfo(context) }
         appState.snapshot = withContext(Dispatchers.IO) { repository.checkStatus() }
         recoverPresencesIfReady()
+    }
+
+    suspend fun warmSaveScanCache(saveCache: SaveScanCache) {
+        val installedSaveTargets =
+            ALL_TARGETS
+                .asSequence()
+                .filter { target -> appInfoMap[target.packageName]?.isInstalled == true }
+                .map { target -> target.packageName }
+                .filterNot { packageName -> appState.saveScanResults.containsKey(packageName) }
+                .toList()
+        if (installedSaveTargets.isEmpty()) return
+
+        val warmed = saveCache.warm(installedSaveTargets)
+        if (warmed.isNotEmpty()) {
+            appState.saveScanResults = appState.saveScanResults + warmed
+        }
     }
 
     /**
