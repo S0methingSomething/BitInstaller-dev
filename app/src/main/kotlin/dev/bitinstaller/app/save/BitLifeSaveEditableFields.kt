@@ -37,7 +37,27 @@ internal object BitLifeSaveEditor {
             doc.write(outputFile)
             outputFile.readBytes()
         }
+
+    fun applyEdits(
+        bytes: ByteArray,
+        edits: List<SaveFieldEdit>,
+        outputFile: File,
+    ): ByteArray =
+        NrbfDocument.open(bytes).use { doc ->
+            edits.forEach { edit ->
+                val node = doc.objectNode(edit.field.objectId)
+                val member = node.member(edit.field.memberName)
+                member.set(edit.field.parseRawValue(edit.rawValue))
+            }
+            doc.write(outputFile)
+            outputFile.readBytes()
+        }
 }
+
+internal data class SaveFieldEdit(
+    val field: SaveEditableField,
+    val rawValue: String,
+)
 
 private fun MemberNode.editableValueKind(): SaveEditableValueKind? =
     when (value) {

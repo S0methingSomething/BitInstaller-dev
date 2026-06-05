@@ -46,13 +46,14 @@ internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
 @Composable
 internal fun SaveFactRows(
     save: BitLifeSaveSummary,
+    draft: SaveSlotEditDraft,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         save.bankBalanceField?.let { field ->
             SaveInlineTextField(
                 label = "BANK",
-                value = save.bankBalance?.let { String.format(Locale.US, "$%,.0f", it) } ?: "",
+                value = draft.valueFor(field),
                 onValueChange = { onFieldChange(field, it) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -61,7 +62,7 @@ internal fun SaveFactRows(
             if (fact.field != null) {
                 SaveInlineTextField(
                     label = fact.label,
-                    value = fact.value,
+                    value = draft.valueFor(fact.field),
                     onValueChange = { onFieldChange(fact.field, it) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -73,11 +74,12 @@ internal fun SaveFactRows(
 @Composable
 internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
-    onFieldChange: (SaveEditableField, Float) -> Unit,
+    draft: SaveSlotEditDraft,
+    onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
-            SaveAttributeMeterRow(attribute = attribute, onFieldChange = onFieldChange)
+            SaveAttributeMeterRow(attribute = attribute, draft = draft, onFieldChange = onFieldChange)
         }
         if (attributes.size > MAX_ATTRIBUTE_PREVIEW_COUNT) {
             Text(
@@ -92,6 +94,7 @@ internal fun SaveAttributeRows(
 @Composable
 internal fun SaveCharacterRows(
     characters: List<SaveCharacterSummary>,
+    draft: SaveSlotEditDraft,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     if (characters.isEmpty()) return
@@ -136,6 +139,7 @@ internal fun SaveCharacterRows(
             for (character in categoryPeople) {
                 RelationshipCard(
                     character = character,
+                    draft = draft,
                     onFieldChange = onFieldChange,
                     maxFieldCount = MAX_CHARACTER_FIELD_COUNT,
                 )

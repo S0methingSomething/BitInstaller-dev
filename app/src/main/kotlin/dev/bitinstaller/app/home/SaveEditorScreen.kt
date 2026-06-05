@@ -114,6 +114,7 @@ internal fun SaveTargetDetail(
     actions: SaveTargetCardActions,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
+    transitionState: SaveSlotSharedTransitionState = SaveSlotSharedTransitionState(),
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -140,6 +141,7 @@ internal fun SaveTargetDetail(
                     saves = target.saves,
                     onSaveOpen = actions.onSaveOpen,
                     modifier = Modifier.weight(1f),
+                    transitionState = transitionState,
                 )
             }
         }

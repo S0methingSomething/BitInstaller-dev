@@ -34,6 +34,7 @@ internal val RelationshipBadgeShape = RoundedCornerShape(6.dp)
 @Composable
 internal fun RelationshipCard(
     character: SaveCharacterSummary,
+    draft: SaveSlotEditDraft,
     onFieldChange: (SaveEditableField, String) -> Unit,
     maxFieldCount: Int,
 ) {
@@ -77,7 +78,7 @@ internal fun RelationshipCard(
             if (field.label.equals("Alive", ignoreCase = true)) {
                 SaveInlineToggleField(
                     label = field.label,
-                    checked = field.value.equals("True", ignoreCase = true),
+                    checked = draft.valueFor(field).equals("true", ignoreCase = true),
                     onCheckedChange = { checked ->
                         onFieldChange(field, if (checked) "True" else "False")
                     },
@@ -86,7 +87,7 @@ internal fun RelationshipCard(
             } else {
                 SaveInlineTextField(
                     label = field.label,
-                    value = field.value,
+                    value = draft.valueFor(field),
                     onValueChange = { onFieldChange(field, it) },
                     modifier = Modifier.fillMaxWidth(),
                 )

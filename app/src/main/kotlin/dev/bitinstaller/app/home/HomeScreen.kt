@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun HomeRoute(
+internal fun HomeRoute(
     state: HomeUiState,
     modifier: Modifier = Modifier,
     activeSession: PatchEditorSession? = null,

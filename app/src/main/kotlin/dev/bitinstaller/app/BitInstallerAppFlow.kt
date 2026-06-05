@@ -81,9 +81,9 @@ internal fun buildHomeRouteCallbacks(
                 appState.selectedSaveTargetId = target.packageName
                 coroutineScope.launchSaveScan(target, repository, operationLock, appState, saveCache)
             },
-            onSaveFieldEdit = { target, save, field, value ->
-                coroutineScope.launchSaveFieldEdit(
-                    request = SaveFieldEditRequest(context, target, save, field, value),
+            onSaveFieldEdits = { target, save, edits ->
+                coroutineScope.launchSaveFieldEdits(
+                    request = SaveFieldEditBatchRequest(context, target, save, edits),
                     repository = repository,
                     operationLock = operationLock,
                     appState = appState,

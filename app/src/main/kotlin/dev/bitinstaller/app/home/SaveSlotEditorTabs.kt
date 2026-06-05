@@ -12,12 +12,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,12 +73,11 @@ internal data class SaveSlotTabBodyState(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
     val selectedTab: String,
+    val draft: SaveSlotEditDraft,
 )
 
 internal data class SaveSlotTabBodyActions(
-    val onFieldChange: (SaveEditableField, String) -> Unit,
-    val onAttributeChange: (SaveEditableField, Float) -> Unit,
-    val onAdvancedClick: () -> Unit,
+    val onDraftChange: (SaveEditableField, String) -> Unit,
 )
 
 private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
@@ -107,7 +103,7 @@ private fun LazyListScope.saveSlotTabItems(
             when (state.selectedTab) {
                 SAVE_DETAIL_TAB_STATS -> SaveStatsTabContent(state = state, actions = actions)
                 SAVE_DETAIL_TAB_PEOPLE -> SavePeopleTabContent(state = state, actions = actions)
-                SAVE_DETAIL_TAB_ADVANCED -> SaveAdvancedTabContent(actions = actions)
+                SAVE_DETAIL_TAB_ADVANCED -> SaveAdvancedTabContent(state = state, actions = actions)
             }
         }
     }
@@ -119,8 +115,12 @@ private fun SaveStatsTabContent(
     actions: SaveSlotTabBodyActions,
 ) {
     SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
-        SaveFactRows(save = state.save, onFieldChange = actions.onFieldChange)
-        SaveAttributeRows(attributes = state.save.attributes, onFieldChange = actions.onAttributeChange)
+        SaveFactRows(save = state.save, draft = state.draft, onFieldChange = actions.onDraftChange)
+        SaveAttributeRows(
+            attributes = state.save.attributes,
+            draft = state.draft,
+            onFieldChange = actions.onDraftChange,
+        )
     }
 }
 
@@ -130,26 +130,21 @@ private fun SavePeopleTabContent(
     actions: SaveSlotTabBodyActions,
 ) {
     SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
-        SaveCharacterRows(characters = state.save.characters, onFieldChange = actions.onFieldChange)
+        SaveCharacterRows(
+            characters = state.save.characters,
+            draft = state.draft,
+            onFieldChange = actions.onDraftChange,
+        )
     }
 }
 
 @Composable
-private fun SaveAdvancedTabContent(actions: SaveSlotTabBodyActions) {
+private fun SaveAdvancedTabContent(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+) {
     SaveDetailPanel(title = "ADVANCED VARIABLES") {
-        Text(
-            text = "Open the complete registry-style variable stream for this save.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
-        )
-        Button(
-            onClick = actions.onAdvancedClick,
-            shape = SaveEditorControlShape,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
-        ) {
-            Text(text = "Open Advanced Editor", fontWeight = FontWeight.Black)
-        }
+        SaveAdvancedInlineTab(save = state.save, draft = state.draft, onDraftChange = actions.onDraftChange)
     }
 }
 

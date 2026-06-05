@@ -47,9 +47,12 @@ private val MeterRowShape = RoundedCornerShape(12.dp)
 @Composable
 internal fun SaveAttributeMeterRow(
     attribute: SaveAttributeSummary,
-    onFieldChange: (SaveEditableField, Float) -> Unit,
+    draft: SaveSlotEditDraft,
+    onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
-    var sliderValue by remember(attribute.field?.id) { mutableFloatStateOf(attribute.value) }
+    val field = attribute.field
+    val displayedValue = field?.let { draft.valueFor(it).toFloatOrNull() } ?: attribute.value
+    var sliderValue by remember(field?.id, displayedValue) { mutableFloatStateOf(displayedValue) }
     val progress = sliderValue.coerceIn(ATTRIBUTE_MIN_VALUE, ATTRIBUTE_MAX_VALUE) / ATTRIBUTE_MAX_VALUE
     val valueColor = attributeValueColor(sliderValue)
 
@@ -89,11 +92,10 @@ internal fun SaveAttributeMeterRow(
             )
         }
 
-        val field = attribute.field
         if (field != null) {
             MeterSlider(value = sliderValue, onValueChange = {
                 sliderValue = it
-            }, onValueChangeFinished = { onFieldChange(field, sliderValue) }, valueColor = valueColor)
+            }, onValueChangeFinished = { onFieldChange(field, sliderValue.toString()) }, valueColor = valueColor)
         } else {
             MeterBar(progress = progress, valueColor = valueColor)
         }

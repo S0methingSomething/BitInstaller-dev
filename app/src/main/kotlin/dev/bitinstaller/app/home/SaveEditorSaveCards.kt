@@ -68,6 +68,7 @@ internal fun SaveFileList(
     saves: List<BitLifeSaveSummary>,
     onSaveOpen: (BitLifeSaveSummary) -> Unit,
     modifier: Modifier = Modifier,
+    transitionState: SaveSlotSharedTransitionState = SaveSlotSharedTransitionState(),
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -108,6 +109,7 @@ internal fun SaveFileList(
                     isWorking = target.editingSavePath == save.path,
                     error = target.editErrors[save.path] ?: save.errorMessage,
                     onOpen = { onSaveOpen(save) },
+                    transitionState = transitionState,
                 )
             }
         }
@@ -121,6 +123,7 @@ private fun SaveSlotSummaryCard(
     isWorking: Boolean,
     error: String?,
     onOpen: () -> Unit,
+    transitionState: SaveSlotSharedTransitionState,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -138,7 +141,10 @@ private fun SaveSlotSummaryCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .graphicsLayer {
+                .saveSlotSharedBounds(
+                    save = save,
+                    transitionState = transitionState,
+                ).graphicsLayer {
                     scaleX = scale
                     scaleY = scale
                 },

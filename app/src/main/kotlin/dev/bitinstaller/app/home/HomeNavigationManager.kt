@@ -79,7 +79,7 @@ internal fun HomeDestinationHost(
                 actions =
                     SaveEditorSectionActions(
                         onTargetClick = callbacks.onSaveTargetClick,
-                        onFieldEdit = callbacks.onSaveFieldEdit,
+                        onFieldEdits = callbacks.onSaveFieldEdits,
                         onSaveRevert = callbacks.onSaveRevert,
                         onBackClick = callbacks.onSaveEditorBack,
                     ),

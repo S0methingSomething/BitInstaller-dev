@@ -19,11 +19,9 @@ internal fun SaveEditorSection(
     var selectedSavePath by rememberSaveable(selectedTarget?.packageName) { mutableStateOf<String?>(null) }
     var dismissedSuccessTokens by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
     val selectedSave = selectedTarget?.saves?.firstOrNull { it.path == selectedSavePath }
-    val modalState =
-        SaveEditorModalState(selectedTarget, selectedSavePath, refs.advancedSave, refs.revertSave)
+    val modalState = SaveEditorModalState(selectedTarget, selectedSavePath, refs.revertSave)
     val modalActions =
         SaveEditorModalActions(
-            closeAdvanced = { refs.advancedSave = null },
             closeRevert = { refs.revertSave = null },
             confirmRevert = { target, save ->
                 actions.onSaveRevert(target, save)
@@ -36,7 +34,6 @@ internal fun SaveEditorSection(
         SaveEditorNavigatorCallbacks(
             onSaveOpen = { save -> selectedSavePath = save.path },
             onSaveBackClick = { selectedSavePath = null },
-            onAdvancedClick = { save -> refs.advancedSave = save },
             onSaveRevert = { save -> refs.revertSave = save },
         )
     val backProgressAnim = rememberSaveEditorBackHandler(modalState, modalActions)
@@ -56,6 +53,5 @@ internal fun SaveEditorSection(
 }
 
 private class SectionRefs {
-    var advancedSave: BitLifeSaveSummary? by mutableStateOf(null)
     var revertSave: BitLifeSaveSummary? by mutableStateOf(null)
 }
