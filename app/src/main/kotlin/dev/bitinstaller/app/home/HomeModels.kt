@@ -1,9 +1,11 @@
 package dev.bitinstaller.app.home
 
 import android.graphics.drawable.Drawable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 
+@Immutable
 enum class BitInstallerDestination(
     val label: String,
     val route: String,
@@ -12,6 +14,7 @@ enum class BitInstallerDestination(
     SaveEditor(label = "Save Editor", route = "saves"),
 }
 
+@Immutable
 sealed interface BackendStatus {
     data object ShizukuUnavailable : BackendStatus
 
@@ -20,12 +23,14 @@ sealed interface BackendStatus {
     data object Ready : BackendStatus
 }
 
+@Immutable
 enum class PatchSupportState {
     READY,
     BACKEND_REQUIRED,
     UNSUPPORTED,
 }
 
+@Immutable
 enum class PatchPresenceState {
     NOT_PATCHED,
     PATCHED,
@@ -51,6 +56,7 @@ class TargetIcon(
 }
 
 /** Derived presentation state for a target's patch action and status display. */
+@Immutable
 data class TargetPatchState(
     val supportState: PatchSupportState,
     val presenceState: PatchPresenceState,
@@ -114,13 +120,13 @@ class PatchTargetUiState(
     }
 }
 
-@Stable
+@Immutable
 data class SaveEditorUiState(
     val targets: List<SaveTargetUiState>,
     val selectedTarget: SaveTargetUiState?,
 )
 
-@Stable
+@Immutable
 data class SaveTargetUiState(
     val name: String,
     val packageName: String,
@@ -138,13 +144,13 @@ data class SaveTargetUiState(
     val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
 )
 
-@Stable
+@Immutable
 data class HomeNoticeUiState(
     val token: Int,
     val message: String,
 )
 
-@Stable
+@Immutable
 data class HomeUiState(
     val title: String,
     val summary: String,

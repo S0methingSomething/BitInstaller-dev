@@ -1,5 +1,6 @@
 package dev.bitinstaller.app
 
+import androidx.compose.runtime.snapshots.Snapshot
 import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.save.BitLifeSaveParser
 import dev.bitinstaller.app.save.BitLifeSaveSummary
@@ -71,12 +72,16 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
     repository: ShizukuMonetizationRepository,
     saveCache: SaveScanCache,
 ) {
-    saveScanTargetId = target.packageName
-    saveScanErrors = saveScanErrors - target.packageName
+    Snapshot.withMutableSnapshot {
+        saveScanTargetId = target.packageName
+        saveScanErrors = saveScanErrors - target.packageName
+    }
     val inMemory = saveScanResults[target.packageName]
     if (inMemory == null) {
         saveCache.read(target.packageName)?.let { diskSaves ->
-            saveScanResults = saveScanResults + (target.packageName to diskSaves)
+            Snapshot.withMutableSnapshot {
+                saveScanResults = saveScanResults + (target.packageName to diskSaves)
+            }
         }
     }
     val cachedSaves =
@@ -100,12 +105,17 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
             }
         }
     }.onSuccess { summaries ->
-        saveScanResults = saveScanResults + (target.packageName to summaries)
+        Snapshot.withMutableSnapshot {
+            saveScanResults = saveScanResults + (target.packageName to summaries)
+            saveScanTargetId = null
+        }
         saveCache.write(target.packageName, summaries)
     }.onFailure { error ->
-        saveScanErrors = saveScanErrors + (target.packageName to (error.message ?: "Could not scan saves"))
+        Snapshot.withMutableSnapshot {
+            saveScanErrors = saveScanErrors + (target.packageName to (error.message ?: "Could not scan saves"))
+            saveScanTargetId = null
+        }
     }
-    saveScanTargetId = null
 }
 
 private fun Long.toIntSize(): Int = coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
@@ -116,9 +126,11 @@ private suspend fun BitInstallerAppState.revertSaveFile(
     saveCache: SaveScanCache,
 ) {
     val save = request.save
-    saveEditTargetPath = save.path
-    saveEditErrors = saveEditErrors - save.path
-    saveEditMessages = saveEditMessages - save.path
+    Snapshot.withMutableSnapshot {
+        saveEditTargetPath = save.path
+        saveEditErrors = saveEditErrors - save.path
+        saveEditMessages = saveEditMessages - save.path
+    }
     runCatching {
         withContext(Dispatchers.IO) {
             val restored = repository.revertLifeSaveFile(save.path)
@@ -127,16 +139,24 @@ private suspend fun BitInstallerAppState.revertSaveFile(
                 .copy(advancedFields = save.advancedFields)
         }
     }.onSuccess { updatedSave ->
-        saveScanResults =
+        val updatedResults =
             saveScanResults +
-            (request.target.packageName to saveScanResults[request.target.packageName].replaceSave(updatedSave))
-        saveEditMessages = saveEditMessages + (save.path to "Reverted to backup")
-        saveEditMessageTokens = saveEditMessageTokens.increment(save.path)
-        saveScanResults[request.target.packageName]?.let { saves -> saveCache.write(request.target.packageName, saves) }
+                (request.target.packageName to saveScanResults[request.target.packageName].replaceSave(updatedSave))
+        val updatedMessages = saveEditMessages + (save.path to "Reverted to backup")
+        val updatedTokens = saveEditMessageTokens.increment(save.path)
+        Snapshot.withMutableSnapshot {
+            saveScanResults = updatedResults
+            saveEditMessages = updatedMessages
+            saveEditMessageTokens = updatedTokens
+            saveEditTargetPath = null
+        }
+        updatedResults[request.target.packageName]?.let { saves -> saveCache.write(request.target.packageName, saves) }
     }.onFailure { error ->
-        saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not revert"))
+        Snapshot.withMutableSnapshot {
+            saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not revert"))
+            saveEditTargetPath = null
+        }
     }
-    saveEditTargetPath = null
 }
 
 private fun List<BitLifeSaveSummary>?.replaceSave(updatedSave: BitLifeSaveSummary): List<BitLifeSaveSummary> =

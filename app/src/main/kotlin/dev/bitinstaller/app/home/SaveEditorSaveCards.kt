@@ -102,7 +102,7 @@ internal fun SaveFileList(
                         slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
                             it / SAVE_CARD_ENTRANCE_SLIDE_DIVISOR
                         },
-                modifier = Modifier.animateItem(),
+                modifier = Modifier.animateItem(placementSpec = BitInstallerAnimations.listPlacementSpec()),
             ) {
                 SaveSlotSummaryCard(
                     state =

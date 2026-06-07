@@ -1,6 +1,7 @@
 package dev.bitinstaller.app
 
 import android.content.Context
+import androidx.compose.runtime.snapshots.Snapshot
 import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.save.BitLifeSaveEditor
 import dev.bitinstaller.app.save.BitLifeSaveParser
@@ -54,30 +55,40 @@ private suspend fun BitInstallerAppState.editSaveFields(
     saveCache: SaveScanCache,
 ) {
     val save = request.save
-    saveEditTargetPath = save.path
-    saveEditErrors = saveEditErrors - save.path
-    saveEditMessages = saveEditMessages - save.path
+    Snapshot.withMutableSnapshot {
+        saveEditTargetPath = save.path
+        saveEditErrors = saveEditErrors - save.path
+        saveEditMessages = saveEditMessages - save.path
+    }
     runCatching {
         withContext(Dispatchers.IO) { request.applyBatchEdit(repository = repository) }
     }.onSuccess { (updatedSave, backupPath) ->
-        saveScanResults =
+        val targetPackage = request.target.packageName
+        val editedFieldIds = request.edits.map { edit -> edit.field.id }
+        val updatedResults =
             saveScanResults +
-            (request.target.packageName to saveScanResults[request.target.packageName].replaceBatchSave(updatedSave))
-        saveRecentEditFieldIds =
+                (targetPackage to saveScanResults[targetPackage].replaceBatchSave(updatedSave))
+        val updatedRecentFields =
             saveRecentEditFieldIds +
-            (
-                save.path to
-                    saveRecentEditFieldIds[save.path].promoteBatchEdits(request.edits.map { edit -> edit.field.id })
-            )
-        saveEditMessages =
+                (save.path to saveRecentEditFieldIds[save.path].promoteBatchEdits(editedFieldIds))
+        val updatedMessages =
             saveEditMessages +
-            (save.path to "Saved ${request.edits.size} changes. Backup: ${backupPath.substringAfterLast('/')}")
-        saveEditMessageTokens = saveEditMessageTokens.incrementBatchToken(save.path)
-        saveScanResults[request.target.packageName]?.let { saves -> saveCache.write(request.target.packageName, saves) }
+                (save.path to "Saved ${request.edits.size} changes. Backup: ${backupPath.substringAfterLast('/')}")
+        val updatedTokens = saveEditMessageTokens.incrementBatchToken(save.path)
+        Snapshot.withMutableSnapshot {
+            saveScanResults = updatedResults
+            saveRecentEditFieldIds = updatedRecentFields
+            saveEditMessages = updatedMessages
+            saveEditMessageTokens = updatedTokens
+            saveEditTargetPath = null
+        }
+        updatedResults[targetPackage]?.let { saves -> saveCache.write(targetPackage, saves) }
     }.onFailure { error ->
-        saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not save edits"))
+        Snapshot.withMutableSnapshot {
+            saveEditErrors = saveEditErrors + (save.path to (error.message ?: "Could not save edits"))
+            saveEditTargetPath = null
+        }
     }
-    saveEditTargetPath = null
 }
 
 private suspend fun SaveFieldEditBatchRequest.applyBatchEdit(

@@ -123,7 +123,7 @@ internal fun PatchTargetsSection(
                         slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
                             it / TARGET_CARD_ENTRANCE_SLIDE_DIVISOR
                         },
-                modifier = Modifier.animateItem(),
+                modifier = Modifier.animateItem(placementSpec = BitInstallerAnimations.listPlacementSpec()),
             ) {
                 PatchTargetCard(
                     target = target,

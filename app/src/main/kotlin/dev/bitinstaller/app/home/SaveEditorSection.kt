@@ -36,7 +36,6 @@ internal fun SaveEditorSection(
             onSaveBackClick = { selectedSavePath = null },
             onSaveRevert = { save -> refs.revertSave = save },
         )
-    val backProgressAnim = rememberSaveEditorBackHandler(modalState, modalActions)
     SaveEditorModals(modalState, modalActions)
     SaveEditorFullscreenFrame(
         config =
@@ -44,7 +43,6 @@ internal fun SaveEditorSection(
                 selectedTarget,
                 selectedSave,
                 selectedTarget?.saveSuccessPopup(dismissedSuccessTokens),
-                backProgressAnim.value,
             ),
         onDismissPopup = { popup -> dismissedSuccessTokens = dismissedSuccessTokens + (popup.path to popup.token) },
     ) {

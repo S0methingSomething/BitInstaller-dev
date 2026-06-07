@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -33,13 +32,6 @@ internal fun rememberHomeNavigationManager(selectedDestination: BitInstallerDest
     val navController = rememberNavController()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-
-    LaunchedEffect(selectedDestination, currentRoute) {
-        val targetRoute = selectedDestination.route
-        if (currentRoute != null && currentRoute != targetRoute) {
-            navController.navigateToDestination(selectedDestination)
-        }
-    }
 
     return HomeNavigationManager(
         navController = navController,

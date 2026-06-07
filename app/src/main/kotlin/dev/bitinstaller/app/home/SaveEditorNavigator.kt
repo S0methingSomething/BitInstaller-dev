@@ -1,9 +1,6 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -12,10 +9,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,12 +21,11 @@ import androidx.navigation.compose.rememberNavController
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveFieldEdit
 
-private const val SAVE_EDITOR_ROUTE_SLIDE_DIVISOR = 4
 private const val SAVE_EDITOR_ROUTE_TARGETS = "save-targets"
 private const val SAVE_EDITOR_ROUTE_SLOTS = "save-slots"
 private const val SAVE_EDITOR_ROUTE_SLOT_EDITOR = "save-slot-editor"
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SaveEditorNavigator(
     state: SaveEditorUiState,
@@ -39,99 +35,121 @@ internal fun SaveEditorNavigator(
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    BackHandler(enabled = state.selectedTarget != null && selectedSave == null) {
-        actions.onBackClick()
-    }
-    LaunchedEffect(state.selectedTarget?.packageName, selectedSave?.path, currentBackStackEntry?.destination?.route) {
-        val targetRoute = state.targetRoute(selectedSave)
-        if (currentBackStackEntry?.destination?.route != targetRoute) {
-            navController.navigateSaveEditorRoute(targetRoute)
+    BackHandler(enabled = state.selectedTarget != null) {
+        when {
+            selectedSave != null -> {
+                callbacks.onSaveBackClick()
+                navController.popBackStack(SAVE_EDITOR_ROUTE_SLOTS, inclusive = false)
+            }
+
+            else -> {
+                actions.onBackClick()
+                navController.popBackStack(SAVE_EDITOR_ROUTE_TARGETS, inclusive = false)
+            }
         }
     }
-    SharedTransitionLayout(modifier = modifier.fillMaxSize()) {
-        SaveEditorRouteGraph(
-            navController = navController,
-            state = state,
-            selectedSave = selectedSave,
-            actions = actions,
-            callbacks = callbacks,
-        )
-    }
+    SaveEditorRouteGraph(
+        routeState = SaveEditorRouteState(navController, state, selectedSave, actions, callbacks),
+        modifier = modifier,
+    )
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
+private data class SaveEditorRouteState(
+    val navController: NavHostController,
+    val state: SaveEditorUiState,
+    val selectedSave: BitLifeSaveSummary?,
+    val actions: SaveEditorSectionActions,
+    val callbacks: SaveEditorNavigatorCallbacks,
+)
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SharedTransitionScope.SaveEditorRouteGraph(
-    navController: NavHostController,
-    state: SaveEditorUiState,
-    selectedSave: BitLifeSaveSummary?,
-    actions: SaveEditorSectionActions,
-    callbacks: SaveEditorNavigatorCallbacks,
+private fun SaveEditorRouteGraph(
+    routeState: SaveEditorRouteState,
+    modifier: Modifier = Modifier,
 ) {
     val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
     val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
 
     NavHost(
-        navController = navController,
+        navController = routeState.navController,
         startDestination = SAVE_EDITOR_ROUTE_TARGETS,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         enterTransition = {
             slideInHorizontally(animationSpec = spatialIntSpec) { fullWidth ->
-                fullWidth / SAVE_EDITOR_ROUTE_SLIDE_DIVISOR
+                fullWidth / BitInstallerAnimations.ROUTE_SLIDE_DIVISOR
             } +
                 fadeIn(animationSpec = effectsFloatSpec)
         },
         exitTransition = {
             slideOutHorizontally(animationSpec = spatialIntSpec) { fullWidth ->
-                -fullWidth / SAVE_EDITOR_ROUTE_SLIDE_DIVISOR
+                -fullWidth / BitInstallerAnimations.ROUTE_SLIDE_DIVISOR
             } +
                 fadeOut(animationSpec = effectsFloatSpec)
         },
         popEnterTransition = {
             slideInHorizontally(animationSpec = spatialIntSpec) { fullWidth ->
-                -fullWidth / SAVE_EDITOR_ROUTE_SLIDE_DIVISOR
+                -fullWidth / BitInstallerAnimations.ROUTE_SLIDE_DIVISOR
             } +
                 fadeIn(animationSpec = effectsFloatSpec)
         },
         popExitTransition = {
             slideOutHorizontally(animationSpec = spatialIntSpec) { fullWidth ->
-                fullWidth / SAVE_EDITOR_ROUTE_SLIDE_DIVISOR
+                fullWidth / BitInstallerAnimations.ROUTE_SLIDE_DIVISOR
             } +
                 fadeOut(animationSpec = effectsFloatSpec)
         },
     ) {
-        composable(SAVE_EDITOR_ROUTE_TARGETS) {
-            SaveEditorTargetRoute(state = state, actions = actions)
-        }
-        composable(SAVE_EDITOR_ROUTE_SLOTS) {
-            SaveEditorSlotsRoute(
-                state = state,
-                actions = actions,
-                callbacks = callbacks,
-                transitionState = SaveSlotSharedTransitionState(this@SaveEditorRouteGraph, this),
-            )
-        }
-        composable(SAVE_EDITOR_ROUTE_SLOT_EDITOR) {
-            SaveEditorSlotRoute(
-                state = state,
-                selectedSave = selectedSave,
-                actions = actions,
-                callbacks = callbacks,
-                transitionState = SaveSlotSharedTransitionState(this@SaveEditorRouteGraph, this),
-            )
-        }
+        saveEditorRoutes(routeState)
+    }
+}
+
+private fun NavGraphBuilder.saveEditorRoutes(routeState: SaveEditorRouteState) {
+    composable(SAVE_EDITOR_ROUTE_TARGETS) {
+        SaveEditorTargetRoute(
+            state = routeState.state,
+            onTargetClick = { target ->
+                routeState.actions.onTargetClick(target)
+                routeState.navController.navigateSaveEditorRoute(SAVE_EDITOR_ROUTE_SLOTS)
+            },
+        )
+    }
+    composable(SAVE_EDITOR_ROUTE_SLOTS) {
+        SaveEditorSlotsRoute(
+            state = routeState.state,
+            actions = routeState.actions,
+            onBackClick = {
+                routeState.actions.onBackClick()
+                routeState.navController.popBackStack(SAVE_EDITOR_ROUTE_TARGETS, inclusive = false)
+            },
+            onSaveOpen = { save ->
+                routeState.callbacks.onSaveOpen(save)
+                routeState.navController.navigateSaveEditorRoute(SAVE_EDITOR_ROUTE_SLOT_EDITOR)
+            },
+        )
+    }
+    composable(SAVE_EDITOR_ROUTE_SLOT_EDITOR) {
+        SaveEditorSlotRoute(
+            state = routeState.state,
+            selectedSave = routeState.selectedSave,
+            actions = routeState.actions,
+            callbacks = routeState.callbacks,
+            onBackClick = {
+                routeState.callbacks.onSaveBackClick()
+                routeState.navController.popBackStack(SAVE_EDITOR_ROUTE_SLOTS, inclusive = false)
+            },
+        )
     }
 }
 
 @Composable
 private fun SaveEditorTargetRoute(
     state: SaveEditorUiState,
-    actions: SaveEditorSectionActions,
+    onTargetClick: (SaveTargetUiState) -> Unit,
 ) {
     SaveEditorTargetList(
         targets = state.targets,
-        onTargetClick = actions.onTargetClick,
+        onTargetClick = onTargetClick,
         modifier = Modifier.fillMaxSize(),
     )
 }
@@ -140,12 +158,12 @@ private fun SaveEditorTargetRoute(
 private fun SaveEditorSlotsRoute(
     state: SaveEditorUiState,
     actions: SaveEditorSectionActions,
-    callbacks: SaveEditorNavigatorCallbacks,
-    transitionState: SaveSlotSharedTransitionState,
+    onBackClick: () -> Unit,
+    onSaveOpen: (BitLifeSaveSummary) -> Unit,
 ) {
     val selectedTarget = state.selectedTarget
     if (selectedTarget == null) {
-        SaveEditorTargetRoute(state = state, actions = actions)
+        SaveEditorTargetRoute(state = state, onTargetClick = actions.onTargetClick)
         return
     }
 
@@ -154,11 +172,10 @@ private fun SaveEditorSlotsRoute(
         actions =
             SaveTargetCardActions(
                 onTargetClick = actions.onTargetClick,
-                onSaveOpen = callbacks.onSaveOpen,
+                onSaveOpen = onSaveOpen,
             ),
-        onBackClick = actions.onBackClick,
+        onBackClick = onBackClick,
         modifier = Modifier.fillMaxSize(),
-        transitionState = transitionState,
     )
 }
 
@@ -168,15 +185,15 @@ private fun SaveEditorSlotRoute(
     selectedSave: BitLifeSaveSummary?,
     actions: SaveEditorSectionActions,
     callbacks: SaveEditorNavigatorCallbacks,
-    transitionState: SaveSlotSharedTransitionState,
+    onBackClick: () -> Unit,
 ) {
     val selectedTarget = state.selectedTarget
     if (selectedTarget == null || selectedSave == null) {
         SaveEditorSlotsRoute(
             state = state,
             actions = actions,
-            callbacks = callbacks,
-            transitionState = transitionState,
+            onBackClick = actions.onBackClick,
+            onSaveOpen = callbacks.onSaveOpen,
         )
         return
     }
@@ -186,21 +203,13 @@ private fun SaveEditorSlotRoute(
         save = selectedSave,
         actions =
             SaveSlotEditorDetailActions(
-                onBackClick = callbacks.onSaveBackClick,
+                onBackClick = onBackClick,
                 onSaveChanges = { edits -> actions.onFieldEdits(selectedTarget, selectedSave, edits) },
                 onSaveRevert = { callbacks.onSaveRevert(selectedSave) },
             ),
         modifier = Modifier.fillMaxSize(),
-        transitionState = transitionState,
     )
 }
-
-private fun SaveEditorUiState.targetRoute(selectedSave: BitLifeSaveSummary?): String =
-    when {
-        selectedTarget == null -> SAVE_EDITOR_ROUTE_TARGETS
-        selectedSave == null -> SAVE_EDITOR_ROUTE_SLOTS
-        else -> SAVE_EDITOR_ROUTE_SLOT_EDITOR
-    }
 
 private fun NavHostController.navigateSaveEditorRoute(route: String) {
     navigate(route) {

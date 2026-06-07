@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
@@ -71,7 +72,7 @@ internal fun SaveEditorTargetList(
                     target = target,
                     showSaves = false,
                     actions = SaveTargetCardActions(onTargetClick = onTargetClick),
-                    modifier = Modifier.animateItem(),
+                    modifier = Modifier.animateItem(placementSpec = BitInstallerAnimations.listPlacementSpec()),
                 )
             }
         }
@@ -269,9 +270,11 @@ private fun SaveTargetTextBlock(target: SaveTargetUiState) {
 }
 
 @Composable
-private fun SaveAppGlyph(
+internal fun SaveAppGlyph(
     icon: TargetIcon,
     name: String,
+    modifier: Modifier = Modifier,
+    size: Dp = 56.dp,
 ) {
     if (icon.drawable != null) {
         val painter =
@@ -282,16 +285,16 @@ private fun SaveAppGlyph(
             painter = painter,
             contentDescription = name,
             modifier =
-                Modifier
-                    .size(56.dp)
+                modifier
+                    .size(size)
                     .clip(RoundedCornerShape(12.dp)),
         )
     } else {
         Box(
             contentAlignment = Alignment.Center,
             modifier =
-                Modifier
-                    .size(56.dp)
+                modifier
+                    .size(size)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         shape = RoundedCornerShape(12.dp),
