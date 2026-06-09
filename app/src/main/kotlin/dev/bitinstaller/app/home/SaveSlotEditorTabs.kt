@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,34 +29,26 @@ internal fun SaveSlotTabBody(
     actions: SaveSlotTabBodyActions,
     modifier: Modifier = Modifier,
 ) {
+    val statsActive = state.selectedTab == SAVE_DETAIL_TAB_STATS
+    val peopleActive = state.selectedTab == SAVE_DETAIL_TAB_PEOPLE
+    val advancedActive = state.selectedTab == SAVE_DETAIL_TAB_ADVANCED
+
     Box(modifier = modifier.fillMaxSize()) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .alpha(if (state.selectedTab == SAVE_DETAIL_TAB_STATS) 1f else 0f)
-                    .animateContentSize(),
-        ) {
+        if (statsActive) {
             SlotDetailLazyColumn {
                 saveSlotStatusItem(state = state)
                 statsTabItem(state = state, actions = actions)
             }
         }
 
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .alpha(if (state.selectedTab == SAVE_DETAIL_TAB_PEOPLE) 1f else 0f)
-                    .animateContentSize(),
-        ) {
+        if (peopleActive) {
             SlotDetailLazyColumn {
                 saveSlotStatusItem(state = state)
                 peopleTabItem(state = state, actions = actions)
             }
         }
 
-        if (state.selectedTab == SAVE_DETAIL_TAB_ADVANCED && state.save.errorMessage == null) {
+        if (advancedActive && state.save.errorMessage == null) {
             SaveAdvancedInlineTab(
                 save = state.save,
                 draft = state.draft,
