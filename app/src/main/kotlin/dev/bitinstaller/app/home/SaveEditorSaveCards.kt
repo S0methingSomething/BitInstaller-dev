@@ -102,7 +102,7 @@ internal fun SaveFileList(
                 SaveSlotSummaryCard(state = state, onOpen = { onSaveOpen(save) }, transitionState = transitionState)
             } else {
                 val index = entranceOrder[save.path] ?: 0
-SlotCardWithEntrance(
+                SlotCardWithEntrance(
                     index = index,
                     state = state,
                     onOpen = { onSaveOpen(save) },
