@@ -47,58 +47,82 @@ internal fun SaveSlotEditorDetail(
     modifier: Modifier = Modifier,
     transitionState: SaveSlotSharedTransitionState = SaveSlotSharedTransitionState(),
 ) {
-    var selectedTab by remember(save.path) { mutableStateOf(SAVE_DETAIL_TAB_STATS) }
-    var draft by remember(save.path) { mutableStateOf(SaveSlotEditDraft()) }
-    var showDiscardPrompt by remember(save.path) { mutableStateOf(false) }
-    LaunchedEffect(target.editMessageTokens[save.path]) { draft = SaveSlotEditDraft() }
-    BackHandler(enabled = draft.isDirty) { showDiscardPrompt = true }
-    BackHandler(enabled = !draft.isDirty) { actions.onBackClick() }
-
-    SaveDiscardPrompt(
-        visible = showDiscardPrompt,
-        onDismiss = { showDiscardPrompt = false },
-        onDiscard = {
-            draft = SaveSlotEditDraft()
-            showDiscardPrompt = false
-            actions.onBackClick()
-        },
+    val initial =
+        SaveSlotEditorState(
+            target = target,
+            save = save,
+            selectedTab = SAVE_DETAIL_TAB_STATS,
+            draft = SaveSlotEditDraft(),
+            showDiscardPrompt = false,
+            navigateBack = false,
+            editsToSave = null,
+        )
+    var state by remember(save.path) { mutableStateOf(initial) }
+    SaveSlotEditorSideEffects(state = state, actions = actions, onState = { state = it }, saveKey = save.path)
+    SaveSlotEditorContent(
+        content =
+            SaveSlotEditorContent(
+                state = state,
+                save = save,
+                actions = actions,
+                onReduce = { state = saveSlotEditorReduce(state, it) },
+                transitionState = transitionState,
+                modifier = modifier,
+            ),
     )
+}
 
+private data class SaveSlotEditorContent(
+    val state: SaveSlotEditorState,
+    val save: BitLifeSaveSummary,
+    val actions: SaveSlotEditorDetailActions,
+    val onReduce: (SaveSlotEditorEvent) -> Unit,
+    val transitionState: SaveSlotSharedTransitionState,
+    val modifier: Modifier,
+)
+
+@Composable
+private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
+    val state = content.state
+    val save = content.save
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 18.dp),
+        modifier = content.modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 18.dp),
     ) {
         SaveSlotEditorHeader(
             save = save,
-            dirtyCount = draft.dirtyCount,
-            transitionState = transitionState,
+            dirtyCount = state.draft.dirtyCount,
+            transitionState = content.transitionState,
         )
-        SaveSlotCategoryTabs(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
+        SaveSlotCategoryTabs(
+            selectedTab = state.selectedTab,
+            onTabSelected = { content.onReduce(SaveSlotEditorEvent.TabSelected(it)) },
+        )
         SaveSlotTabBody(
-            state = SaveSlotTabBodyState(target = target, save = save, selectedTab = selectedTab, draft = draft),
+            state =
+                SaveSlotTabBodyState(
+                    target = state.target,
+                    save = state.save,
+                    selectedTab = state.selectedTab,
+                    draft = state.draft,
+                ),
             actions =
                 SaveSlotTabBodyActions(
-                    onDraftChange = { field, value -> draft = draft.update(field, value) },
+                    onDraftChange = { field, value -> content.onReduce(SaveSlotEditorEvent.FieldEdited(field, value)) },
                 ),
             modifier = Modifier.weight(1f),
         )
         if (save.errorMessage == null) {
             SaveDetailActions(
-                enabled = target.editingSavePath != save.path,
-                dirtyCount = draft.dirtyCount,
-                onSaveChanges = { actions.onSaveChanges(draft.toEdits(save)) },
-                onDiscardChanges = { draft = SaveSlotEditDraft() },
-                onBackClick = {
-                    if (draft.isDirty) {
-                        showDiscardPrompt = true
-                    } else {
-                        actions.onBackClick()
-                    }
-                },
+                enabled = state.target.editingSavePath != save.path,
+                dirtyCount = state.draft.dirtyCount,
+                onSaveRequested = { content.onReduce(SaveSlotEditorEvent.SaveRequested) },
+                onDiscardRequested = { content.onReduce(SaveSlotEditorEvent.DiscardRequested) },
+                onBackRequested = { content.onReduce(SaveSlotEditorEvent.BackRequested) },
             )
         } else {
             TextButton(
-                onClick = actions.onBackClick,
+                onClick = content.actions.onBackClick,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
             ) {
                 Text(text = "Back to save slots")
@@ -108,32 +132,22 @@ internal fun SaveSlotEditorDetail(
 }
 
 @Composable
-private fun SaveDiscardPrompt(
-    visible: Boolean,
-    onDismiss: () -> Unit,
-    onDiscard: () -> Unit,
+private fun DiscardPrompt(
+    state: SaveSlotEditorState,
+    onEvent: (SaveSlotEditorEvent) -> Unit,
 ) {
-    if (visible) {
-        DiscardChangesDialog(onDismiss = onDismiss, onDiscard = onDiscard)
-    }
-}
-
-@Composable
-private fun DiscardChangesDialog(
-    onDismiss: () -> Unit,
-    onDiscard: () -> Unit,
-) {
+    if (!state.showDiscardPrompt) return
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { onEvent(SaveSlotEditorEvent.DismissDiscardPrompt) },
         title = { Text(text = "Discard changes?") },
         text = { Text(text = "This save has unsaved edits. Discard them and return to the save slots?") },
         confirmButton = {
-            TextButton(onClick = onDiscard) {
+            TextButton(onClick = { onEvent(SaveSlotEditorEvent.ConfirmDiscard) }) {
                 Text(text = "Discard")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = { onEvent(SaveSlotEditorEvent.DismissDiscardPrompt) }) {
                 Text(text = "Keep editing")
             }
         },
@@ -264,15 +278,15 @@ private fun SaveSlotTabItem(
 private fun SaveDetailActions(
     enabled: Boolean,
     dirtyCount: Int,
-    onSaveChanges: () -> Unit,
-    onDiscardChanges: () -> Unit,
-    onBackClick: () -> Unit,
+    onSaveRequested: () -> Unit,
+    onDiscardRequested: () -> Unit,
+    onBackRequested: () -> Unit,
 ) {
     val isDirty = dirtyCount > 0
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = enabled && isDirty,
-            onClick = onSaveChanges,
+            onClick = onSaveRequested,
             colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
             shape = SaveEditorControlShape,
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
@@ -285,17 +299,43 @@ private fun SaveDetailActions(
         }
         FilledTonalButton(
             enabled = enabled && isDirty,
-            onClick = onDiscardChanges,
+            onClick = onDiscardRequested,
             shape = SaveEditorControlShape,
             modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
         ) {
             Text(text = "Discard Changes", textAlign = TextAlign.Center)
         }
         TextButton(
-            onClick = onBackClick,
+            onClick = onBackRequested,
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
         ) {
             Text(text = "Back to save slots", textAlign = TextAlign.Center)
         }
     }
+}
+
+@Composable
+private fun SaveSlotEditorSideEffects(
+    state: SaveSlotEditorState,
+    actions: SaveSlotEditorDetailActions,
+    onState: (SaveSlotEditorState) -> Unit,
+    saveKey: String,
+) {
+    LaunchedEffect(state.target.editMessageTokens[saveKey]) {
+        onState(state.copy(draft = SaveSlotEditDraft()))
+    }
+    LaunchedEffect(state.editsToSave) {
+        state.editsToSave?.let { edits -> actions.onSaveChanges(edits) }
+    }
+    LaunchedEffect(state.navigateBack) {
+        if (state.navigateBack) {
+            onState(saveSlotEditorReduce(state, SaveSlotEditorEvent.NavigateBackHandled))
+            actions.onBackClick()
+        }
+    }
+    BackHandler(enabled = state.draft.isDirty && !state.showDiscardPrompt) {
+        onState(saveSlotEditorReduce(state, SaveSlotEditorEvent.DiscardRequested))
+    }
+    BackHandler(enabled = !state.draft.isDirty && !state.showDiscardPrompt) { actions.onBackClick() }
+    DiscardPrompt(state = state, onEvent = { onState(saveSlotEditorReduce(state, it)) })
 }

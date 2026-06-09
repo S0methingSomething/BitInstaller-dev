@@ -80,12 +80,9 @@ internal data class SaveSlotTabBodyActions(
 )
 
 private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
+    if (state.target.editingSavePath == state.save.path) return
     val statusText = state.target.editErrors[state.save.path] ?: state.save.errorMessage
-    if (state.target.editingSavePath == state.save.path) {
-        item(contentType = "status") {
-            SaveSlotStatus(text = "Working on save...", isError = false, modifier = Modifier.animateItem())
-        }
-    } else if (statusText != null) {
+    if (statusText != null) {
         item(
             contentType = "status",
         ) { SaveSlotStatus(text = statusText, isError = true, modifier = Modifier.animateItem()) }
