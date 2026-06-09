@@ -58,6 +58,7 @@ private const val SAVE_CARD_PRESSED_SCALE = 0.985f
 private const val SAVE_CARD_ENTRANCE_SLIDE_DIVISOR = 10
 private const val SAVE_CARD_ENTRANCE_STAGGER_MS = 12L
 private const val COLLAPSED_ATTRIBUTE_COUNT = 3
+private const val STAGGER_ENTRANCE_COMPLETE_DELAY_MS = 500L
 private const val SUMMARY_BYTES_PER_KIB = 1024f
 private const val SUMMARY_BYTES_PER_MIB = SUMMARY_BYTES_PER_KIB * SUMMARY_BYTES_PER_KIB
 
@@ -71,6 +72,11 @@ internal fun SaveFileList(
     transitionState: SaveSlotSharedTransitionState = SaveSlotSharedTransitionState(),
 ) {
     val entranceOrder = remember(saves) { saves.mapIndexed { index, save -> save.path to index }.toMap() }
+    var entrancePlayed by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(saves.size * SAVE_CARD_ENTRANCE_STAGGER_MS + STAGGER_ENTRANCE_COMPLETE_DELAY_MS)
+        entrancePlayed = true
+    }
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -85,37 +91,52 @@ internal fun SaveFileList(
                 modifier = Modifier.padding(bottom = 6.dp),
             )
         }
-        items(saves, key = { save ->
-            save.path
-        }, contentType = { BitLifeSaveSummary::class }) { save ->
-            var visible by rememberSaveable(save.path) { mutableStateOf(false) }
-            LaunchedEffect(visible) {
-                if (!visible) {
-                    delay((entranceOrder[save.path] ?: 0) * SAVE_CARD_ENTRANCE_STAGGER_MS)
-                    visible = true
-                }
-            }
-            AnimatedVisibility(
-                visible = visible,
-                enter =
-                    fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
-                        slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
-                            it / SAVE_CARD_ENTRANCE_SLIDE_DIVISOR
-                        },
-                modifier = Modifier.animateItem(placementSpec = BitInstallerAnimations.listPlacementSpec()),
-            ) {
-                SaveSlotSummaryCard(
-                    state =
-                        SaveSlotSummaryCardState(
-                            save = save,
-                            isWorking = target.editingSavePath == save.path,
-                            error = target.editErrors[save.path] ?: save.errorMessage,
-                        ),
+        items(saves, key = { save -> save.path }, contentType = { BitLifeSaveSummary::class }) { save ->
+            val state =
+                SaveSlotSummaryCardState(
+                    save = save,
+                    isWorking = target.editingSavePath == save.path,
+                    error = target.editErrors[save.path] ?: save.errorMessage,
+                )
+            if (entrancePlayed) {
+                SaveSlotSummaryCard(state = state, onOpen = { onSaveOpen(save) }, transitionState = transitionState)
+            } else {
+                val index = entranceOrder[save.path] ?: 0
+SlotCardWithEntrance(
+                    index = index,
+                    state = state,
                     onOpen = { onSaveOpen(save) },
                     transitionState = transitionState,
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun SlotCardWithEntrance(
+    index: Int,
+    state: SaveSlotSummaryCardState,
+    onOpen: () -> Unit,
+    transitionState: SaveSlotSharedTransitionState,
+) {
+    var visible by rememberSaveable(state.save.path) { mutableStateOf(false) }
+    LaunchedEffect(visible) {
+        if (!visible) {
+            delay(index * SAVE_CARD_ENTRANCE_STAGGER_MS)
+            visible = true
+        }
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
+                    it / SAVE_CARD_ENTRANCE_SLIDE_DIVISOR
+                },
+    ) {
+        SaveSlotSummaryCard(state = state, onOpen = onOpen, transitionState = transitionState)
     }
 }
 
@@ -202,7 +223,7 @@ private fun SaveSlotSummaryHeader(save: BitLifeSaveSummary) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = remember(save) { save.identityLine() },
+                text = remember(save) { "Age ${save.age} · ${save.gender} · ${formatBytes(save.sizeBytes)}" },
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = SAVE_CARD_SECONDARY_ALPHA),
                 maxLines = 1,
@@ -315,14 +336,6 @@ private data class SaveSlotMetricItem(
     val label: String,
     val value: String,
 )
-
-private fun BitLifeSaveSummary.identityLine(): String =
-    listOfNotNull(
-        slotName,
-        age?.let { "Age $it" },
-        gender,
-        formatBytes(sizeBytes),
-    ).joinToString(" · ")
 
 private fun BitLifeSaveSummary.summaryMetrics(): List<SaveSlotMetricItem> =
     buildList {

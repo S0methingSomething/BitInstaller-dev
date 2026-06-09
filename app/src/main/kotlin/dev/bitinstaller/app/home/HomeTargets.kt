@@ -22,10 +22,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,9 +74,9 @@ private const val TARGET_REST_SCALE = 1f
 private const val TARGET_DISABLED_ALPHA = 0.42f
 private const val TARGET_SECONDARY_TEXT_ALPHA = 0.5f
 private const val TARGET_MONOGRAM_ACCENT_ALPHA = 0.14f
+internal const val TARGET_CARD_ENTRANCE_SLIDE_DIVISOR = 4
 
-private const val TARGET_CARD_ENTRANCE_SLIDE_DIVISOR = 4
-private const val TARGET_CARD_ENTRANCE_STAGGER_MS = 35L
+internal const val TARGET_CARD_ENTRANCE_STAGGER_MS = 35L
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -83,12 +86,15 @@ internal fun PatchTargetsSection(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
+    var entrancePlayed by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(targets.size * TARGET_CARD_ENTRANCE_STAGGER_MS + STAGGER_ENTRANCE_COMPLETE_DELAY_MS)
+        entrancePlayed = true
+    }
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
-        modifier =
-            Modifier
-                .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         item(contentType = "header") {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
@@ -111,28 +117,40 @@ internal fun PatchTargetsSection(
             ->
             target.packageName
         }, contentType = { _, _ -> "patch-target" }) { index, target ->
-            var visible by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) {
-                delay(index * TARGET_CARD_ENTRANCE_STAGGER_MS)
-                visible = true
-            }
-            AnimatedVisibility(
-                visible = visible,
-                enter =
-                    fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
-                        slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
-                            it / TARGET_CARD_ENTRANCE_SLIDE_DIVISOR
-                        },
-                modifier = Modifier.animateItem(placementSpec = BitInstallerAnimations.listPlacementSpec()),
-            ) {
-                PatchTargetCard(
-                    target = target,
-                    onPatchClick = onPatchClick,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                )
+            if (entrancePlayed) {
+                PatchTargetCard(target, onPatchClick, sharedTransitionScope, animatedVisibilityScope)
+            } else {
+                TargetCardEntrance(index, target, onPatchClick, sharedTransitionScope, animatedVisibilityScope)
             }
         }
+    }
+}
+
+private const val STAGGER_ENTRANCE_COMPLETE_DELAY_MS = 500L
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun TargetCardEntrance(
+    index: Int,
+    target: PatchTargetUiState,
+    onPatchClick: (PatchTargetUiState) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(index * TARGET_CARD_ENTRANCE_STAGGER_MS)
+        visible = true
+    }
+    AnimatedVisibility(
+        visible = visible,
+        enter =
+            fadeIn(animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()) +
+                slideInVertically(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()) {
+                    it / TARGET_CARD_ENTRANCE_SLIDE_DIVISOR
+                },
+    ) {
+        PatchTargetCard(target, onPatchClick, sharedTransitionScope, animatedVisibilityScope)
     }
 }
 
@@ -270,7 +288,7 @@ private fun TargetTextBlock(
     target: PatchTargetUiState,
     titleWeight: Int,
 ) {
-    val statusAccent = patchPresenceColor(target.patchState.presenceState)
+    val statusAccent = patchPresenceColors(target.patchState.presenceState).first
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -380,8 +398,7 @@ private fun PatchStateChip(
     label: String,
     patchPresenceState: PatchPresenceState,
 ) {
-    val contentColor = patchPresenceColor(patchPresenceState)
-    val containerColor = patchPresenceContainerColor(patchPresenceState)
+    val (contentColor, containerColor) = patchPresenceColors(patchPresenceState)
 
     Surface(
         color = containerColor,
@@ -405,17 +422,18 @@ private fun targetAccentColor(supportState: PatchSupportState): Color =
     }
 
 @Composable
-private fun patchPresenceColor(patchPresenceState: PatchPresenceState): Color =
-    when (patchPresenceState) {
-        PatchPresenceState.NOT_PATCHED -> MaterialTheme.colorScheme.onSurfaceVariant
-        PatchPresenceState.PATCHED -> MaterialTheme.colorScheme.tertiary
-        PatchPresenceState.UNKNOWN -> MaterialTheme.colorScheme.outline
-    }
+private fun patchPresenceColors(state: PatchPresenceState): Pair<Color, Color> =
+    when (state) {
+        PatchPresenceState.NOT_PATCHED -> {
+            MaterialTheme.colorScheme.onSurfaceVariant to Color.Transparent
+        }
 
-@Composable
-private fun patchPresenceContainerColor(patchPresenceState: PatchPresenceState): Color =
-    when (patchPresenceState) {
-        PatchPresenceState.NOT_PATCHED -> Color.Transparent
-        PatchPresenceState.PATCHED -> MaterialTheme.colorScheme.tertiary.copy(alpha = TARGET_MONOGRAM_ACCENT_ALPHA)
-        PatchPresenceState.UNKNOWN -> Color.Transparent
+        PatchPresenceState.PATCHED -> {
+            MaterialTheme.colorScheme.tertiary to
+                MaterialTheme.colorScheme.tertiary.copy(alpha = TARGET_MONOGRAM_ACCENT_ALPHA)
+        }
+
+        PatchPresenceState.UNKNOWN -> {
+            MaterialTheme.colorScheme.outline to Color.Transparent
+        }
     }

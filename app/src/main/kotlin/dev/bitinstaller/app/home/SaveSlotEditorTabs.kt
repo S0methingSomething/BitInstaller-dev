@@ -1,12 +1,6 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,67 +10,72 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 
 private const val SAVE_DETAIL_SECTION_LETTER_SPACING_SP = 1f
-private const val SAVE_DETAIL_TAB_SLIDE_DIVISOR = 3
 
-@OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SaveSlotTabBody(
     state: SaveSlotTabBodyState,
     actions: SaveSlotTabBodyActions,
     modifier: Modifier = Modifier,
 ) {
-    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    Box(modifier = modifier.fillMaxSize()) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .alpha(if (state.selectedTab == SAVE_DETAIL_TAB_STATS) 1f else 0f)
+                    .animateContentSize(),
+        ) {
+            SlotDetailLazyColumn {
+                saveSlotStatusItem(state = state)
+                statsTabItem(state = state, actions = actions)
+            }
+        }
 
-    AnimatedContent(
-        targetState = state.selectedTab,
-        transitionSpec = {
-            val movingForward = targetState.saveTabIndex() >= initialState.saveTabIndex()
-            val enter =
-                slideInHorizontally(animationSpec = spatialIntSpec) { width ->
-                    if (movingForward) width / SAVE_DETAIL_TAB_SLIDE_DIVISOR else -width / SAVE_DETAIL_TAB_SLIDE_DIVISOR
-                } + fadeIn(animationSpec = effectsFloatSpec)
-            val exit =
-                slideOutHorizontally(animationSpec = spatialIntSpec) { width ->
-                    if (movingForward) -width / SAVE_DETAIL_TAB_SLIDE_DIVISOR else width / SAVE_DETAIL_TAB_SLIDE_DIVISOR
-                } + fadeOut(animationSpec = effectsFloatSpec)
-            enter togetherWith exit
-        },
-        modifier = modifier.fillMaxSize(),
-        label = "save_slot_tab_transition",
-    ) { selectedTab ->
-        val tabState = state.copy(selectedTab = selectedTab)
-        if (selectedTab == SAVE_DETAIL_TAB_ADVANCED && state.save.errorMessage == null) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .alpha(if (state.selectedTab == SAVE_DETAIL_TAB_PEOPLE) 1f else 0f)
+                    .animateContentSize(),
+        ) {
+            SlotDetailLazyColumn {
+                saveSlotStatusItem(state = state)
+                peopleTabItem(state = state, actions = actions)
+            }
+        }
+
+        if (state.selectedTab == SAVE_DETAIL_TAB_ADVANCED && state.save.errorMessage == null) {
             SaveAdvancedInlineTab(
-                save = tabState.save,
-                draft = tabState.draft,
+                save = state.save,
+                draft = state.draft,
                 onDraftChange = actions.onDraftChange,
                 modifier = Modifier.fillMaxSize(),
             )
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                saveSlotStatusItem(state = tabState)
-                saveSlotTabItems(state = tabState, actions = actions)
-            }
         }
     }
+}
+
+@Composable
+private fun SlotDetailLazyColumn(content: LazyListScope.() -> Unit) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxSize(),
+        content = content,
+    )
 }
 
 internal data class SaveSlotTabBodyState(
@@ -103,18 +102,23 @@ private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
     }
 }
 
-private fun LazyListScope.saveSlotTabItems(
+private fun LazyListScope.statsTabItem(
     state: SaveSlotTabBodyState,
     actions: SaveSlotTabBodyActions,
 ) {
     if (state.save.errorMessage != null) return
-    item(contentType = "tab-content") {
-        Box(Modifier.animateItem()) {
-            when (state.selectedTab) {
-                SAVE_DETAIL_TAB_STATS -> SaveStatsTabContent(state = state, actions = actions)
-                SAVE_DETAIL_TAB_PEOPLE -> SavePeopleTabContent(state = state, actions = actions)
-            }
-        }
+    item(contentType = "tab-stats") {
+        SaveStatsTabContent(state = state, actions = actions)
+    }
+}
+
+private fun LazyListScope.peopleTabItem(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+) {
+    if (state.save.errorMessage != null) return
+    item(contentType = "tab-people") {
+        SavePeopleTabContent(state = state, actions = actions)
     }
 }
 
@@ -146,14 +150,6 @@ private fun SavePeopleTabContent(
         )
     }
 }
-
-private fun String.saveTabIndex(): Int =
-    when (this) {
-        SAVE_DETAIL_TAB_STATS -> 0
-        SAVE_DETAIL_TAB_PEOPLE -> 1
-        SAVE_DETAIL_TAB_ADVANCED -> 2
-        else -> 0
-    }
 
 @Composable
 private fun SaveDetailPanel(

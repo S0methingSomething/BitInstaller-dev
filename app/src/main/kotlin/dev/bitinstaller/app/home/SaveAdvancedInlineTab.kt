@@ -22,6 +22,7 @@ import dev.bitinstaller.app.save.SaveEditableValueKind
 import kotlinx.coroutines.delay
 
 private const val INLINE_ADVANCED_SEARCH_DEBOUNCE_MS = 250L
+private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
 
 @Composable
 internal fun SaveAdvancedInlineTab(
@@ -77,18 +78,32 @@ private fun SaveAdvancedDraftField(
     onDraftChange: (SaveEditableField, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val draftValue = draft.valueFor(field)
+    var localValue by rememberSaveable(field.id) { mutableStateOf(draftValue) }
+
+    LaunchedEffect(localValue) {
+        if (localValue != draft.valueFor(field)) {
+            delay(FIELD_DRAFT_SYNC_DEBOUNCE_MS)
+            onDraftChange(field, localValue)
+        }
+    }
+
     if (field.valueKind == SaveEditableValueKind.BOOLEAN) {
+        val checked = localValue.equals("true", ignoreCase = true)
         SaveInlineToggleField(
             label = field.label,
-            checked = draft.valueFor(field).equals("true", ignoreCase = true),
-            onCheckedChange = { checked -> onDraftChange(field, if (checked) "True" else "False") },
+            checked = checked,
+            onCheckedChange = { value ->
+                val str = if (value) "True" else "False"
+                localValue = str
+            },
             modifier = modifier.fillMaxWidth(),
         )
     } else {
         SaveInlineTextField(
             label = field.label,
-            value = draft.valueFor(field),
-            onValueChange = { value -> onDraftChange(field, value) },
+            value = localValue,
+            onValueChange = { value -> localValue = value },
             modifier = modifier.fillMaxWidth(),
         )
     }

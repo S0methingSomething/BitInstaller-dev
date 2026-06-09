@@ -108,6 +108,7 @@ internal fun HomeContent(
 ) {
     val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
     val isSaveEditorRoute = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    val hideNavBar = isSaveEditorRoute && state.saveEditor.selectedTarget != null
     BackHandler(enabled = isSaveEditorRoute && state.saveEditor.selectedTarget == null) {
         navigationManager.navigateTo(BitInstallerDestination.MonetizationVars, callbacks.onDestinationSelected)
     }
@@ -135,6 +136,9 @@ internal fun HomeContent(
                 state = state,
                 callbacks = callbacks,
             )
+        }
+
+        if (!hideNavBar) {
             HomeBottomNavigation(
                 selectedDestination = navigationManager.selectedDestination,
                 onDestinationSelected = { destination ->
