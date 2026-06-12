@@ -52,6 +52,7 @@ internal fun SaveSlotTabBody(
             SaveAdvancedInlineTab(
                 save = state.save,
                 draft = state.draft,
+                recentFieldIds = state.recentFieldIds,
                 onDraftChange = actions.onDraftChange,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -73,6 +74,7 @@ internal data class SaveSlotTabBodyState(
     val save: BitLifeSaveSummary,
     val selectedTab: String,
     val draft: SaveSlotEditDraft,
+    val recentFieldIds: List<String>,
 )
 
 internal data class SaveSlotTabBodyActions(

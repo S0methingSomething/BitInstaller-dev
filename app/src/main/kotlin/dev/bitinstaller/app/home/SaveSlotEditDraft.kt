@@ -20,12 +20,20 @@ internal data class SaveSlotEditDraft(
     ): SaveSlotEditDraft =
         copy(
             values =
-                if (rawValue == field.value) {
+                if (valuesEqual(rawValue, field.value)) {
                     values - field.id
                 } else {
                     values + (field.id to rawValue)
                 },
         )
+
+    private fun valuesEqual(
+        a: String,
+        b: String,
+    ): Boolean =
+        a == b || a.toFloatOrNull()?.let { fa ->
+            b.toFloatOrNull()?.let { fb -> fa == fb }
+        } == true
 
     fun toEdits(save: BitLifeSaveSummary): List<SaveFieldEdit> {
         val fieldsById = save.editableFields().associateBy { field -> field.id }

@@ -105,6 +105,7 @@ private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
                     save = state.save,
                     selectedTab = state.selectedTab,
                     draft = state.draft,
+                    recentFieldIds = state.target.recentEditFieldIds[save.path] ?: emptyList(),
                 ),
             actions =
                 SaveSlotTabBodyActions(
@@ -322,7 +323,7 @@ private fun SaveSlotEditorSideEffects(
     saveKey: String,
 ) {
     LaunchedEffect(state.target.editMessageTokens[saveKey]) {
-        onState(state.copy(draft = SaveSlotEditDraft()))
+        onState(state.copy(draft = SaveSlotEditDraft(), editsToSave = null))
     }
     LaunchedEffect(state.editsToSave) {
         state.editsToSave?.let { edits -> actions.onSaveChanges(edits) }
