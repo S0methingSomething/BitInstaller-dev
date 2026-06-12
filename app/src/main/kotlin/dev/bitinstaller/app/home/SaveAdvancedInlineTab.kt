@@ -53,7 +53,7 @@ internal fun SaveAdvancedInlineTab(
         debouncedQuery = query
     }
     val fields =
-        remember(debouncedQuery) {
+        remember(debouncedQuery, recentFieldIds) {
             save.advancedFields.filteredAndSorted(
                 query = debouncedQuery,
                 recentFieldIds = recentFieldIds,
@@ -98,7 +98,7 @@ internal fun SaveAdvancedInlineTab(
         ) { field ->
             SaveAdvancedDraftField(
                 field = field,
-                draft = draft,
+                draftValue = draft.valueFor(field),
                 onDraftChange = onDraftChange,
                 modifier = Modifier.animateItem(),
             )
@@ -153,15 +153,14 @@ private fun RecentFieldsSection(
 @Composable
 private fun SaveAdvancedDraftField(
     field: SaveEditableField,
-    draft: SaveSlotEditDraft,
+    draftValue: String,
     onDraftChange: (SaveEditableField, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val draftValue = draft.valueFor(field)
     var localValue by rememberSaveable(field.id) { mutableStateOf(draftValue) }
 
     LaunchedEffect(localValue) {
-        if (localValue != draft.valueFor(field)) {
+        if (localValue != draftValue) {
             delay(FIELD_DRAFT_SYNC_DEBOUNCE_MS)
             onDraftChange(field, localValue)
         }

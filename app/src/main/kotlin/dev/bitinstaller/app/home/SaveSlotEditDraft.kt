@@ -1,9 +1,11 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.runtime.Immutable
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 
+@Immutable
 internal data class SaveSlotEditDraft(
     val values: Map<String, String> = emptyMap(),
 ) {

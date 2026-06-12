@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +70,7 @@ private fun SlotDetailLazyColumn(content: LazyListScope.() -> Unit) {
     )
 }
 
+@Immutable
 internal data class SaveSlotTabBodyState(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
@@ -77,6 +79,7 @@ internal data class SaveSlotTabBodyState(
     val recentFieldIds: List<String>,
 )
 
+@Immutable
 internal data class SaveSlotTabBodyActions(
     val onDraftChange: (SaveEditableField, String) -> Unit,
 )
@@ -96,7 +99,7 @@ private fun LazyListScope.statsTabItem(
     actions: SaveSlotTabBodyActions,
 ) {
     if (state.save.errorMessage != null) return
-    item(contentType = "tab-stats") {
+    item(contentType = "stats-panel") {
         SaveStatsTabContent(state = state, actions = actions)
     }
 }
@@ -106,7 +109,7 @@ private fun LazyListScope.peopleTabItem(
     actions: SaveSlotTabBodyActions,
 ) {
     if (state.save.errorMessage != null) return
-    item(contentType = "tab-people") {
+    item(contentType = "people-characters") {
         SavePeopleTabContent(state = state, actions = actions)
     }
 }

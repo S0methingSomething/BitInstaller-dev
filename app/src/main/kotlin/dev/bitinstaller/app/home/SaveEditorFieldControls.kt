@@ -58,6 +58,7 @@ internal fun SaveInlineSliderField(
     onValueChangeFinished: (Float) -> Unit,
 ) {
     var sliderValue by remember(value) { mutableFloatStateOf(value) }
+    val thresholdColor = remember(sliderValue, valueRange) { valueThresholdColor(sliderValue, valueRange) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -84,7 +85,7 @@ internal fun SaveInlineSliderField(
             Text(
                 text = String.format(Locale.US, "%.0f", sliderValue),
                 style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-                color = valueThresholdColor(sliderValue, valueRange),
+                color = thresholdColor,
                 fontWeight = FontWeight.Black,
             )
         }
@@ -95,8 +96,8 @@ internal fun SaveInlineSliderField(
             valueRange = valueRange,
             colors =
                 SliderDefaults.colors(
-                    thumbColor = valueThresholdColor(sliderValue, valueRange),
-                    activeTrackColor = valueThresholdColor(sliderValue, valueRange),
+                    thumbColor = thresholdColor,
+                    activeTrackColor = thresholdColor,
                     inactiveTrackColor = Color.White.copy(alpha = FIELD_BAR_TRACK_ALPHA),
                 ),
             modifier =
