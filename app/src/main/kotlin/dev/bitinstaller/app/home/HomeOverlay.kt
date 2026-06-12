@@ -4,10 +4,8 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -18,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
@@ -30,7 +27,7 @@ import androidx.compose.ui.unit.dp
 private val PATCH_EDITOR_BACKGROUND_BLUR = 18.dp
 private const val SLIDE_IN_OFFSET_DIVISOR = 4
 private const val SLIDE_OUT_OFFSET_DIVISOR = 2
-private const val PATCH_EDITOR_SCRIM_ALPHA = 0.52f
+private const val PATCH_EDITOR_SCRIM_ALPHA = 0.65f
 
 @Composable
 internal fun HomeBackground(
@@ -102,11 +99,6 @@ private fun PatchEditorScrim(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
-    val contentProgress by animatedVisibilityScope.transition.animateFloat(
-        label = "patch_editor_content_progress",
-    ) { state ->
-        if (state == EnterExitState.Visible) 1f else 0f
-    }
     val sharedBoundsModifier =
         if (sharedTransitionScope != null) {
             with(sharedTransitionScope) {
@@ -127,7 +119,6 @@ private fun PatchEditorScrim(
     ) {
         PatchEditorScene(
             target = session.target,
-            contentAlpha = contentProgress,
             onDismissRequest = callbacks.onDismissSession,
             modifier = sharedBoundsModifier,
             config =

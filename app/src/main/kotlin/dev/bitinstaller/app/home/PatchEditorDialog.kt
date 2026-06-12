@@ -29,18 +29,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
 import kotlinx.coroutines.launch
 
-private const val EDITOR_CONTENT_RISE_DP: Float = 42f
-private const val EDITOR_CONTENT_REST_SCALE = 1f
-private const val EDITOR_CONTENT_START_SCALE = 0.92f
 private const val PATCH_EDITOR_CONTAINER_COLOR_ARGB = 0xF5050505
-private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.85f
+private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.88f
 private val PatchEditorShape = RoundedCornerShape(24.dp)
 
 data class PatchEditorSceneConfig(
@@ -50,14 +46,9 @@ data class PatchEditorSceneConfig(
     },
 )
 
-private data class PatchEditorContentChrome(
-    val contentAlpha: Float,
-)
-
 @Composable
 fun PatchEditorScene(
     target: PatchTargetUiState,
-    contentAlpha: Float,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     config: PatchEditorSceneConfig = PatchEditorSceneConfig(),
@@ -98,10 +89,6 @@ fun PatchEditorScene(
         )
 
     PatchEditorContent(
-        chrome =
-            PatchEditorContentChrome(
-                contentAlpha = contentAlpha,
-            ),
         uiState = uiState,
         actions =
             rememberPatchEditorActions(
@@ -144,7 +131,6 @@ private fun rememberPatchEditorActions(
 
 @Composable
 private fun PatchEditorContent(
-    chrome: PatchEditorContentChrome,
     uiState: PatchEditorUiState,
     actions: PatchEditorActions,
     modifier: Modifier = Modifier,
@@ -155,28 +141,17 @@ private fun PatchEditorContent(
             Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .navigationBarsPadding(),
     ) {
         Surface(
             shape = PatchEditorShape,
             tonalElevation = 0.dp,
             color = Color(PATCH_EDITOR_CONTAINER_COLOR_ARGB),
             modifier =
-                Modifier
+                modifier
                     .fillMaxWidth()
                     .fillMaxHeight(PATCH_EDITOR_HEIGHT_FRACTION)
-                    .sizeIn(maxHeight = 760.dp)
-                    .then(modifier)
-                    .graphicsLayer {
-                        val scale =
-                            EDITOR_CONTENT_START_SCALE +
-                                ((EDITOR_CONTENT_REST_SCALE - EDITOR_CONTENT_START_SCALE) * chrome.contentAlpha)
-                        alpha = chrome.contentAlpha
-                        scaleX = scale
-                        scaleY = scale
-                        translationY = (1f - chrome.contentAlpha) * EDITOR_CONTENT_RISE_DP
-                    },
+                    .sizeIn(maxHeight = 760.dp),
         ) {
             Column(
                 modifier =
