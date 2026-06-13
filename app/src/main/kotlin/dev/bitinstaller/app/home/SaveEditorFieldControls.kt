@@ -114,6 +114,7 @@ internal fun SaveInlineTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -150,7 +151,7 @@ internal fun SaveInlineTextField(
                     ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             )
         }
     }

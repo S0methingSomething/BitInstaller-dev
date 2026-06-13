@@ -1,6 +1,5 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
@@ -71,16 +70,16 @@ class SaveAdvancedInlineTabTest {
             )
         }
 
-        // Verify initially both items are displayed
-        composeTestRule.onNodeWithText("Vampire Mode").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zombie Mode").assertIsDisplayed()
+        // Verify initially both items exist in the list
+        composeTestRule.onNodeWithText("Vampire Mode").assertExists()
+        composeTestRule.onNodeWithText("Zombie Mode").assertExists()
 
         // Input search query
         composeTestRule.onNodeWithText("Search names", substring = true).performTextInput("vampire")
         composeTestRule.mainClock.advanceTimeBy(ADVANCED_SEARCH_DEBOUNCE_MS + 50L)
 
-        // Verify only the matching item is displayed
-        composeTestRule.onNodeWithText("Vampire Mode").assertIsDisplayed()
+        // Verify only the matching item remains
+        composeTestRule.onNodeWithText("Vampire Mode").assertExists()
         composeTestRule.onNodeWithText("Zombie Mode").assertDoesNotExist()
     }
 }

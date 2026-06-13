@@ -1,18 +1,11 @@
 package dev.bitinstaller.app.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +18,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
@@ -33,11 +25,7 @@ import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
 import kotlinx.coroutines.delay
 
-private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
 internal const val ADVANCED_SEARCH_DEBOUNCE_MS = 120L
-
-private val RecentChipShape = RoundedCornerShape(8.dp)
-private const val RECENT_CHIP_ALPHA = 0.06f
 
 @Composable
 internal fun SaveAdvancedInlineTab(
@@ -48,25 +36,17 @@ internal fun SaveAdvancedInlineTab(
     modifier: Modifier = Modifier,
 ) {
     var query by rememberSaveable(save.path) { mutableStateOf("") }
+    var selectedCategory by rememberSaveable(save.path) { mutableStateOf<SaveFieldUiCategory?>(null) }
     val debouncedQuery = rememberDebouncedQuery(query, save.path)
 
-    val fields by remember(save.path, recentFieldIds, debouncedQuery) {
-        derivedStateOf {
-            save.advancedFields.filteredAndSorted(
-                query = debouncedQuery,
-                recentFieldIds = recentFieldIds,
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.NAME,
-            )
-        }
-    }
-
-    val recentLabels =
-        remember(recentFieldIds) {
-            save.advancedFields
-                .filter { field -> field.id in recentFieldIds }
-                .map { field -> field.label }
-        }
+    val fields =
+        rememberFilteredAdvancedFields(
+            save = save,
+            recentFieldIds = recentFieldIds,
+            debouncedQuery = debouncedQuery,
+            selectedCategory = selectedCategory,
+        )
+    val recentLabels = rememberRecentLabels(save = save, recentFieldIds = recentFieldIds)
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -83,6 +63,13 @@ internal fun SaveAdvancedInlineTab(
         item(contentType = "advanced-search") {
             SaveAdvancedSearch(value = query, onValueChange = { query = it }, modifier = Modifier.fillMaxWidth())
         }
+        item(contentType = "advanced-categories") {
+            CategoryFilterChips(
+                selectedCategory = selectedCategory,
+                onCategorySelected = { selectedCategory = it },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         item(contentType = "advanced-count") {
             Text(
                 text = "${fields.size} variable${if (fields.size != 1) "s" else ""}",
@@ -93,10 +80,10 @@ internal fun SaveAdvancedInlineTab(
         }
         items(
             items = fields,
-            key = { field -> field.id },
-            contentType = { field -> field.valueKind },
-        ) { field ->
-            SaveAdvancedDraftField(
+            key = { field: SaveEditableField -> field.id },
+            contentType = { field: SaveEditableField -> field.valueKind },
+        ) { field: SaveEditableField ->
+            SaveAdvancedFieldCard(
                 field = field,
                 draftValue = draft.valueFor(field),
                 onDraftChange = onDraftChange,
@@ -106,86 +93,37 @@ internal fun SaveAdvancedInlineTab(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RecentFieldsSection(
-    labels: List<String>,
-    onChipClick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = "RECENTLY EDITED",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.25f),
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 4.dp),
-        )
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            labels.forEach { label ->
-                FilterChip(
-                    selected = false,
-                    onClick = { onChipClick(label) },
-                    label = {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    },
-                    shape = RecentChipShape,
-                    colors =
-                        androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                            containerColor = Color.White.copy(alpha = RECENT_CHIP_ALPHA),
-                            labelColor = Color.White,
-                        ),
-                )
-            }
+private fun rememberFilteredAdvancedFields(
+    save: BitLifeSaveSummary,
+    recentFieldIds: List<String>,
+    debouncedQuery: String,
+    selectedCategory: SaveFieldUiCategory?,
+): List<SaveEditableField> {
+    val fields by remember(save.path, recentFieldIds, debouncedQuery, selectedCategory) {
+        derivedStateOf {
+            save.advancedFields.filteredAndSorted(
+                query = debouncedQuery,
+                recentFieldIds = recentFieldIds,
+                filter = AdvancedFieldFilter.ALL,
+                sort = AdvancedFieldSort.NAME,
+                categoryFilter = selectedCategory,
+            )
         }
     }
+    return fields
 }
 
 @Composable
-private fun SaveAdvancedDraftField(
-    field: SaveEditableField,
-    draftValue: String,
-    onDraftChange: (SaveEditableField, String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var localValue by rememberSaveable(field.id) { mutableStateOf(draftValue) }
-
-    LaunchedEffect(localValue) {
-        if (localValue != draftValue) {
-            delay(FIELD_DRAFT_SYNC_DEBOUNCE_MS)
-            onDraftChange(field, localValue)
-        }
+private fun rememberRecentLabels(
+    save: BitLifeSaveSummary,
+    recentFieldIds: List<String>,
+): List<String> =
+    remember(recentFieldIds) {
+        save.advancedFields
+            .filter { field -> field.id in recentFieldIds }
+            .map { field -> field.label }
     }
-
-    if (field.valueKind == SaveEditableValueKind.BOOLEAN) {
-        val checked = localValue.equals("true", ignoreCase = true)
-        SaveInlineToggleField(
-            label = field.label,
-            checked = checked,
-            onCheckedChange = { value ->
-                val str = if (value) "True" else "False"
-                localValue = str
-            },
-            modifier = modifier.fillMaxWidth(),
-        )
-    } else {
-        SaveInlineTextField(
-            label = field.label,
-            value = localValue,
-            onValueChange = { value -> localValue = value },
-            modifier = modifier.fillMaxWidth(),
-        )
-    }
-}
 
 @Composable
 private fun rememberDebouncedQuery(

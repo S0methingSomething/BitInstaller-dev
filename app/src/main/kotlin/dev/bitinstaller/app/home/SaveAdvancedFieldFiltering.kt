@@ -40,12 +40,13 @@ internal fun List<SaveEditableField>.filteredAndSorted(
     recentFieldIds: List<String>,
     filter: AdvancedFieldFilter,
     sort: AdvancedFieldSort,
+    categoryFilter: SaveFieldUiCategory? = null,
 ): List<SaveEditableField> {
     val needle = query.trim()
     val recentRank = recentFieldIds.withIndex().associate { (index, fieldId) -> fieldId to index }
     return mapNotNull { field ->
         val hint = field.explanation()
-        if (field.matchesQuery(needle, hint) && field.matchesFilter(filter, recentFieldIds, hint?.category.orEmpty())) {
+        if (field.shouldInclude(needle, filter, recentFieldIds, categoryFilter, hint)) {
             field to field.searchScore(needle, hint)
         } else {
             null
@@ -54,6 +55,19 @@ internal fun List<SaveEditableField>.filteredAndSorted(
         compareByDescending<Pair<SaveEditableField, Int>> { it.second }
             .then(sort.comparator(recentRank).let { c -> Comparator { a, b -> c.compare(a.first, b.first) } }),
     ).map { it.first }
+}
+
+private fun SaveEditableField.shouldInclude(
+    needle: String,
+    filter: AdvancedFieldFilter,
+    recentFieldIds: List<String>,
+    categoryFilter: SaveFieldUiCategory?,
+    hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
+): Boolean {
+    val matchesQuery = matchesQuery(needle, hint)
+    val matchesFilter = matchesFilter(filter, recentFieldIds, hint?.category.orEmpty())
+    val matchesCategory = categoryFilter == null || uiCategory() == categoryFilter
+    return matchesQuery && matchesFilter && matchesCategory
 }
 
 private fun SaveEditableField.searchText(hint: dev.bitinstaller.app.save.SaveFieldExplanation?): String =
