@@ -1,81 +1,71 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DockedSearchBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-private const val ADVANCED_SEARCH_CONTAINER_COLOR_ARGB = 0x0DFFFFFF
 private const val ADVANCED_SEARCH_ICON_ALPHA = 0.55f
 private const val ADVANCED_SEARCH_HINT_ALPHA = 0.45f
+private const val ADVANCED_SEARCH_CONTAINER_ALPHA = 0.06f
+private const val ADVANCED_SEARCH_MIN_HEIGHT = 48
+private val SearchFieldShape = RoundedCornerShape(14.dp)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SaveAdvancedSearch(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    DockedSearchBar(
-        inputField = {
-            SearchBarDefaults.InputField(
-                query = value,
-                onQueryChange = onValueChange,
-                onSearch = { expanded = false },
-                expanded = expanded,
-                onExpandedChange = { updated -> expanded = updated },
-                placeholder = { Text(text = "Search names, stats, money, flags...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = ADVANCED_SEARCH_ICON_ALPHA),
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                trailingIcon = value.clearSearchIcon { onValueChange("") },
-                colors =
-                    TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = {
+            Text(
+                text = "Search names, stats, money, flags...",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = ADVANCED_SEARCH_HINT_ALPHA),
             )
         },
-        expanded = expanded,
-        onExpandedChange = { updated -> expanded = updated },
-        colors = SearchBarDefaults.colors(containerColor = Color(ADVANCED_SEARCH_CONTAINER_COLOR_ARGB)),
-        tonalElevation = 0.dp,
-        shadowElevation = 0.dp,
-        modifier = modifier,
-    ) {
-        Text(
-            text = "Search narrows the editable values below.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = ADVANCED_SEARCH_HINT_ALPHA),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-        )
-    }
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search",
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = ADVANCED_SEARCH_ICON_ALPHA),
+                modifier = Modifier.size(18.dp),
+            )
+        },
+        trailingIcon = value.clearSearchIcon { onValueChange("") },
+        singleLine = true,
+        shape = SearchFieldShape,
+        colors =
+            OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedContainerColor = Color.White.copy(alpha = ADVANCED_SEARCH_CONTAINER_ALPHA),
+                unfocusedContainerColor = Color.White.copy(alpha = ADVANCED_SEARCH_CONTAINER_ALPHA),
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                cursorColor = MaterialTheme.colorScheme.primary,
+            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = ADVANCED_SEARCH_MIN_HEIGHT.dp),
+    )
 }
 
 private fun String.clearSearchIcon(onClear: () -> Unit): (@Composable () -> Unit)? =

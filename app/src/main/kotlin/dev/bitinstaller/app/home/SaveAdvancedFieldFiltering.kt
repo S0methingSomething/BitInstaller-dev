@@ -44,14 +44,23 @@ internal fun List<SaveEditableField>.filteredAndSorted(
 private fun SaveEditableField.matchesQuery(
     needle: String,
     hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
-): Boolean =
-    needle.isBlank() ||
-        path.contains(needle, ignoreCase = true) ||
-        label.contains(needle, ignoreCase = true) ||
-        memberName.contains(needle, ignoreCase = true) ||
-        value.contains(needle, ignoreCase = true) ||
-        hint?.category?.contains(needle, ignoreCase = true) == true ||
-        hint?.description?.contains(needle, ignoreCase = true) == true
+): Boolean {
+    if (needle.isBlank()) return true
+    val tokens = needle.split(" ").filter { token -> token.isNotBlank() }
+    val searchText =
+        buildString {
+            append(path.lowercase())
+            append(' ')
+            append(label.lowercase())
+            append(' ')
+            append(memberName.lowercase())
+            append(' ')
+            append(value.lowercase())
+            hint?.category?.let { append(' ').append(it.lowercase()) }
+            hint?.description?.let { append(' ').append(it.lowercase()) }
+        }
+    return tokens.all { token -> searchText.contains(token.lowercase()) }
+}
 
 private fun SaveEditableField.matchesFilter(
     filter: AdvancedFieldFilter,
