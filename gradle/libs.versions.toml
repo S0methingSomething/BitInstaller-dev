@@ -46,6 +46,7 @@ androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+robolectric-annotations = { module = "org.robolectric:annotations", version.ref = "robolectric" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "composeExpressiveMaterial3" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
