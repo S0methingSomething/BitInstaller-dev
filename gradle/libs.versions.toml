@@ -14,6 +14,7 @@ versionsPlugin = "0.54.0"
 catalogUpdate = "1.1.0"
 dependencyAnalysis = "3.10.0"
 junit4 = "4.13.2"
+robolectric = "4.12.1"
 coroutines = "1.10.2"
 shizuku = "13.1.5"
 accompanist = "0.37.3"
@@ -41,7 +42,10 @@ androidx-compose-ui-geometry = { module = "androidx.compose.ui:ui-geometry" }
 androidx-compose-ui-text = { module = "androidx.compose.ui:ui-text" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-ui-test = { module = "androidx.compose.ui:ui-test" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "composeExpressiveMaterial3" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
