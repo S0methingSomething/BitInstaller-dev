@@ -1,8 +1,16 @@
 package dev.bitinstaller.app.home
 
+import com.github.terrakok.fuzzykot.ratio
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
 import dev.bitinstaller.app.save.explanation
+
+private const val FUZZY_MATCH_CUTOFF = 60
+private const val SCORE_EXACT_LABEL = 1000
+private const val SCORE_EXACT_MEMBER = 950
+private const val SCORE_PREFIX_LABEL = 900
+private const val SCORE_PREFIX_MEMBER = 850
+private const val SCORE_SUBSTRING_TEXT = 800
 
 internal enum class AdvancedFieldFilter(
     val label: String,
@@ -35,31 +43,59 @@ internal fun List<SaveEditableField>.filteredAndSorted(
 ): List<SaveEditableField> {
     val needle = query.trim()
     val recentRank = recentFieldIds.withIndex().associate { (index, fieldId) -> fieldId to index }
-    return filter { field ->
+    return mapNotNull { field ->
         val hint = field.explanation()
-        field.matchesQuery(needle, hint) && field.matchesFilter(filter, recentFieldIds, hint?.category.orEmpty())
-    }.sortedWith(sort.comparator(recentRank))
+        if (field.matchesQuery(needle, hint) && field.matchesFilter(filter, recentFieldIds, hint?.category.orEmpty())) {
+            field to field.searchScore(needle, hint)
+        } else {
+            null
+        }
+    }.sortedWith(
+        compareByDescending<Pair<SaveEditableField, Int>> { it.second }
+            .then(sort.comparator(recentRank).let { c -> Comparator { a, b -> c.compare(a.first, b.first) } }),
+    ).map { it.first }
 }
+
+private fun SaveEditableField.searchText(hint: dev.bitinstaller.app.save.SaveFieldExplanation?): String =
+    buildString {
+        append(memberName)
+        append(' ')
+        append(label)
+        append(' ')
+        append(path)
+        hint?.category?.let { append(' ').append(it) }
+        hint?.description?.let { append(' ').append(it) }
+    }
 
 private fun SaveEditableField.matchesQuery(
     needle: String,
     hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
 ): Boolean {
     if (needle.isBlank()) return true
-    val tokens = needle.split(" ").filter { token -> token.isNotBlank() }
-    val searchText =
-        buildString {
-            append(path.lowercase())
-            append(' ')
-            append(label.lowercase())
-            append(' ')
-            append(memberName.lowercase())
-            append(' ')
-            append(value.lowercase())
-            hint?.category?.let { append(' ').append(it.lowercase()) }
-            hint?.description?.let { append(' ').append(it.lowercase()) }
+    val tokens = needle.split(Regex("\\s+")).filter { token -> token.isNotBlank() }
+    val text = searchText(hint)
+    return tokens.all { token ->
+        text.contains(token, ignoreCase = true) || text.ratio(token) >= FUZZY_MATCH_CUTOFF
+    }
+}
+
+private fun SaveEditableField.searchScore(
+    needle: String,
+    hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
+): Int {
+    if (needle.isBlank()) return 0
+    val tokens = needle.split(Regex("\\s+")).filter { token -> token.isNotBlank() }
+    val text = searchText(hint)
+    return tokens.sumOf { token ->
+        when {
+            label.equals(token, ignoreCase = true) -> SCORE_EXACT_LABEL
+            memberName.equals(token, ignoreCase = true) -> SCORE_EXACT_MEMBER
+            label.startsWith(token, ignoreCase = true) -> SCORE_PREFIX_LABEL
+            memberName.startsWith(token, ignoreCase = true) -> SCORE_PREFIX_MEMBER
+            text.contains(token, ignoreCase = true) -> SCORE_SUBSTRING_TEXT
+            else -> text.ratio(token)
         }
-    return tokens.all { token -> searchText.contains(token.lowercase()) }
+    } / tokens.size
 }
 
 private fun SaveEditableField.matchesFilter(

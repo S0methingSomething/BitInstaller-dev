@@ -45,15 +45,25 @@ class SaveAdvancedFieldFilteringTest {
     }
 
     @Test
-    fun testFilteredAndSortedMultipleTokens() {
+    fun testFuzzyMatchingWithoutExactSubstring() {
         val fields =
             listOf(
                 SaveEditableField(
                     id = "1",
                     objectId = 1,
                     memberName = "vampireMode",
-                    label = "Vampire Mode Status",
+                    label = "Vampire Mode",
                     path = "player.vampireMode",
+                    group = "test",
+                    value = "false",
+                    valueKind = SaveEditableValueKind.BOOLEAN,
+                ),
+                SaveEditableField(
+                    id = "2",
+                    objectId = 2,
+                    memberName = "zombieMode",
+                    label = "Zombie Mode",
+                    path = "player.zombieMode",
                     group = "test",
                     value = "false",
                     valueKind = SaveEditableValueKind.BOOLEAN,
@@ -62,12 +72,13 @@ class SaveAdvancedFieldFilteringTest {
 
         val result =
             fields.filteredAndSorted(
-                query = "vampire status",
+                query = "vmpire",
                 recentFieldIds = emptyList(),
                 filter = AdvancedFieldFilter.ALL,
                 sort = AdvancedFieldSort.NAME,
             )
 
         assertEquals(1, result.size)
+        assertEquals("1", result[0].id)
     }
 }

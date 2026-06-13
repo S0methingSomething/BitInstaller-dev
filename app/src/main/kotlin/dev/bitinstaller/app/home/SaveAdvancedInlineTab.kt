@@ -34,6 +34,7 @@ import dev.bitinstaller.app.save.SaveEditableValueKind
 import kotlinx.coroutines.delay
 
 private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
+internal const val ADVANCED_SEARCH_DEBOUNCE_MS = 120L
 
 private val RecentChipShape = RoundedCornerShape(8.dp)
 private const val RECENT_CHIP_ALPHA = 0.06f
@@ -47,11 +48,12 @@ internal fun SaveAdvancedInlineTab(
     modifier: Modifier = Modifier,
 ) {
     var query by rememberSaveable(save.path) { mutableStateOf("") }
+    val debouncedQuery = rememberDebouncedQuery(query, save.path)
 
-    val fields by remember(save.path, recentFieldIds) {
+    val fields by remember(save.path, recentFieldIds, debouncedQuery) {
         derivedStateOf {
             save.advancedFields.filteredAndSorted(
-                query = query,
+                query = debouncedQuery,
                 recentFieldIds = recentFieldIds,
                 filter = AdvancedFieldFilter.ALL,
                 sort = AdvancedFieldSort.NAME,
@@ -183,4 +185,17 @@ private fun SaveAdvancedDraftField(
             modifier = modifier.fillMaxWidth(),
         )
     }
+}
+
+@Composable
+private fun rememberDebouncedQuery(
+    query: String,
+    key: String,
+): String {
+    var debounced by rememberSaveable(key) { mutableStateOf(query) }
+    LaunchedEffect(query) {
+        delay(ADVANCED_SEARCH_DEBOUNCE_MS)
+        debounced = query
+    }
+    return debounced
 }

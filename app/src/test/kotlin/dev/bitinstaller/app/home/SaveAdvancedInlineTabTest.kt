@@ -77,6 +77,7 @@ class SaveAdvancedInlineTabTest {
 
         // Input search query
         composeTestRule.onNodeWithText("Search names", substring = true).performTextInput("vampire")
+        composeTestRule.mainClock.advanceTimeBy(ADVANCED_SEARCH_DEBOUNCE_MS + 50L)
 
         // Verify only the matching item is displayed
         composeTestRule.onNodeWithText("Vampire Mode").assertIsDisplayed()

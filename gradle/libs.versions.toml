@@ -15,6 +15,7 @@ catalogUpdate = "1.1.0"
 dependencyAnalysis = "3.10.0"
 junit4 = "4.13.2"
 robolectric = "4.12.1"
+fuzzykot = "1.0.0"
 coroutines = "1.10.2"
 shizuku = "13.1.5"
 accompanist = "0.37.3"
@@ -47,6 +48,7 @@ androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-mani
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 robolectric-annotations = { module = "org.robolectric:annotations", version.ref = "robolectric" }
+fuzzykot = { module = "com.github.terrakok:fuzzykot", version.ref = "fuzzykot" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "composeExpressiveMaterial3" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
