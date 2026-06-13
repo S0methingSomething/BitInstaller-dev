@@ -17,11 +17,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -30,14 +33,19 @@ import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
-private const val INLINE_ADVANCED_SEARCH_DEBOUNCE_MS = 250L
+private const val ADVANCED_SEARCH_DEBOUNCE_MS = 120L
 private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
 
 private val RecentChipShape = RoundedCornerShape(8.dp)
 private const val RECENT_CHIP_ALPHA = 0.06f
 
+@OptIn(FlowPreview::class)
 @Composable
 internal fun SaveAdvancedInlineTab(
     save: BitLifeSaveSummary,
@@ -47,20 +55,22 @@ internal fun SaveAdvancedInlineTab(
     modifier: Modifier = Modifier,
 ) {
     var query by rememberSaveable(save.path) { mutableStateOf("") }
-    var debouncedQuery by remember { mutableStateOf("") }
-    LaunchedEffect(query) {
-        delay(INLINE_ADVANCED_SEARCH_DEBOUNCE_MS)
-        debouncedQuery = query
-    }
-    val fields =
-        remember(debouncedQuery, recentFieldIds) {
-            save.advancedFields.filteredAndSorted(
-                query = debouncedQuery,
-                recentFieldIds = recentFieldIds,
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.NAME,
-            )
-        }
+    val currentSave by rememberUpdatedState(save)
+
+    val fields: List<SaveEditableField> by remember(recentFieldIds, save.path) {
+        snapshotFlow { query }
+            .debounce(ADVANCED_SEARCH_DEBOUNCE_MS)
+            .distinctUntilChanged()
+            .map { currentQuery ->
+                currentSave.advancedFields.filteredAndSorted(
+                    query = currentQuery,
+                    recentFieldIds = recentFieldIds,
+                    filter = AdvancedFieldFilter.ALL,
+                    sort = AdvancedFieldSort.NAME,
+                )
+            }
+    }.collectAsState(initial = save.advancedFields)
+
     val recentLabels =
         remember(recentFieldIds) {
             save.advancedFields
