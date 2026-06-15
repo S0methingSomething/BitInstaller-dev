@@ -95,3 +95,12 @@ internal fun SnapshotStateMap<String, String>.draftDirtyCount(save: BitLifeSaveS
 
 internal fun SnapshotStateMap<String, String>.isDraftDirty(save: BitLifeSaveSummary): Boolean =
     draftDirtyCount(save) > 0
+
+internal fun BitLifeSaveSummary.editableFields(): List<SaveEditableField> =
+    buildList {
+        bankBalanceField?.let(::add)
+        facts.mapNotNullTo(this) { fact -> fact.field }
+        attributes.mapNotNullTo(this) { attribute -> attribute.field }
+        characters.forEach { character -> addAll(character.fields) }
+        addAll(advancedFields)
+    }.distinctBy { field -> field.id }

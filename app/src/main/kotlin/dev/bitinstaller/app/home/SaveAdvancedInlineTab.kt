@@ -106,7 +106,7 @@ private fun rememberFilteredAdvancedFields(
                 query = debouncedQuery,
                 recentFieldIds = recentFieldIds,
                 filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.NAME,
+                sort = AdvancedFieldSort.CATEGORY,
                 categoryFilter = selectedCategory,
             )
         }

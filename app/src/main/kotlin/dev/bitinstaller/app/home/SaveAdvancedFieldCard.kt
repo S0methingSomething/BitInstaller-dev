@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
+import dev.bitinstaller.app.save.explanation
 import kotlinx.coroutines.delay
 
 private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
@@ -35,7 +36,11 @@ private const val FIELD_CARD_ALPHA = 0.06f
 private const val FIELD_TAG_ALPHA = 0.12f
 private const val FIELD_RISK_DOT_SIZE_DP = 6
 private const val FIELD_HEADER_ALPHA = 0.35f
-private const val FIELD_PATH_MAX_LINES = 1
+private const val FIELD_PATH_MAX_LINES = 2
+private const val FIELD_NOTICE_ALPHA = 0.08f
+private const val FIELD_NOTICE_LABEL_ALPHA = 0.9f
+private const val FIELD_DESCRIPTION_ALPHA = 0.5f
+private val FieldNoticeShape = RoundedCornerShape(8.dp)
 
 @Composable
 internal fun SaveAdvancedFieldCard(
@@ -46,6 +51,7 @@ internal fun SaveAdvancedFieldCard(
 ) {
     val category = field.uiCategory()
     val risk = field.uiRisk()
+    val explanation = field.explanation()
     var localValue by rememberSaveable(field.id) { mutableStateOf(draftValue) }
 
     LaunchedEffect(localValue) {
@@ -69,6 +75,9 @@ internal fun SaveAdvancedFieldCard(
             localValue = localValue,
             onValueChange = { localValue = it },
         )
+        if (explanation != null) {
+            FieldFooter(explanation = explanation, risk = risk)
+        }
     }
 }
 
@@ -87,7 +96,7 @@ private fun FieldHeaderRow(
         FieldCategoryChip(category = category)
         FieldRiskDot(risk = risk)
         Text(
-            text = field.path,
+            text = field.formatBreadcrumb(),
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
             color = Color.White.copy(alpha = FIELD_HEADER_ALPHA),
             maxLines = FIELD_PATH_MAX_LINES,
@@ -131,6 +140,64 @@ private fun FieldRiskDot(
 }
 
 @Composable
+private fun FieldFooter(
+    explanation: dev.bitinstaller.app.save.SaveFieldExplanation,
+    risk: SaveFieldUiRisk,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = explanation.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = FIELD_DESCRIPTION_ALPHA),
+        )
+        if (risk != SaveFieldUiRisk.SAFE) {
+            FieldRiskNotice(risk = risk)
+        }
+    }
+}
+
+@Composable
+private fun FieldRiskNotice(
+    risk: SaveFieldUiRisk,
+    modifier: Modifier = Modifier,
+) {
+    val noticeColor = risk.color()
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(noticeColor.copy(alpha = FIELD_NOTICE_ALPHA), shape = FieldNoticeShape)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = risk.label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = noticeColor.copy(alpha = FIELD_NOTICE_LABEL_ALPHA),
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = risk.noticeText(),
+            style = MaterialTheme.typography.bodySmall,
+            color = noticeColor.copy(alpha = FIELD_NOTICE_LABEL_ALPHA),
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+private fun SaveFieldUiRisk.noticeText(): String =
+    when (this) {
+        SaveFieldUiRisk.DANGER -> "Editing this field can break cloud sync or corrupt your save."
+        SaveFieldUiRisk.MEDIUM -> "Invalid values may cause game glitches or unexpected behavior."
+        SaveFieldUiRisk.SAFE -> ""
+    }
+
+@Composable
 private fun FieldControl(
     field: SaveEditableField,
     localValue: String,
@@ -171,4 +238,14 @@ private fun FieldControl(
             modifier = modifier.fillMaxWidth(),
         )
     }
+}
+
+private fun SaveEditableField.formatBreadcrumb(): String {
+    val segments = path.split(" / ")
+    val filtered =
+        segments.filterNot { segment ->
+            segment.equals("items", ignoreCase = true) ||
+                segment.equals(label, ignoreCase = true)
+        }
+    return filtered.joinToString(" / ")
 }

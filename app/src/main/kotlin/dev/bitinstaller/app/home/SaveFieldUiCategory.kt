@@ -40,8 +40,10 @@ internal fun SaveEditableField.uiCategory(): SaveFieldUiCategory {
     val category = explanation?.category
     val member = memberName.lowercase()
     val groupLower = group.lowercase()
+    val pathLower = path.lowercase()
 
     return categoryFromExplanation(category, member, groupLower)
+        ?: categoryFromPath(pathLower)
         ?: categoryFromMemberName(member, groupLower)
         ?: SaveFieldUiCategory.OTHER
 }
@@ -56,6 +58,8 @@ private fun categoryFromExplanation(
         "Money" -> SaveFieldUiCategory.FINANCES
         "Asset condition" -> SaveFieldUiCategory.ASSETS
         "State flag", "Boolean" -> SaveFieldUiCategory.STATE
+        "Naming flag" -> SaveFieldUiCategory.CHARACTER
+        "Cosmetic index" -> SaveFieldUiCategory.CHARACTER
         "Cooldown / timing" -> SaveFieldUiCategory.TIMING
         "Counter" -> SaveFieldUiCategory.COUNTERS
         "Identity / metadata", "Rendering internal", "Enum id" -> SaveFieldUiCategory.INTERNAL

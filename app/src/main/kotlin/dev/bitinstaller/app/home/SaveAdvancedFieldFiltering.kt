@@ -167,7 +167,7 @@ private fun AdvancedFieldSort.comparator(recentRank: Map<String, Int>): Comparat
         }
 
         AdvancedFieldSort.CATEGORY -> {
-            compareBy<SaveEditableField> { field -> field.explanation()?.category.orEmpty() }
+            compareBy<SaveEditableField> { field -> field.uiCategory().ordinal }
                 .thenBy { field -> field.path }
         }
     }

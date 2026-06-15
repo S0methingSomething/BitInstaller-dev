@@ -20,11 +20,20 @@ internal enum class SaveFieldUiRisk(
 internal fun SaveEditableField.uiRisk(): SaveFieldUiRisk {
     val category = explanation()?.category
     val member = memberName.lowercase()
+    val pathLower = path.lowercase()
 
     return when {
-        category.isDangerousCategory() || member.isDangerousField() -> SaveFieldUiRisk.DANGER
-        category.isMediumRiskCategory() -> SaveFieldUiRisk.MEDIUM
-        else -> SaveFieldUiRisk.SAFE
+        category.isDangerousCategory() || member.isDangerousField() || pathLower.isDangerousPath() -> {
+            SaveFieldUiRisk.DANGER
+        }
+
+        category.isMediumRiskCategory() || member.isMediumRiskField() || pathLower.isMediumRiskPath() -> {
+            SaveFieldUiRisk.MEDIUM
+        }
+
+        else -> {
+            SaveFieldUiRisk.SAFE
+        }
     }
 }
 
@@ -33,7 +42,14 @@ private fun String?.isDangerousCategory(): Boolean =
 
 private fun String.isDangerousField(): Boolean = this == "_lifeid" || this == "metagenerationid"
 
+private fun String.isDangerousPath(): Boolean =
+    contains("metalastbootupversion") || contains("_script") || contains("emojiscr")
+
 private fun String?.isMediumRiskCategory(): Boolean =
-    this == "Cooldown / timing" || this == "Counter" || this == "Attribute"
+    this == "Cooldown / timing" || this == "Counter" || this == "Attribute" || this == "Cosmetic index"
+
+private fun String.isMediumRiskField(): Boolean = this == "age" || (startsWith("accessory") && contains("index"))
+
+private fun String.isMediumRiskPath(): Boolean = contains("accessory") && contains("index")
 
 internal fun SaveFieldUiRisk.color(): Color = Color(colorArgb)
