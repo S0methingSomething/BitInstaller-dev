@@ -193,11 +193,8 @@ dependencies {
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.junit4)
-    testImplementation(libs.androidx.compose.ui.test)
-    testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.robolectric.annotations)
+    testRuntimeOnly(libs.androidx.test.core)
+    testRuntimeOnly(libs.coroutines.test)
     implementation(libs.fuzzykot)
 }

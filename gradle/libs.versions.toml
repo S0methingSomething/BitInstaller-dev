@@ -78,6 +78,8 @@ material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adap
 material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "material3-adaptive" }
 window-core = { module = "androidx.window:window-core", version.ref = "windowCore" }
 leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+androidx-test-core = { module = "androidx.test:core", version = "1.5.0" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
