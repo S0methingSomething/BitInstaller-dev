@@ -1,5 +1,6 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
@@ -8,7 +9,6 @@ internal data class SaveSlotEditorState(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
     val selectedTab: String,
-    val draft: SaveSlotEditDraft,
     val showDiscardPrompt: Boolean,
     val navigateBack: Boolean,
     val editsToSave: List<SaveFieldEdit>?,
@@ -19,12 +19,9 @@ internal sealed interface SaveSlotEditorEvent {
         val tab: String,
     ) : SaveSlotEditorEvent
 
-    data class FieldEdited(
-        val field: SaveEditableField,
-        val value: String,
+    data class SaveRequested(
+        val edits: List<SaveFieldEdit>,
     ) : SaveSlotEditorEvent
-
-    data object SaveRequested : SaveSlotEditorEvent
 
     data object DiscardRequested : SaveSlotEditorEvent
 
@@ -46,10 +43,6 @@ internal fun saveSlotEditorReduce(
             state.copy(selectedTab = event.tab)
         }
 
-        is SaveSlotEditorEvent.FieldEdited -> {
-            state.copy(draft = state.draft.update(event.field, event.value))
-        }
-
         SaveSlotEditorEvent.DiscardRequested -> {
             state.copy(showDiscardPrompt = true)
         }
@@ -60,25 +53,45 @@ internal fun saveSlotEditorReduce(
 
         SaveSlotEditorEvent.ConfirmDiscard -> {
             state.copy(
-                draft = SaveSlotEditDraft(),
                 showDiscardPrompt = false,
                 navigateBack = true,
             )
         }
 
         SaveSlotEditorEvent.BackRequested -> {
-            if (state.draft.isDirty) {
-                state.copy(showDiscardPrompt = true)
-            } else {
-                state.copy(navigateBack = true)
-            }
+            state.copy(navigateBack = true)
         }
 
-        SaveSlotEditorEvent.SaveRequested -> {
-            state.copy(editsToSave = state.draft.toEdits(state.save))
+        is SaveSlotEditorEvent.SaveRequested -> {
+            state.copy(editsToSave = event.edits)
         }
 
         SaveSlotEditorEvent.NavigateBackHandled -> {
             state.copy(navigateBack = false)
         }
     }
+
+internal fun SnapshotStateMap<String, String>.collectSaveEdits(save: BitLifeSaveSummary): List<SaveFieldEdit> {
+    val fieldsById = save.editableFields().associateBy { field -> field.id }
+    return entries.mapNotNull { (fieldId, rawValue) ->
+        fieldsById[fieldId]?.let { field -> SaveFieldEdit(field = field, rawValue = rawValue) }
+    }
+}
+
+private fun valuesEqual(
+    a: String,
+    b: String,
+): Boolean =
+    a == b || a.toFloatOrNull()?.let { fa ->
+        b.toFloatOrNull()?.let { fb -> fa == fb }
+    } == true
+
+internal fun SnapshotStateMap<String, String>.draftDirtyCount(save: BitLifeSaveSummary): Int {
+    val fieldsById = save.editableFields().associateBy { field -> field.id }
+    return entries.count { (fieldId, rawValue) ->
+        fieldsById[fieldId]?.let { field -> !valuesEqual(field.value, rawValue) } ?: true
+    }
+}
+
+internal fun SnapshotStateMap<String, String>.isDraftDirty(save: BitLifeSaveSummary): Boolean =
+    draftDirtyCount(save) > 0

@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
+
+internal fun SnapshotStateMap<String, String>.valueFor(field: SaveEditableField): String = this[field.id] ?: field.value
 
 private const val SAVE_DETAIL_SECTION_LETTER_SPACING_SP = 1f
 
@@ -52,7 +55,7 @@ internal fun SaveSlotTabBody(
         if (advancedActive && state.save.errorMessage == null) {
             SaveAdvancedInlineTab(
                 save = state.save,
-                draft = state.draft,
+                draftValues = state.draftValues,
                 recentFieldIds = state.recentFieldIds,
                 onDraftChange = actions.onDraftChange,
                 modifier = Modifier.fillMaxSize(),
@@ -70,12 +73,11 @@ private fun SlotDetailLazyColumn(content: LazyListScope.() -> Unit) {
     )
 }
 
-@Immutable
 internal data class SaveSlotTabBodyState(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
     val selectedTab: String,
-    val draft: SaveSlotEditDraft,
+    val draftValues: SnapshotStateMap<String, String>,
     val recentFieldIds: List<String>,
 )
 
@@ -90,7 +92,7 @@ private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
     if (statusText != null) {
         item(
             contentType = "status",
-        ) { SaveSlotStatus(text = statusText, isError = true, modifier = Modifier.animateItem()) }
+        ) { SaveSlotStatus(text = statusText, isError = true) }
     }
 }
 
@@ -120,10 +122,10 @@ private fun SaveStatsTabContent(
     actions: SaveSlotTabBodyActions,
 ) {
     SaveDetailPanel(title = "IDENTITY & BIO METRICS") {
-        SaveFactRows(save = state.save, draft = state.draft, onFieldChange = actions.onDraftChange)
+        SaveFactRows(save = state.save, draftValues = state.draftValues, onFieldChange = actions.onDraftChange)
         SaveAttributeRows(
             attributes = state.save.attributes,
-            draft = state.draft,
+            draftValues = state.draftValues,
             onFieldChange = actions.onDraftChange,
         )
     }
@@ -137,7 +139,7 @@ private fun SavePeopleTabContent(
     SaveDetailPanel(title = "FAMILY & RELATIONSHIPS") {
         SaveCharacterRows(
             characters = state.save.characters,
-            draft = state.draft,
+            draftValues = state.draftValues,
             onFieldChange = actions.onDraftChange,
         )
     }

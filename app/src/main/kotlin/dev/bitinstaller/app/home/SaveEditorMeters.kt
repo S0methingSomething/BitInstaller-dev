@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,11 +48,11 @@ private val MeterRowShape = RoundedCornerShape(12.dp)
 @Composable
 internal fun SaveAttributeMeterRow(
     attribute: SaveAttributeSummary,
-    draft: SaveSlotEditDraft,
+    draftValues: SnapshotStateMap<String, String>,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     val field = attribute.field
-    val displayedValue = field?.let { draft.valueFor(it).toFloatOrNull() } ?: attribute.value
+    val displayedValue = field?.let { draftValues.valueFor(it).toFloatOrNull() } ?: attribute.value
     var sliderValue by remember(field?.id, displayedValue) { mutableFloatStateOf(displayedValue) }
     val progress = sliderValue.coerceIn(ATTRIBUTE_MIN_VALUE, ATTRIBUTE_MAX_VALUE) / ATTRIBUTE_MAX_VALUE
     val valueColor = attributeValueColor(sliderValue)

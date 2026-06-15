@@ -34,6 +34,8 @@ private val FieldCardShape = RoundedCornerShape(14.dp)
 private const val FIELD_CARD_ALPHA = 0.06f
 private const val FIELD_TAG_ALPHA = 0.12f
 private const val FIELD_RISK_DOT_SIZE_DP = 6
+private const val FIELD_HEADER_ALPHA = 0.35f
+private const val FIELD_PATH_MAX_LINES = 1
 
 @Composable
 internal fun SaveAdvancedFieldCard(
@@ -78,24 +80,19 @@ private fun FieldHeaderRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier.fillMaxWidth(),
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f),
-        ) {
-            FieldCategoryChip(category = category)
-            FieldRiskDot(risk = risk)
-        }
+        FieldCategoryChip(category = category)
+        FieldRiskDot(risk = risk)
         Text(
-            text = field.memberName,
+            text = field.path,
             style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-            color = Color.White.copy(alpha = 0.25f),
-            maxLines = 1,
+            color = Color.White.copy(alpha = FIELD_HEADER_ALPHA),
+            maxLines = FIELD_PATH_MAX_LINES,
             overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
         )
     }
 }
@@ -110,6 +107,9 @@ private fun FieldCategoryChip(
         style = MaterialTheme.typography.labelSmall,
         color = category.color(),
         fontWeight = FontWeight.Black,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Clip,
         modifier =
             modifier
                 .background(category.color().copy(alpha = FIELD_TAG_ALPHA), shape = RoundedCornerShape(6.dp))

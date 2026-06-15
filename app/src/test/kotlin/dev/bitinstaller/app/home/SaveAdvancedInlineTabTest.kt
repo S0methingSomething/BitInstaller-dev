@@ -1,5 +1,7 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
@@ -61,10 +63,11 @@ class SaveAdvancedInlineTabTest {
                     ),
             )
 
+        val draftValues = mutableStateMapOf<String, String>()
         composeTestRule.setContent {
             SaveAdvancedInlineTab(
                 save = save,
-                draft = SaveSlotEditDraft(),
+                draftValues = draftValues,
                 recentFieldIds = emptyList(),
                 onDraftChange = { _, _ -> },
             )

@@ -41,6 +41,8 @@ internal fun CategoryFilterChips(
                     text = "All",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false,
                 )
             },
             shape = CategoryChipShape,
@@ -56,6 +58,8 @@ internal fun CategoryFilterChips(
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false,
                     )
                 },
                 shape = CategoryChipShape,

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -46,14 +47,14 @@ internal fun SaveFileMetaLine(save: BitLifeSaveSummary) {
 @Composable
 internal fun SaveFactRows(
     save: BitLifeSaveSummary,
-    draft: SaveSlotEditDraft,
+    draftValues: SnapshotStateMap<String, String>,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         save.bankBalanceField?.let { field ->
             SaveInlineTextField(
                 label = "BANK",
-                value = draft.valueFor(field),
+                value = draftValues.valueFor(field),
                 onValueChange = { onFieldChange(field, it) },
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -62,7 +63,7 @@ internal fun SaveFactRows(
             if (fact.field != null) {
                 SaveInlineTextField(
                     label = fact.label,
-                    value = draft.valueFor(fact.field),
+                    value = draftValues.valueFor(fact.field),
                     onValueChange = { onFieldChange(fact.field, it) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -74,12 +75,12 @@ internal fun SaveFactRows(
 @Composable
 internal fun SaveAttributeRows(
     attributes: List<SaveAttributeSummary>,
-    draft: SaveSlotEditDraft,
+    draftValues: SnapshotStateMap<String, String>,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         attributes.take(MAX_ATTRIBUTE_PREVIEW_COUNT).forEach { attribute ->
-            SaveAttributeMeterRow(attribute = attribute, draft = draft, onFieldChange = onFieldChange)
+            SaveAttributeMeterRow(attribute = attribute, draftValues = draftValues, onFieldChange = onFieldChange)
         }
         if (attributes.size > MAX_ATTRIBUTE_PREVIEW_COUNT) {
             Text(
@@ -94,7 +95,7 @@ internal fun SaveAttributeRows(
 @Composable
 internal fun SaveCharacterRows(
     characters: List<SaveCharacterSummary>,
-    draft: SaveSlotEditDraft,
+    draftValues: SnapshotStateMap<String, String>,
     onFieldChange: (SaveEditableField, String) -> Unit,
 ) {
     if (characters.isEmpty()) return
@@ -139,7 +140,7 @@ internal fun SaveCharacterRows(
             for (character in categoryPeople) {
                 RelationshipCard(
                     character = character,
-                    draft = draft,
+                    draftValues = draftValues,
                     onFieldChange = onFieldChange,
                     maxFieldCount = MAX_CHARACTER_FIELD_COUNT,
                 )

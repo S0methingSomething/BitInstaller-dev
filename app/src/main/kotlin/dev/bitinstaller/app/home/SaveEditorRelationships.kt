@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +35,7 @@ internal val RelationshipBadgeShape = RoundedCornerShape(6.dp)
 @Composable
 internal fun RelationshipCard(
     character: SaveCharacterSummary,
-    draft: SaveSlotEditDraft,
+    draftValues: SnapshotStateMap<String, String>,
     onFieldChange: (SaveEditableField, String) -> Unit,
     maxFieldCount: Int,
 ) {
@@ -78,7 +79,7 @@ internal fun RelationshipCard(
             if (field.label.equals("Alive", ignoreCase = true)) {
                 SaveInlineToggleField(
                     label = field.label,
-                    checked = draft.valueFor(field).equals("true", ignoreCase = true),
+                    checked = draftValues.valueFor(field).equals("true", ignoreCase = true),
                     onCheckedChange = { checked ->
                         onFieldChange(field, if (checked) "True" else "False")
                     },
@@ -87,7 +88,7 @@ internal fun RelationshipCard(
             } else {
                 SaveInlineTextField(
                     label = field.label,
-                    value = draft.valueFor(field),
+                    value = draftValues.valueFor(field),
                     onValueChange = { onFieldChange(field, it) },
                     modifier = Modifier.fillMaxWidth(),
                 )
