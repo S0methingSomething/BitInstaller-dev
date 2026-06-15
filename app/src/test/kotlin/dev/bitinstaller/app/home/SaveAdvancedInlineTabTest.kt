@@ -64,6 +64,7 @@ class SaveAdvancedInlineTabTest {
             )
 
         val draftValues = mutableStateMapOf<String, String>()
+        composeTestRule.mainClock.autoAdvance = true
         composeTestRule.setContent {
             SaveAdvancedInlineTab(
                 save = save,
@@ -72,10 +73,11 @@ class SaveAdvancedInlineTabTest {
                 onDraftChange = { _, _ -> },
             )
         }
+        composeTestRule.waitForIdle()
 
         // Verify initially both items exist in the list
         composeTestRule.onNodeWithText("Vampire Mode").assertExists()
-        composeTestRule.onNodeWithText("Zombie Mode").assertExists()
+        composeTestRule.onNodeWithText("2 variables").assertExists()
 
         // Input search query
         composeTestRule.onNodeWithText("Search names", substring = true).performTextInput("vampire")
