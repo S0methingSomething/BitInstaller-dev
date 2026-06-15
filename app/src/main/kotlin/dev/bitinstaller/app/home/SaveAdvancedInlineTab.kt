@@ -9,13 +9,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,10 +24,12 @@ import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
-internal const val ADVANCED_SEARCH_DEBOUNCE_MS = 120L
-
+@OptIn(FlowPreview::class)
 @Composable
 internal fun SaveAdvancedInlineTab(
     save: BitLifeSaveSummary,
@@ -38,15 +40,19 @@ internal fun SaveAdvancedInlineTab(
 ) {
     var query by rememberSaveable(save.path) { mutableStateOf("") }
     var selectedCategory by rememberSaveable(save.path) { mutableStateOf<SaveFieldUiCategory?>(null) }
-    val debouncedQuery = rememberDebouncedQuery(query, save.path)
 
-    val fields =
-        rememberFilteredAdvancedFields(
-            save = save,
-            recentFieldIds = recentFieldIds,
-            debouncedQuery = debouncedQuery,
-            selectedCategory = selectedCategory,
-        )
+    val result by produceState(initialValue = AdvancedFieldResult(fields = emptyList(), isComputing = true)) {
+        val debouncedQuery =
+            snapshotFlow { query }
+                .debounce(ADVANCED_DEBOUNCE_MS)
+                .distinctUntilChanged()
+
+        combine(debouncedQuery, snapshotFlow { selectedCategory }) { q, c -> q to c }
+            .collect { (debouncedQuery, category) ->
+                value = computeFields(save, recentFieldIds, debouncedQuery, category)
+            }
+    }
+
     val recentLabels = rememberRecentLabels(save = save, recentFieldIds = recentFieldIds)
 
     LazyColumn(
@@ -73,14 +79,14 @@ internal fun SaveAdvancedInlineTab(
         }
         item(contentType = "advanced-count") {
             Text(
-                text = "${fields.size} variable${if (fields.size != 1) "s" else ""}",
+                text = "${result.fields.size} variable${if (result.fields.size != 1) "s" else ""}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.3f),
                 fontWeight = FontWeight.Bold,
             )
         }
         items(
-            items = fields,
+            items = result.fields,
             key = { field: SaveEditableField -> field.id },
             contentType = { field: SaveEditableField -> field.valueKind },
         ) { field: SaveEditableField ->
@@ -94,27 +100,6 @@ internal fun SaveAdvancedInlineTab(
 }
 
 @Composable
-private fun rememberFilteredAdvancedFields(
-    save: BitLifeSaveSummary,
-    recentFieldIds: List<String>,
-    debouncedQuery: String,
-    selectedCategory: SaveFieldUiCategory?,
-): List<SaveEditableField> {
-    val fields by remember(save.path, recentFieldIds, debouncedQuery, selectedCategory) {
-        derivedStateOf {
-            save.advancedFields.filteredAndSorted(
-                query = debouncedQuery,
-                recentFieldIds = recentFieldIds,
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.CATEGORY,
-                categoryFilter = selectedCategory,
-            )
-        }
-    }
-    return fields
-}
-
-@Composable
 private fun rememberRecentLabels(
     save: BitLifeSaveSummary,
     recentFieldIds: List<String>,
@@ -124,16 +109,3 @@ private fun rememberRecentLabels(
             .filter { field -> field.id in recentFieldIds }
             .map { field -> field.label }
     }
-
-@Composable
-private fun rememberDebouncedQuery(
-    query: String,
-    key: String,
-): String {
-    var debounced by rememberSaveable(key) { mutableStateOf(query) }
-    LaunchedEffect(query) {
-        delay(ADVANCED_SEARCH_DEBOUNCE_MS)
-        debounced = query
-    }
-    return debounced
-}
