@@ -172,7 +172,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.ui.unit)
-    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core)
     implementation(libs.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.serialization.core)
@@ -197,4 +197,10 @@ dependencies {
     testRuntimeOnly(libs.androidx.test.core)
     testRuntimeOnly(libs.coroutines.test)
     implementation(libs.fuzzykot)
+
+    constraints {
+        implementation(libs.androidx.core.ktx) {
+            because("Align transitive core-ktx version with core to prevent duplicate class issues")
+        }
+    }
 }

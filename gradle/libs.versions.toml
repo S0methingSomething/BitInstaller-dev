@@ -6,7 +6,7 @@ catalogUpdate = "1.1.0"
 compileSdk = "37"
 composeBom = "2026.05.01"
 composeExpressiveMaterial3 = "1.5.0-alpha21"
-coreKtx = "1.19.0"
+androidxCore = "1.19.0"
 coroutines = "1.11.0"
 dependencyAnalysis = "3.15.0"
 detekt = "1.23.8"
@@ -50,7 +50,8 @@ androidx-compose-ui-text = { module = "androidx.compose.ui:ui-text" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-compose-ui-unit = { module = "androidx.compose.ui:ui-unit" }
-androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-core = { module = "androidx.core:core", version.ref = "androidxCore" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
 compose-animation = { module = "androidx.compose.animation:animation" }
 compose-animation-core = { module = "androidx.compose.animation:animation-core" }
