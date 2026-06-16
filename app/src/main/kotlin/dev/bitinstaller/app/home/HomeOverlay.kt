@@ -6,6 +6,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -13,8 +16,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,8 @@ private val PATCH_EDITOR_BACKGROUND_BLUR = 18.dp
 private const val SLIDE_IN_OFFSET_DIVISOR = 4
 private const val SLIDE_OUT_OFFSET_DIVISOR = 2
 private const val PATCH_EDITOR_SCRIM_ALPHA = 0.65f
+private const val PATCH_EDITOR_ENTER_MS = 120
+private const val PATCH_EDITOR_EXIT_MS = 90
 
 @Composable
 internal fun HomeBackground(
@@ -61,24 +64,25 @@ private fun Modifier.patchEditorBlur(isBlurred: Boolean): Modifier {
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PatchEditorOverlay(
     activeSession: PatchEditorSession?,
     callbacks: HomeRouteCallbacks,
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
-    val effectsFloatSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
-    val spatialIntSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    val enterFloatSpec = tween<Float>(PATCH_EDITOR_ENTER_MS, easing = LinearOutSlowInEasing)
+    val enterIntSpec = tween<IntOffset>(PATCH_EDITOR_ENTER_MS, easing = FastOutSlowInEasing)
+    val exitFloatSpec = tween<Float>(PATCH_EDITOR_EXIT_MS)
+    val exitIntSpec = tween<IntOffset>(PATCH_EDITOR_EXIT_MS)
 
     AnimatedVisibility(
         visible = activeSession != null,
         enter =
-            fadeIn(animationSpec = effectsFloatSpec) +
-                slideInVertically(animationSpec = spatialIntSpec) { it / SLIDE_IN_OFFSET_DIVISOR },
+            fadeIn(animationSpec = enterFloatSpec) +
+                slideInVertically(animationSpec = enterIntSpec) { it / SLIDE_IN_OFFSET_DIVISOR },
         exit =
-            fadeOut(animationSpec = effectsFloatSpec) +
-                slideOutVertically(animationSpec = spatialIntSpec) { it / SLIDE_OUT_OFFSET_DIVISOR },
+            fadeOut(animationSpec = exitFloatSpec) +
+                slideOutVertically(animationSpec = exitIntSpec) { it / SLIDE_OUT_OFFSET_DIVISOR },
     ) {
         activeSession?.let { session ->
             PatchEditorScrim(

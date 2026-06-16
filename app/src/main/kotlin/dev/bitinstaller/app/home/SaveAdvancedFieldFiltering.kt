@@ -3,7 +3,6 @@ package dev.bitinstaller.app.home
 import com.github.terrakok.fuzzykot.ratio
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
-import dev.bitinstaller.app.save.explanation
 
 private const val FUZZY_MATCH_CUTOFF = 60
 private const val SCORE_EXACT_LABEL = 1000
@@ -11,6 +10,8 @@ private const val SCORE_EXACT_MEMBER = 950
 private const val SCORE_PREFIX_LABEL = 900
 private const val SCORE_PREFIX_MEMBER = 850
 private const val SCORE_SUBSTRING_TEXT = 800
+
+private val whitespaceRegex = Regex("\\s+")
 
 internal enum class AdvancedFieldFilter(
     val label: String,
@@ -35,59 +36,67 @@ internal enum class AdvancedFieldSort(
     CATEGORY("Category"),
 }
 
+internal data class FilterConfig(
+    val filter: AdvancedFieldFilter,
+    val sort: AdvancedFieldSort,
+    val categoryFilter: SaveFieldUiCategory? = null,
+)
+
 internal fun List<SaveEditableField>.filteredAndSorted(
     query: String,
     recentFieldIds: List<String>,
-    filter: AdvancedFieldFilter,
-    sort: AdvancedFieldSort,
-    categoryFilter: SaveFieldUiCategory? = null,
+    config: FilterConfig,
+    metadataMap: Map<String, FieldMetadata> = emptyMap(),
 ): List<SaveEditableField> {
     val needle = query.trim()
     val recentRank = recentFieldIds.withIndex().associate { (index, fieldId) -> fieldId to index }
     return mapNotNull { field ->
-        val hint = field.explanation()
-        if (field.shouldInclude(needle, filter, recentFieldIds, categoryFilter, hint)) {
-            field to field.searchScore(needle, hint)
+        val meta = metadataMap[field.id] ?: field.computeMetadata()
+        if (field.shouldInclude(needle, config, recentFieldIds, meta)) {
+            field to field.searchScore(needle, meta)
         } else {
             null
         }
     }.sortedWith(
         compareByDescending<Pair<SaveEditableField, Int>> { it.second }
-            .then(sort.comparator(recentRank).let { c -> Comparator { a, b -> c.compare(a.first, b.first) } }),
+            .then(
+                config.sort.comparator(recentRank, metadataMap).let { c ->
+                    Comparator { a, b -> c.compare(a.first, b.first) }
+                },
+            ),
     ).map { it.first }
 }
 
 private fun SaveEditableField.shouldInclude(
     needle: String,
-    filter: AdvancedFieldFilter,
+    config: FilterConfig,
     recentFieldIds: List<String>,
-    categoryFilter: SaveFieldUiCategory?,
-    hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
+    meta: FieldMetadata,
 ): Boolean {
-    val matchesQuery = matchesQuery(needle, hint)
-    val matchesFilter = matchesFilter(filter, recentFieldIds, hint?.category.orEmpty())
-    val matchesCategory = categoryFilter == null || uiCategory() == categoryFilter
+    val matchesQuery = matchesQuery(needle, meta)
+    val matchesFilter = matchesFilter(config.filter, recentFieldIds, meta)
+    val matchesCategory = config.categoryFilter == null || meta.uiCategory == config.categoryFilter
     return matchesQuery && matchesFilter && matchesCategory
 }
 
-private fun SaveEditableField.searchText(hint: dev.bitinstaller.app.save.SaveFieldExplanation?): String =
+private fun SaveEditableField.searchText(meta: FieldMetadata): String =
     buildString {
         append(memberName)
         append(' ')
         append(label)
         append(' ')
         append(path)
-        hint?.category?.let { append(' ').append(it) }
-        hint?.description?.let { append(' ').append(it) }
+        meta.explanation?.category?.let { append(' ').append(it) }
+        meta.explanation?.description?.let { append(' ').append(it) }
     }
 
 private fun SaveEditableField.matchesQuery(
     needle: String,
-    hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
+    meta: FieldMetadata,
 ): Boolean {
     if (needle.isBlank()) return true
-    val tokens = needle.split(Regex("\\s+")).filter { token -> token.isNotBlank() }
-    val text = searchText(hint)
+    val tokens = needle.split(whitespaceRegex).filter { token -> token.isNotBlank() }
+    val text = searchText(meta)
     return tokens.all { token ->
         text.contains(token, ignoreCase = true) || text.ratio(token) >= FUZZY_MATCH_CUTOFF
     }
@@ -95,11 +104,11 @@ private fun SaveEditableField.matchesQuery(
 
 private fun SaveEditableField.searchScore(
     needle: String,
-    hint: dev.bitinstaller.app.save.SaveFieldExplanation?,
+    meta: FieldMetadata,
 ): Int {
     if (needle.isBlank()) return 0
-    val tokens = needle.split(Regex("\\s+")).filter { token -> token.isNotBlank() }
-    val text = searchText(hint)
+    val tokens = needle.split(whitespaceRegex).filter { token -> token.isNotBlank() }
+    val text = searchText(meta)
     return tokens.sumOf { token ->
         when {
             label.equals(token, ignoreCase = true) -> SCORE_EXACT_LABEL
@@ -115,7 +124,7 @@ private fun SaveEditableField.searchScore(
 private fun SaveEditableField.matchesFilter(
     filter: AdvancedFieldFilter,
     recentFieldIds: List<String>,
-    category: String,
+    meta: FieldMetadata,
 ): Boolean =
     when (filter) {
         AdvancedFieldFilter.ALL -> {
@@ -127,31 +136,41 @@ private fun SaveEditableField.matchesFilter(
         }
 
         AdvancedFieldFilter.EXPLAINED -> {
-            category.isNotEmpty()
+            meta.explanation != null
         }
 
         AdvancedFieldFilter.ATTRIBUTES -> {
-            category == "Attribute"
+            meta.explanation?.category == "Attribute"
         }
 
         AdvancedFieldFilter.MONEY -> {
-            category == "Money"
+            meta.explanation?.category == "Money"
         }
 
         AdvancedFieldFilter.COUNTERS -> {
-            category == "Counter"
+            meta.explanation?.category == "Counter"
         }
 
         AdvancedFieldFilter.FLAGS -> {
-            valueKind == SaveEditableValueKind.BOOLEAN || category in listOf("State flag", "Boolean")
+            valueKind == SaveEditableValueKind.BOOLEAN ||
+                meta.explanation?.category in listOf("State flag", "Boolean")
         }
 
         AdvancedFieldFilter.RISKY -> {
-            category in listOf("Cooldown / timing", "Enum id", "Identity / metadata", "Rendering internal")
+            meta.explanation?.category in
+                listOf(
+                    "Cooldown / timing",
+                    "Enum id",
+                    "Identity / metadata",
+                    "Rendering internal",
+                )
         }
     }
 
-private fun AdvancedFieldSort.comparator(recentRank: Map<String, Int>): Comparator<SaveEditableField> =
+private fun AdvancedFieldSort.comparator(
+    recentRank: Map<String, Int>,
+    metadataMap: Map<String, FieldMetadata>,
+): Comparator<SaveEditableField> =
     when (this) {
         AdvancedFieldSort.RECENT_FIRST -> {
             compareBy<SaveEditableField> { field -> recentRank[field.id] ?: Int.MAX_VALUE }
@@ -167,7 +186,8 @@ private fun AdvancedFieldSort.comparator(recentRank: Map<String, Int>): Comparat
         }
 
         AdvancedFieldSort.CATEGORY -> {
-            compareBy<SaveEditableField> { field -> field.uiCategory().ordinal }
-                .thenBy { field -> field.path }
+            compareBy<SaveEditableField> { field ->
+                metadataMap[field.id]?.uiCategory?.ordinal ?: field.uiCategory().ordinal
+            }.thenBy { field -> field.path }
         }
     }

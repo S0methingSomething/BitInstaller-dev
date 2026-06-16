@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +37,7 @@ internal fun SimplifiedEditor(
     onTextChanged: (String, String) -> Unit,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.sizeIn(maxHeight = 350.dp),
     ) {
         items(originalData.entries.toList(), key = { it.key }) { entry ->
@@ -103,7 +104,8 @@ private fun BooleanEditorRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .heightIn(min = 62.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         SimplifiedKeyText(
             keyName = keyName,
@@ -116,9 +118,11 @@ private fun BooleanEditorRow(
         FilledTonalButton(
             onClick = { onBooleanChanged(keyName, !value) },
             shape = BooleanToggleShape,
+            modifier = Modifier.heightIn(min = 34.dp),
         ) {
             Text(
                 text = if (value) "Enabled" else "Disabled",
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight(toggleWeight),
             )
         }
@@ -133,8 +137,8 @@ private fun ValueEditorRow(
     onTextChanged: (String, String) -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         SimplifiedKeyText(keyName = keyName, supportingText = if (value is Int) "Int32" else "Base64 payload")
         OutlinedTextField(
@@ -152,24 +156,24 @@ private fun SimplifiedKeyText(
     supportingText: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier) {
         Text(
             text = monetizationDisplayName(keyName),
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = keyName,
-            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = supportingText,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

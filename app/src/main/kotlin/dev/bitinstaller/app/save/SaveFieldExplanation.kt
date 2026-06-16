@@ -5,11 +5,13 @@ internal data class SaveFieldExplanation(
     val description: String,
 )
 
+private val backingFieldRegex = Regex("<([^>]+)>k__BackingField")
+
 internal fun SaveEditableField.explanation(): SaveFieldExplanation? {
     val name =
         memberName
             .substringAfterLast('+')
-            .replace(Regex("<([^>]+)>k__BackingField"), "$1")
+            .replace(backingFieldRegex, "$1")
             .removePrefix("_")
     return name.explanationByName()
         ?: when (valueKind) {

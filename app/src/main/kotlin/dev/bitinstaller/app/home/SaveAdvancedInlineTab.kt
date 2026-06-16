@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -28,6 +29,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.fold
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -41,18 +43,8 @@ internal fun SaveAdvancedInlineTab(
     var query by rememberSaveable(save.path) { mutableStateOf("") }
     var selectedCategory by rememberSaveable(save.path) { mutableStateOf<SaveFieldUiCategory?>(null) }
 
-    val result by produceState(initialValue = AdvancedFieldResult(fields = emptyList(), isComputing = true)) {
-        val debouncedQuery =
-            snapshotFlow { query }
-                .debounce(ADVANCED_DEBOUNCE_MS)
-                .distinctUntilChanged()
-
-        combine(debouncedQuery, snapshotFlow { selectedCategory }) { q, c -> q to c }
-            .collect { (debouncedQuery, category) ->
-                value = computeFields(save, recentFieldIds, debouncedQuery, category)
-            }
-    }
-
+    val metadataMap = remember(save) { save.advancedFields.associate { it.id to it.computeMetadata() } }
+    val result = rememberAdvancedFieldResult(save, recentFieldIds, metadataMap, query, selectedCategory)
     val recentLabels = rememberRecentLabels(save = save, recentFieldIds = recentFieldIds)
 
     LazyColumn(
@@ -79,14 +71,14 @@ internal fun SaveAdvancedInlineTab(
         }
         item(contentType = "advanced-count") {
             Text(
-                text = "${result.fields.size} variable${if (result.fields.size != 1) "s" else ""}",
+                text = "${result.value.fields.size} variable${if (result.value.fields.size != 1) "s" else ""}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.3f),
                 fontWeight = FontWeight.Bold,
             )
         }
         items(
-            items = result.fields,
+            items = result.value.fields,
             key = { field: SaveEditableField -> field.id },
             contentType = { field: SaveEditableField -> field.valueKind },
         ) { field: SaveEditableField ->
@@ -98,6 +90,33 @@ internal fun SaveAdvancedInlineTab(
         }
     }
 }
+
+@OptIn(FlowPreview::class)
+@Composable
+private fun rememberAdvancedFieldResult(
+    save: BitLifeSaveSummary,
+    recentFieldIds: List<String>,
+    metadataMap: Map<String, FieldMetadata>,
+    query: String,
+    selectedCategory: SaveFieldUiCategory?,
+): State<AdvancedFieldResult> =
+    produceState(initialValue = AdvancedFieldResult(fields = emptyList(), isComputing = true)) {
+        combine(
+            snapshotFlow { query }
+                .debounce { q -> if (q.isEmpty()) 0L else ADVANCED_DEBOUNCE_MS }
+                .distinctUntilChanged(),
+            snapshotFlow { selectedCategory },
+        ) { q, c -> q to c }
+            .collect { (debouncedQuery, category) ->
+                value = AdvancedFieldResult(emptyList(), isComputing = true)
+                computeFieldsFlow(save, recentFieldIds, debouncedQuery, category, metadataMap)
+                    .fold(emptyList<SaveEditableField>()) { acc, chunk ->
+                        val next = acc + chunk
+                        value = AdvancedFieldResult(fields = next, isComputing = false)
+                        next
+                    }
+            }
+    }
 
 @Composable
 private fun rememberRecentLabels(

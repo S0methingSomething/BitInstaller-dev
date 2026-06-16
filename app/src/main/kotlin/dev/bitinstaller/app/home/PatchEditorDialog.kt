@@ -33,7 +33,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val PATCH_EDITOR_CONTAINER_COLOR_ARGB = 0xF5050505
 private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.88f
@@ -42,7 +44,8 @@ private val PatchEditorShape = RoundedCornerShape(24.dp)
 data class PatchEditorSceneConfig(
     val initialData: MonetizationData = buildPreviewData(),
     val saveData: suspend (MonetizationData) -> String = { data ->
-        "Saved and re-encrypted file (${MonetizationCodec.encrypt(data).length} chars)."
+        val length = withContext(Dispatchers.Default) { MonetizationCodec.encrypt(data).length }
+        "Saved and re-encrypted file ($length chars)."
     },
 )
 
@@ -157,8 +160,8 @@ private fun PatchEditorContent(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 18.dp, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 PatchEditorHeaderSection(uiState = uiState, actions = actions)
                 PatchEditorBodySection(
@@ -182,7 +185,7 @@ private fun PatchEditorHeaderSection(
     uiState: PatchEditorUiState,
     actions: PatchEditorActions,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         PatchEditorToolbar(editorMode = uiState.editorMode, onModeSelected = actions.onModeSelected)
         BulkPatchPanel(onUnlockAll = actions.onUnlockAll)
     }

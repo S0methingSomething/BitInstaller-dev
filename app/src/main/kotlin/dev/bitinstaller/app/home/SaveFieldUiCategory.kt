@@ -2,6 +2,7 @@ package dev.bitinstaller.app.home
 
 import androidx.compose.ui.graphics.Color
 import dev.bitinstaller.app.save.SaveEditableField
+import dev.bitinstaller.app.save.SaveFieldExplanation
 import dev.bitinstaller.app.save.explanation
 
 private const val COLOR_CHARACTER_ARGB = 0xFF4CAF50L
@@ -37,7 +38,10 @@ internal enum class SaveFieldUiCategory(
 
 internal fun SaveEditableField.uiCategory(): SaveFieldUiCategory {
     val explanation = explanation()
-    val category = explanation?.category
+    return computeUiCategory(explanation?.category)
+}
+
+internal fun SaveEditableField.computeUiCategory(category: String?): SaveFieldUiCategory {
     val member = memberName.lowercase()
     val groupLower = group.lowercase()
     val pathLower = path.lowercase()

@@ -19,6 +19,10 @@ internal enum class SaveFieldUiRisk(
 
 internal fun SaveEditableField.uiRisk(): SaveFieldUiRisk {
     val category = explanation()?.category
+    return computeUiRisk(category)
+}
+
+internal fun SaveEditableField.computeUiRisk(category: String?): SaveFieldUiRisk {
     val member = memberName.lowercase()
     val pathLower = path.lowercase()
 

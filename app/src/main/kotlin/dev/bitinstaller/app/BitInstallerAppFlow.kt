@@ -27,7 +27,9 @@ import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import dev.bitinstaller.app.targets.PatchTarget
 import dev.bitinstaller.app.targets.findTarget
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 internal const val SHIZUKU_PERMISSION_REQUEST_CODE: Int = 6207
@@ -238,7 +240,7 @@ private suspend fun savePatchSession(
     val patchTarget =
         findTarget(session.packageName)
             ?: error("Unknown target: ${session.packageName}")
-    val encrypted = MonetizationCodec.encrypt(data)
+    val encrypted = withContext(Dispatchers.Default) { MonetizationCodec.encrypt(data) }
     val writeResult = repository.writeMonetizationVars(path = session.filePath, content = encrypted)
     manifestStore.recordPatched(target = patchTarget, encryptedContent = encrypted)
     appState.patchPresences = appState.patchPresences + (
@@ -317,7 +319,7 @@ internal fun requestShizukuPermission(onError: (String?) -> Unit) {
     }
 }
 
-private fun MonetizationVarsFile.toPatchEditorSession(
+private suspend fun MonetizationVarsFile.toPatchEditorSession(
     target: PatchTargetUiState,
     patchPresence: PatchManifestPresence,
 ): PatchEditorSession =
@@ -333,5 +335,5 @@ private fun MonetizationVarsFile.toPatchEditorSession(
                     ),
             ),
         filePath = path,
-        initialData = MonetizationCodec.decrypt(content),
+        initialData = withContext(Dispatchers.Default) { MonetizationCodec.decrypt(content) },
     )

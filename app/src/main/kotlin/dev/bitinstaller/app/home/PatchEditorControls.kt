@@ -27,17 +27,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private const val EDITOR_SUBTLE_SURFACE_ALPHA = 0.05f
-private val EditorControlShape = RoundedCornerShape(16.dp)
+private val EditorControlShape = RoundedCornerShape(14.dp)
 
 @Composable
 internal fun PatchEditorToolbar(
     editorMode: EditorMode,
     onModeSelected: (EditorMode) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         EditorSectionLabel(text = "Editor mode")
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             EditorModeButton(
@@ -58,7 +58,7 @@ internal fun PatchEditorToolbar(
 
 @Composable
 internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
         EditorSectionLabel(text = "Bulk patch")
         Surface(
             onClick = onUnlockAll,
@@ -71,12 +71,16 @@ internal fun BulkPatchPanel(onUnlockAll: () -> Unit) {
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             ) {
-                Text(text = "Enable all unlocks", fontWeight = FontWeight.Medium)
+                Text(
+                    text = "Enable all unlocks",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Medium,
+                )
                 Text(
                     text = "Bulk command - review before saving",
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -103,7 +107,7 @@ internal fun PatchEditorFooter(
         activeWeight = FontWeight.Black.weight,
     )
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         Button(
             enabled = !isSaving,
             onClick = onSave,
@@ -116,7 +120,7 @@ internal fun PatchEditorFooter(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 58.dp),
+                    .heightIn(min = 46.dp),
         ) {
             if (isSaving) {
                 LoadingIndicator(
@@ -130,11 +134,11 @@ internal fun PatchEditorFooter(
         FilledTonalButton(
             onClick = onExportRawJson,
             shape = EditorControlShape,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
         ) {
             Text(text = "Export JSON")
         }
-        TextButton(onClick = onDismissRequest, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
+        TextButton(onClick = onDismissRequest, modifier = Modifier.fillMaxWidth().heightIn(min = 38.dp)) {
             Text(text = "Close")
         }
     }
@@ -162,9 +166,9 @@ private fun EditorModeButton(
                 ),
             onClick = onClick,
             shape = EditorControlShape,
-            modifier = modifier.heightIn(min = 44.dp),
+            modifier = modifier.heightIn(min = 38.dp),
         ) {
-            Text(text = label, fontWeight = FontWeight(textWeight))
+            Text(text = label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight(textWeight))
         }
     } else {
         FilledTonalButton(
@@ -175,9 +179,9 @@ private fun EditorModeButton(
                 ),
             onClick = onClick,
             shape = EditorControlShape,
-            modifier = modifier.heightIn(min = 44.dp),
+            modifier = modifier.heightIn(min = 38.dp),
         ) {
-            Text(text = label, fontWeight = FontWeight(textWeight))
+            Text(text = label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight(textWeight))
         }
     }
 }
@@ -189,7 +193,7 @@ private fun EditorSectionLabel(text: String) {
         style =
             MaterialTheme.typography.labelMedium.copy(
                 fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.4.sp,
+                letterSpacing = 1.2.sp,
             ),
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

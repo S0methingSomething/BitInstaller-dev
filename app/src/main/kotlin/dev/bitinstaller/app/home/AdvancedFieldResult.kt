@@ -7,8 +7,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 internal data class AdvancedFieldResult(
     val fields: List<SaveEditableField>,
@@ -16,11 +16,12 @@ internal data class AdvancedFieldResult(
 )
 
 internal const val ADVANCED_DEBOUNCE_MS = 120L
+private const val FIELD_CHUNK_SIZE = 60
 
 @OptIn(FlowPreview::class)
 internal fun queryFlow(query: Flow<String>): Flow<String> =
     query
-        .debounce(ADVANCED_DEBOUNCE_MS)
+        .debounce { q -> if (q.isEmpty()) 0L else ADVANCED_DEBOUNCE_MS }
         .distinctUntilChanged()
 
 internal suspend fun computeFields(
@@ -28,15 +29,43 @@ internal suspend fun computeFields(
     recentFieldIds: List<String>,
     query: String,
     category: SaveFieldUiCategory?,
+    metadataMap: Map<String, FieldMetadata> = emptyMap(),
 ): AdvancedFieldResult =
-    withContext(Dispatchers.Default) {
+    kotlinx.coroutines.withContext(Dispatchers.Default) {
         val fields =
             save.advancedFields.filteredAndSorted(
                 query = query,
                 recentFieldIds = recentFieldIds,
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.CATEGORY,
-                categoryFilter = category,
+                config =
+                    FilterConfig(
+                        filter = AdvancedFieldFilter.ALL,
+                        sort = AdvancedFieldSort.CATEGORY,
+                        categoryFilter = category,
+                    ),
+                metadataMap = metadataMap,
             )
         AdvancedFieldResult(fields = fields, isComputing = false)
     }
+
+internal fun computeFieldsFlow(
+    save: BitLifeSaveSummary,
+    recentFieldIds: List<String>,
+    query: String,
+    category: SaveFieldUiCategory?,
+    metadataMap: Map<String, FieldMetadata>,
+): Flow<List<SaveEditableField>> =
+    flow {
+        val results =
+            save.advancedFields.filteredAndSorted(
+                query = query,
+                recentFieldIds = recentFieldIds,
+                config =
+                    FilterConfig(
+                        filter = AdvancedFieldFilter.ALL,
+                        sort = AdvancedFieldSort.CATEGORY,
+                        categoryFilter = category,
+                    ),
+                metadataMap = metadataMap,
+            )
+        results.chunked(FIELD_CHUNK_SIZE).forEach { chunk -> emit(chunk) }
+    }.flowOn(Dispatchers.Default)

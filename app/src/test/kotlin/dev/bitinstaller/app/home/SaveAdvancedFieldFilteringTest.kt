@@ -36,8 +36,7 @@ class SaveAdvancedFieldFilteringTest {
             fields.filteredAndSorted(
                 query = "vampire",
                 recentFieldIds = emptyList(),
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.NAME,
+                config = FilterConfig(filter = AdvancedFieldFilter.ALL, sort = AdvancedFieldSort.NAME),
             )
 
         assertEquals(1, result.size)
@@ -74,8 +73,7 @@ class SaveAdvancedFieldFilteringTest {
             fields.filteredAndSorted(
                 query = "",
                 recentFieldIds = emptyList(),
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.CATEGORY,
+                config = FilterConfig(filter = AdvancedFieldFilter.ALL, sort = AdvancedFieldSort.CATEGORY),
             )
 
         assertEquals(2, result.size)
@@ -111,8 +109,7 @@ class SaveAdvancedFieldFilteringTest {
             fields.filteredAndSorted(
                 query = "vmpire",
                 recentFieldIds = emptyList(),
-                filter = AdvancedFieldFilter.ALL,
-                sort = AdvancedFieldSort.NAME,
+                config = FilterConfig(filter = AdvancedFieldFilter.ALL, sort = AdvancedFieldSort.NAME),
             )
 
         assertEquals(1, result.size)
