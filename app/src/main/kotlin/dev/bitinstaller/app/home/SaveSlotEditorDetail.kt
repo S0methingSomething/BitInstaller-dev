@@ -62,6 +62,10 @@ internal fun SaveSlotEditorDetail(
     var state by remember(save.path) { mutableStateOf(initial) }
     val draftValues = remember(save.path) { mutableStateMapOf<String, String>() }
     val dirtyCount by remember { derivedStateOf { draftValues.draftDirtyCount(save) } }
+    LaunchedEffect(target.editMessageTokens[save.path]) {
+        draftValues.clear()
+        state = state.copy(editsToSave = null)
+    }
     SaveSlotEditorSideEffects(
         state = state,
         actions = actions,
@@ -72,6 +76,7 @@ internal fun SaveSlotEditorDetail(
     SaveSlotEditorContent(
         content =
             SaveSlotEditorContent(
+                target = target,
                 state = state,
                 save = save,
                 actions = actions,
@@ -85,6 +90,7 @@ internal fun SaveSlotEditorDetail(
 }
 
 private data class SaveSlotEditorContent(
+    val target: SaveTargetUiState,
     val state: SaveSlotEditorState,
     val save: BitLifeSaveSummary,
     val actions: SaveSlotEditorDetailActions,
@@ -130,7 +136,7 @@ private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
         )
         if (save.errorMessage == null) {
             SaveDetailActions(
-                enabled = state.target.editingSavePath != save.path,
+                enabled = content.target.editingSavePath != save.path,
                 dirtyCount = content.dirtyCount,
                 onSaveRequested = {
                     val edits = draftValues.collectSaveEdits(save)
@@ -356,10 +362,6 @@ private fun SaveSlotEditorSideEffects(
     draftValues: SnapshotStateMap<String, String>,
     save: BitLifeSaveSummary,
 ) {
-    LaunchedEffect(state.target.editMessageTokens[save.path]) {
-        draftValues.clear()
-        onState(state.copy(editsToSave = null))
-    }
     LaunchedEffect(state.editsToSave) {
         state.editsToSave?.let { edits ->
             actions.onSaveChanges(edits)
