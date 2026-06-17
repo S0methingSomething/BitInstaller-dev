@@ -16,7 +16,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,13 +24,10 @@ import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.fold
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
-@OptIn(FlowPreview::class)
 @Composable
 internal fun SaveAdvancedInlineTab(
     save: BitLifeSaveSummary,
@@ -71,14 +67,14 @@ internal fun SaveAdvancedInlineTab(
         }
         item(contentType = "advanced-count") {
             Text(
-                text = "${result.value.fields.size} variable${if (result.value.fields.size != 1) "s" else ""}",
+                text = "${result.value.size} variable${if (result.value.size != 1) "s" else ""}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color.White.copy(alpha = 0.3f),
                 fontWeight = FontWeight.Bold,
             )
         }
         items(
-            items = result.value.fields,
+            items = result.value,
             key = { field: SaveEditableField -> field.id },
             contentType = { field: SaveEditableField -> field.valueKind },
         ) { field: SaveEditableField ->
@@ -91,7 +87,6 @@ internal fun SaveAdvancedInlineTab(
     }
 }
 
-@OptIn(FlowPreview::class)
 @Composable
 private fun rememberAdvancedFieldResult(
     save: BitLifeSaveSummary,
@@ -99,22 +94,22 @@ private fun rememberAdvancedFieldResult(
     metadataMap: Map<String, FieldMetadata>,
     query: String,
     selectedCategory: SaveFieldUiCategory?,
-): State<AdvancedFieldResult> =
-    produceState(initialValue = AdvancedFieldResult(fields = emptyList(), isComputing = true)) {
-        combine(
-            snapshotFlow { query }
-                .debounce { q -> if (q.isEmpty()) 0L else ADVANCED_DEBOUNCE_MS }
-                .distinctUntilChanged(),
-            snapshotFlow { selectedCategory },
-        ) { q, c -> q to c }
-            .collect { (debouncedQuery, category) ->
-                value = AdvancedFieldResult(emptyList(), isComputing = true)
-                computeFieldsFlow(save, recentFieldIds, debouncedQuery, category, metadataMap)
-                    .fold(emptyList<SaveEditableField>()) { acc, chunk ->
-                        val next = acc + chunk
-                        value = AdvancedFieldResult(fields = next, isComputing = false)
-                        next
-                    }
+): State<List<SaveEditableField>> =
+    produceState(initialValue = emptyList<SaveEditableField>(), query, selectedCategory) {
+        if (query.isNotEmpty()) delay(ADVANCED_DEBOUNCE_MS)
+        value =
+            withContext(Dispatchers.Default) {
+                save.advancedFields.filteredAndSorted(
+                    query = query,
+                    recentFieldIds = recentFieldIds,
+                    config =
+                        FilterConfig(
+                            filter = AdvancedFieldFilter.ALL,
+                            sort = AdvancedFieldSort.CATEGORY,
+                            categoryFilter = selectedCategory,
+                        ),
+                    metadataMap = metadataMap,
+                )
             }
     }
 
@@ -123,7 +118,7 @@ private fun rememberRecentLabels(
     save: BitLifeSaveSummary,
     recentFieldIds: List<String>,
 ): List<String> =
-    remember(recentFieldIds) {
+    remember(save, recentFieldIds) {
         save.advancedFields
             .filter { field -> field.id in recentFieldIds }
             .map { field -> field.label }

@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +61,7 @@ internal fun SaveSlotEditorDetail(
         )
     var state by remember(save.path) { mutableStateOf(initial) }
     val draftValues = remember(save.path) { mutableStateMapOf<String, String>() }
-    val dirtyCount = remember(draftValues.size) { draftValues.draftDirtyCount(save) }
+    val dirtyCount by remember { derivedStateOf { draftValues.draftDirtyCount(save) } }
     SaveSlotEditorSideEffects(
         state = state,
         actions = actions,
@@ -313,28 +314,31 @@ private fun SaveDetailActions(
     onBackRequested: () -> Unit,
 ) {
     val isDirty = dirtyCount > 0
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Button(
-            enabled = enabled && isDirty,
-            onClick = onSaveRequested,
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
-            shape = SaveEditorControlShape,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-        ) {
-            Text(
-                text = if (dirtyCount == 1) "Save 1 Change" else "Save $dirtyCount Changes",
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-            )
+    if (isDirty) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(
+                enabled = enabled,
+                onClick = onSaveRequested,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                shape = SaveEditorControlShape,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+            ) {
+                Text(
+                    text = if (dirtyCount == 1) "Save 1 Change" else "Save $dirtyCount Changes",
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            FilledTonalButton(
+                enabled = enabled,
+                onClick = onDiscardRequested,
+                shape = SaveEditorControlShape,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
+            ) {
+                Text(text = "Discard Changes", textAlign = TextAlign.Center)
+            }
         }
-        FilledTonalButton(
-            enabled = enabled && isDirty,
-            onClick = onDiscardRequested,
-            shape = SaveEditorControlShape,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
-        ) {
-            Text(text = "Discard Changes", textAlign = TextAlign.Center)
-        }
+    } else {
         TextButton(
             onClick = onBackRequested,
             modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),

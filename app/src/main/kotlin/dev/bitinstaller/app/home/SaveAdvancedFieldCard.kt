@@ -13,11 +13,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -28,9 +23,7 @@ import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
 import dev.bitinstaller.app.save.explanation
-import kotlinx.coroutines.delay
 
-private const val FIELD_DRAFT_SYNC_DEBOUNCE_MS = 100L
 private val FieldCardShape = RoundedCornerShape(14.dp)
 private const val FIELD_CARD_ALPHA = 0.06f
 private const val FIELD_TAG_ALPHA = 0.12f
@@ -52,14 +45,6 @@ internal fun SaveAdvancedFieldCard(
     val category = field.uiCategory()
     val risk = field.uiRisk()
     val explanation = field.explanation()
-    var localValue by rememberSaveable(field.id) { mutableStateOf(draftValue) }
-
-    LaunchedEffect(localValue) {
-        if (localValue != draftValue) {
-            delay(FIELD_DRAFT_SYNC_DEBOUNCE_MS)
-            onDraftChange(field, localValue)
-        }
-    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -72,8 +57,8 @@ internal fun SaveAdvancedFieldCard(
         FieldHeaderRow(field = field, category = category, risk = risk)
         FieldControl(
             field = field,
-            localValue = localValue,
-            onValueChange = { localValue = it },
+            localValue = draftValue,
+            onValueChange = { onDraftChange(field, it) },
         )
         if (explanation != null) {
             FieldFooter(explanation = explanation, risk = risk)
