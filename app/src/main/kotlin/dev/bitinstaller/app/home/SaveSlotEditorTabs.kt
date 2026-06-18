@@ -35,6 +35,8 @@ internal fun SaveSlotTabBody(
 ) {
     val statsActive = state.selectedTab == SAVE_DETAIL_TAB_STATS
     val peopleActive = state.selectedTab == SAVE_DETAIL_TAB_PEOPLE
+    val assetsActive = state.selectedTab == SAVE_DETAIL_TAB_ASSETS
+    val financeActive = state.selectedTab == SAVE_DETAIL_TAB_FINANCE
     val advancedActive = state.selectedTab == SAVE_DETAIL_TAB_ADVANCED
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -50,6 +52,22 @@ internal fun SaveSlotTabBody(
                 saveSlotStatusItem(state = state)
                 peopleTabItem(state = state, actions = actions)
             }
+        }
+
+        if (assetsActive && state.save.errorMessage == null) {
+            SaveAssetsTabContent(
+                state = state,
+                actions = actions,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        if (financeActive && state.save.errorMessage == null) {
+            SaveFinanceTabContent(
+                state = state,
+                actions = actions,
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         if (advancedActive && state.save.errorMessage == null) {
