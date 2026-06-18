@@ -7,6 +7,30 @@ import dev.nrbf4j.ObjectNode
 
 private const val MAX_ADVANCED_TRAVERSAL_DEPTH = 24
 
+/**
+ * Class names whose instances are pure noise in the Advanced field list:
+ * price-history logs, destiny/flashback logs, internal bookkeeping.
+ * Skipping them removes ~17k of ~18k advanced fields.
+ */
+private val ADVANCED_SKIP_CLASS_NAMES: Set<String> =
+    setOf(
+        "SimStockEvent",
+        "SimCryptoEvent",
+        "SimSectorEvent",
+        "SimDestinyEvent",
+        "ScenarioTimestamp",
+        "SimMarketEvent",
+    )
+
+private val ADVANCED_SKIP_CLASS_PREFIXES: List<String> =
+    listOf(
+        // System.Collections.Generic.List`1[[System.Double, mscorlib, ...]]
+        "System.Collections.Generic.List`1[[System.Double",
+    )
+
+private fun ObjectNode.shouldSkipAdvanced(): Boolean =
+    className in ADVANCED_SKIP_CLASS_NAMES || ADVANCED_SKIP_CLASS_PREFIXES.any { className.startsWith(it) }
+
 internal fun NrbfDocument.collectAdvancedFields(life: ObjectNode?): List<SaveEditableField> {
     val root = life ?: return emptyList()
     val visited = mutableSetOf<Int>()
@@ -18,6 +42,7 @@ internal fun NrbfDocument.collectAdvancedFields(life: ObjectNode?): List<SaveEdi
         depth: Int,
     ) {
         if (depth > MAX_ADVANCED_TRAVERSAL_DEPTH || !visited.add(node.objectId)) return
+        if (node.shouldSkipAdvanced()) return
         node.members().forEach { member ->
             collectAdvancedMember(member = member, path = path, depth = depth, visit = ::visit, fields = fields)
         }
