@@ -22,7 +22,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveEditableValueKind
-import dev.bitinstaller.app.save.explanation
 
 private val FieldCardShape = RoundedCornerShape(14.dp)
 private const val FIELD_CARD_ALPHA = 0.06f
@@ -39,12 +38,13 @@ private val FieldNoticeShape = RoundedCornerShape(8.dp)
 internal fun SaveAdvancedFieldCard(
     field: SaveEditableField,
     draftValue: String,
+    metadata: FieldMetadata,
     onDraftChange: (SaveEditableField, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val category = field.uiCategory()
-    val risk = field.uiRisk()
-    val explanation = field.explanation()
+    val category = metadata.uiCategory
+    val risk = metadata.uiRisk
+    val explanation = metadata.explanation
 
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),

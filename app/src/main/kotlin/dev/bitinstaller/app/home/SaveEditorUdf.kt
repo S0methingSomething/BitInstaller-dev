@@ -6,8 +6,6 @@ import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 
 internal data class SaveSlotEditorState(
-    val target: SaveTargetUiState,
-    val save: BitLifeSaveSummary,
     val selectedTab: String,
     val showDiscardPrompt: Boolean,
     val navigateBack: Boolean,
@@ -71,12 +69,12 @@ internal fun saveSlotEditorReduce(
         }
     }
 
-internal fun SnapshotStateMap<String, String>.collectSaveEdits(save: BitLifeSaveSummary): List<SaveFieldEdit> {
-    val fieldsById = save.editableFields().associateBy { field -> field.id }
-    return entries.mapNotNull { (fieldId, rawValue) ->
+internal fun SnapshotStateMap<String, String>.collectSaveEdits(
+    fieldsById: Map<String, SaveEditableField>,
+): List<SaveFieldEdit> =
+    entries.mapNotNull { (fieldId, rawValue) ->
         fieldsById[fieldId]?.let { field -> SaveFieldEdit(field = field, rawValue = rawValue) }
     }
-}
 
 private fun valuesEqual(
     a: String,
@@ -86,15 +84,13 @@ private fun valuesEqual(
         b.toFloatOrNull()?.let { fb -> fa == fb }
     } == true
 
-internal fun SnapshotStateMap<String, String>.draftDirtyCount(save: BitLifeSaveSummary): Int {
-    val fieldsById = save.editableFields().associateBy { field -> field.id }
-    return entries.count { (fieldId, rawValue) ->
+internal fun SnapshotStateMap<String, String>.draftDirtyCount(fieldsById: Map<String, SaveEditableField>): Int =
+    entries.count { (fieldId, rawValue) ->
         fieldsById[fieldId]?.let { field -> !valuesEqual(field.value, rawValue) } ?: true
     }
-}
 
-internal fun SnapshotStateMap<String, String>.isDraftDirty(save: BitLifeSaveSummary): Boolean =
-    draftDirtyCount(save) > 0
+internal fun SnapshotStateMap<String, String>.isDraftDirty(fieldsById: Map<String, SaveEditableField>): Boolean =
+    draftDirtyCount(fieldsById) > 0
 
 internal fun BitLifeSaveSummary.editableFields(): List<SaveEditableField> =
     buildList {

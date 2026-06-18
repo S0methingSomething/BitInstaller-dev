@@ -92,14 +92,14 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
         }
     }
     val cachedSaves =
-        (saveScanResults[target.packageName] ?: inMemory)
+        saveScanResults[target.packageName]
             .orEmpty()
             .associateBy { save -> save.path }
+    val patchTarget =
+        findTarget(target.packageName)
+            ?: error("Unknown target: ${target.packageName}")
     runCatching {
         withContext(Dispatchers.IO) {
-            val patchTarget =
-                findTarget(target.packageName)
-                    ?: error("Unknown target: ${target.packageName}")
             val semaphore = Semaphore(SCAN_CONCURRENCY)
             coroutineScope {
                 repository

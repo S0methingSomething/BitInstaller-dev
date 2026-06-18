@@ -1,5 +1,3 @@
-@file:Suppress("MagicNumber")
-
 package dev.bitinstaller.app.crypto
 
 import org.json.JSONObject
@@ -15,6 +13,18 @@ const val B64_NET_BOOLEAN_TRUE_VARIANT: String =
     "AAEAAAD/////AQAAAAAAAAAEAQAAAA5TeXN0ZW0uQm9vbGVhbgEAAAAHbV92YWx1ZQABAAs="
 const val B64_NET_BOOLEAN_FALSE_STANDARD: String =
     "AAEAAAD/////AQAAAAAAAAAEAQAAAA5TeXN0ZW0uQm9vbGVhbgEAAAAHbV92YWx1ZQABAAw="
+
+private const val NET_INT32_PREFIX_B64: String =
+    "AAEAAAD/////AQAAAAAAAAAEAQAAAAxTeXN0ZW0uSW50MzIBAAAAB21fdmFsdWUACA=="
+private const val NET_INT32_SUFFIX_B64: String = "Cw=="
+private const val INT32_VALUE_LENGTH: Int = 4
+private const val NET_INT32_PREFIX_LENGTH: Int = 49
+private const val NET_INT32_SUFFIX_LENGTH: Int = 1
+private const val USER_SERIALIZED_INT32_TOTAL_LENGTH: Int =
+    NET_INT32_PREFIX_LENGTH + INT32_VALUE_LENGTH + NET_INT32_SUFFIX_LENGTH
+
+private val userSerializedInt32Prefix: ByteArray = Base64.getDecoder().decode(NET_INT32_PREFIX_B64)
+private val userSerializedInt32Suffix: ByteArray = Base64.getDecoder().decode(NET_INT32_SUFFIX_B64)
 
 typealias MonetizationValue = Any
 typealias MonetizationData = Map<String, MonetizationValue>
@@ -48,63 +58,6 @@ private val obfuscationCharMap: Map<Char, Char> =
         'y' to 'n',
         'z' to 'a',
     )
-
-private val userSerializedInt32Prefix: ByteArray =
-    byteArrayOf(
-        0x00,
-        0x01,
-        0x00,
-        0x00,
-        0x00,
-        0xff.toByte(),
-        0xff.toByte(),
-        0xff.toByte(),
-        0xff.toByte(),
-        0x01,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x00,
-        0x04,
-        0x01,
-        0x00,
-        0x00,
-        0x00,
-        0x0c,
-        0x53,
-        0x79,
-        0x73,
-        0x74,
-        0x65,
-        0x6d,
-        0x2e,
-        0x49,
-        0x6e,
-        0x74,
-        0x33,
-        0x32,
-        0x01,
-        0x00,
-        0x00,
-        0x00,
-        0x07,
-        0x6d,
-        0x5f,
-        0x76,
-        0x61,
-        0x6c,
-        0x75,
-        0x65,
-        0x00,
-        0x08,
-    )
-private val userSerializedInt32Suffix: ByteArray = byteArrayOf(0x0b)
-private const val INT32_VALUE_LENGTH: Int = 4
-private const val USER_SERIALIZED_INT32_TOTAL_LENGTH: Int =
-    49 + INT32_VALUE_LENGTH + 1
 
 object MonetizationCodec {
     fun decrypt(

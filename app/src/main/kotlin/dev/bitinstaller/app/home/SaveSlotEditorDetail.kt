@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 
 internal const val SAVE_DETAIL_TAB_STATS = "stats"
@@ -52,8 +53,6 @@ internal fun SaveSlotEditorDetail(
 ) {
     val initial =
         SaveSlotEditorState(
-            target = target,
-            save = save,
             selectedTab = SAVE_DETAIL_TAB_STATS,
             showDiscardPrompt = false,
             navigateBack = false,
@@ -61,7 +60,8 @@ internal fun SaveSlotEditorDetail(
         )
     var state by remember(save.path) { mutableStateOf(initial) }
     val draftValues = remember(save.path) { mutableStateMapOf<String, String>() }
-    val dirtyCount by remember { derivedStateOf { draftValues.draftDirtyCount(save) } }
+    val fieldsById = remember(save) { save.editableFields().associateBy { it.id } }
+    val dirtyCount by remember { derivedStateOf { draftValues.draftDirtyCount(fieldsById) } }
     LaunchedEffect(target.editMessageTokens[save.path]) {
         draftValues.clear()
         state = state.copy(editsToSave = null)
@@ -71,17 +71,18 @@ internal fun SaveSlotEditorDetail(
         actions = actions,
         onState = { state = it },
         draftValues = draftValues,
-        save = save,
+        fieldsById = fieldsById,
     )
     SaveSlotEditorContent(
         content =
             SaveSlotEditorContent(
                 target = target,
-                state = state,
                 save = save,
+                state = state,
                 actions = actions,
                 onReduce = { state = saveSlotEditorReduce(state, it) },
                 draftValues = draftValues,
+                fieldsById = fieldsById,
                 dirtyCount = dirtyCount,
                 transitionState = transitionState,
                 modifier = modifier,
@@ -96,6 +97,7 @@ private data class SaveSlotEditorContent(
     val actions: SaveSlotEditorDetailActions,
     val onReduce: (SaveSlotEditorEvent) -> Unit,
     val draftValues: SnapshotStateMap<String, String>,
+    val fieldsById: Map<String, SaveEditableField>,
     val dirtyCount: Int,
     val transitionState: SaveSlotSharedTransitionState,
     val modifier: Modifier,
@@ -105,6 +107,7 @@ private data class SaveSlotEditorContent(
 private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
     val state = content.state
     val save = content.save
+    val target = content.target
     val draftValues = content.draftValues
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -122,11 +125,11 @@ private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
         SaveSlotTabBody(
             state =
                 SaveSlotTabBodyState(
-                    target = state.target,
-                    save = state.save,
+                    target = target,
+                    save = save,
                     selectedTab = state.selectedTab,
                     draftValues = draftValues,
-                    recentFieldIds = state.target.recentEditFieldIds[save.path] ?: emptyList(),
+                    recentFieldIds = target.recentEditFieldIds[save.path] ?: emptyList(),
                 ),
             actions =
                 SaveSlotTabBodyActions(
@@ -134,30 +137,39 @@ private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
                 ),
             modifier = Modifier.weight(1f),
         )
-        if (save.errorMessage == null) {
-            SaveDetailActions(
-                enabled = content.target.editingSavePath != save.path,
-                dirtyCount = content.dirtyCount,
-                onSaveRequested = {
-                    val edits = draftValues.collectSaveEdits(save)
-                    content.onReduce(SaveSlotEditorEvent.SaveRequested(edits = edits))
-                },
-                onDiscardRequested = { content.onReduce(SaveSlotEditorEvent.DiscardRequested) },
-                onBackRequested = {
-                    if (draftValues.isDraftDirty(save)) {
-                        content.onReduce(SaveSlotEditorEvent.DiscardRequested)
-                    } else {
-                        content.onReduce(SaveSlotEditorEvent.BackRequested)
-                    }
-                },
-            )
-        } else {
-            TextButton(
-                onClick = content.actions.onBackClick,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
-            ) {
-                Text(text = "Back to save slots")
-            }
+        SaveSlotEditorFooter(content)
+    }
+}
+
+@Composable
+private fun SaveSlotEditorFooter(content: SaveSlotEditorContent) {
+    val save = content.save
+    val target = content.target
+    val draftValues = content.draftValues
+    val fieldsById = content.fieldsById
+    if (save.errorMessage == null) {
+        SaveDetailActions(
+            enabled = target.editingSavePath != save.path,
+            dirtyCount = content.dirtyCount,
+            onSaveRequested = {
+                val edits = draftValues.collectSaveEdits(fieldsById)
+                content.onReduce(SaveSlotEditorEvent.SaveRequested(edits = edits))
+            },
+            onDiscardRequested = { content.onReduce(SaveSlotEditorEvent.DiscardRequested) },
+            onBackRequested = {
+                if (draftValues.isDraftDirty(fieldsById)) {
+                    content.onReduce(SaveSlotEditorEvent.DiscardRequested)
+                } else {
+                    content.onReduce(SaveSlotEditorEvent.BackRequested)
+                }
+            },
+        )
+    } else {
+        TextButton(
+            onClick = content.actions.onBackClick,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+        ) {
+            Text(text = "Back to save slots")
         }
     }
 }
@@ -360,7 +372,7 @@ private fun SaveSlotEditorSideEffects(
     actions: SaveSlotEditorDetailActions,
     onState: (SaveSlotEditorState) -> Unit,
     draftValues: SnapshotStateMap<String, String>,
-    save: BitLifeSaveSummary,
+    fieldsById: Map<String, SaveEditableField>,
 ) {
     LaunchedEffect(state.editsToSave) {
         state.editsToSave?.let { edits ->
@@ -374,10 +386,10 @@ private fun SaveSlotEditorSideEffects(
             actions.onBackClick()
         }
     }
-    BackHandler(enabled = draftValues.isDraftDirty(save) && !state.showDiscardPrompt) {
+    BackHandler(enabled = draftValues.isDraftDirty(fieldsById) && !state.showDiscardPrompt) {
         onState(saveSlotEditorReduce(state, SaveSlotEditorEvent.DiscardRequested))
     }
-    BackHandler(enabled = !draftValues.isDraftDirty(save) && !state.showDiscardPrompt) { actions.onBackClick() }
+    BackHandler(enabled = !draftValues.isDraftDirty(fieldsById) && !state.showDiscardPrompt) { actions.onBackClick() }
     DiscardPrompt(
         state = state,
         draftValues = draftValues,

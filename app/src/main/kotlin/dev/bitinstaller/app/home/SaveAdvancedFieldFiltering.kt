@@ -59,11 +59,17 @@ internal fun List<SaveEditableField>.filteredAndSorted(
         } else {
             this
         }
+    val tokens =
+        if (needle.isBlank()) {
+            emptyList()
+        } else {
+            needle.split(whitespaceRegex).filter { token -> token.isNotBlank() }
+        }
     return source
         .mapNotNull { field ->
             val meta = metadataMap[field.id] ?: field.computeMetadata()
-            if (field.shouldInclude(needle, config, recentFieldIds, meta)) {
-                field to field.searchScore(needle, meta)
+            if (field.shouldInclude(tokens, config, recentFieldIds, meta)) {
+                field to field.searchScore(tokens, meta)
             } else {
                 null
             }
@@ -78,47 +84,36 @@ internal fun List<SaveEditableField>.filteredAndSorted(
 }
 
 private fun SaveEditableField.shouldInclude(
-    needle: String,
+    tokens: List<String>,
     config: FilterConfig,
     recentFieldIds: List<String>,
     meta: FieldMetadata,
 ): Boolean {
-    val matchesQuery = matchesQuery(needle, meta)
+    val matchesQuery = matchesQuery(tokens, meta)
     val matchesFilter = matchesFilter(config.filter, recentFieldIds, meta)
     val matchesCategory = config.categoryFilter == null || meta.uiCategory == config.categoryFilter
     return matchesQuery && matchesFilter && matchesCategory
 }
 
-internal fun SaveEditableField.searchText(meta: FieldMetadata): String =
-    buildString {
-        append(memberName)
-        append(' ')
-        append(label)
-        append(' ')
-        append(path)
-        meta.explanation?.category?.let { append(' ').append(it) }
-        meta.explanation?.description?.let { append(' ').append(it) }
-    }
+internal fun SaveEditableField.searchText(meta: FieldMetadata): String = meta.searchText
 
 private fun SaveEditableField.matchesQuery(
-    needle: String,
+    tokens: List<String>,
     meta: FieldMetadata,
 ): Boolean {
-    if (needle.isBlank()) return true
-    val tokens = needle.split(whitespaceRegex).filter { token -> token.isNotBlank() }
-    val text = searchText(meta)
+    if (tokens.isEmpty()) return true
+    val text = meta.searchText
     return tokens.all { token ->
         text.contains(token, ignoreCase = true) || text.ratio(token) >= FUZZY_MATCH_CUTOFF
     }
 }
 
 private fun SaveEditableField.searchScore(
-    needle: String,
+    tokens: List<String>,
     meta: FieldMetadata,
 ): Int {
-    if (needle.isBlank()) return 0
-    val tokens = needle.split(whitespaceRegex).filter { token -> token.isNotBlank() }
-    val text = searchText(meta)
+    if (tokens.isEmpty()) return 0
+    val text = meta.searchText
     return tokens.sumOf { token ->
         when {
             label.equals(token, ignoreCase = true) -> SCORE_EXACT_LABEL
@@ -251,8 +246,7 @@ internal class FieldSearchIndex(
             for (field in fields) {
                 val meta = metadataMap[field.id] ?: field.computeMetadata()
                 val words =
-                    field
-                        .searchText(meta)
+                    meta.searchText
                         .split(whitespaceRegex)
                         .filter { it.isNotBlank() }
                         .map { it.lowercase() }

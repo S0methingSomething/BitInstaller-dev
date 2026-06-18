@@ -49,12 +49,14 @@ internal class SaveScanCache(
         withContext(Dispatchers.IO) {
             val file = cacheFile(packageName)
             val tmp = File(file.parent, "${file.name}.tmp")
-            runCatching {
+            try {
                 file.parentFile?.mkdirs()
                 tmp.writeText(json.encodeToString(SaveScanCacheEnvelope(saves = saves)))
-                tmp.renameTo(file)
-            }.onFailure {
-                tmp.delete()
+                if (!tmp.renameTo(file)) {
+                    throw java.io.IOException("Could not rename cache tmp to ${file.name}")
+                }
+            } finally {
+                if (tmp.exists()) tmp.delete()
             }
         }
     }

@@ -3,6 +3,10 @@ package dev.bitinstaller.app.save
 private const val BOOLEAN_TRUE = "true"
 private const val BOOLEAN_FALSE = "false"
 
+private val backingFieldRegex = Regex("<([^>]+)>k__BackingField")
+private val camelCaseBoundaryRegex = Regex("(?<=[a-z])(?=[A-Z])")
+private val whitespaceCollapseRegex = Regex("\\s+")
+
 internal fun SaveEditableField.parseRawValue(rawValue: String): Any? =
     when (valueKind) {
         SaveEditableValueKind.TEXT -> rawValue
@@ -59,7 +63,7 @@ internal fun Any?.toEditableDisplayValue(): String =
 
 internal fun String.cleanSaveMemberName(): String =
     substringAfterLast('+')
-        .replace(Regex("<([^>]+)>k__BackingField"), "$1")
+        .replace(backingFieldRegex, "$1")
         .removePrefix("_")
         .splitCamelCase()
         .stripSaveNameNoise()
@@ -95,6 +99,6 @@ private fun Double.toCleanNumberString(): String = if (this % 1.0 == 0.0) toLong
 
 private fun String.splitCamelCase(): String =
     replace('_', ' ')
-        .replace(Regex("(?<=[a-z])(?=[A-Z])"), " ")
-        .replace(Regex("\\s+"), " ")
+        .replace(camelCaseBoundaryRegex, " ")
+        .replace(whitespaceCollapseRegex, " ")
         .trim()

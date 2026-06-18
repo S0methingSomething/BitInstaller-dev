@@ -272,22 +272,26 @@ private suspend fun runShell(
 ): ShellResult =
     withContext(Dispatchers.IO) {
         val process = newShizukuShellProcess(command)
-        if (stdin == null) {
-            process.outputStream.close()
-        } else {
-            process.outputStream.bufferedWriter().use { writer ->
-                writer.write(stdin)
+        try {
+            if (stdin == null) {
+                process.outputStream.close()
+            } else {
+                process.outputStream.bufferedWriter().use { writer ->
+                    writer.write(stdin)
+                }
             }
-        }
 
-        // Read stderr on a background thread to avoid pipe deadlock.
-        val errorFuture =
-            java.util.concurrent.CompletableFuture.supplyAsync {
-                process.errorStream.bufferedReader().readText()
-            }
-        val output = process.inputStream.bufferedReader().readText()
-        val error = errorFuture.get()
-        ShellResult(exitCode = process.waitFor(), output = output, error = error)
+            // Read stderr on a background thread to avoid pipe deadlock.
+            val errorFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync {
+                    process.errorStream.bufferedReader().readText()
+                }
+            val output = process.inputStream.bufferedReader().readText()
+            val error = errorFuture.get()
+            ShellResult(exitCode = process.waitFor(), output = output, error = error)
+        } finally {
+            process.destroy()
+        }
     }
 
 internal suspend fun runShellBytes(
@@ -296,19 +300,23 @@ internal suspend fun runShellBytes(
 ): ShellBytesResult =
     withContext(Dispatchers.IO) {
         val process = newShizukuShellProcess(command)
-        if (stdin == null) {
-            process.outputStream.close()
-        } else {
-            process.outputStream.use { output -> output.write(stdin) }
-        }
-
-        val errorFuture =
-            java.util.concurrent.CompletableFuture.supplyAsync {
-                process.errorStream.bufferedReader().readText()
+        try {
+            if (stdin == null) {
+                process.outputStream.close()
+            } else {
+                process.outputStream.use { output -> output.write(stdin) }
             }
-        val output = process.inputStream.readBytes()
-        val error = errorFuture.get()
-        ShellBytesResult(exitCode = process.waitFor(), output = output, error = error)
+
+            val errorFuture =
+                java.util.concurrent.CompletableFuture.supplyAsync {
+                    process.errorStream.bufferedReader().readText()
+                }
+            val output = process.inputStream.readBytes()
+            val error = errorFuture.get()
+            ShellBytesResult(exitCode = process.waitFor(), output = output, error = error)
+        } finally {
+            process.destroy()
+        }
     }
 
 internal fun shellQuote(value: String): String = "'${value.replace("'", "'\"'\"'")}'"

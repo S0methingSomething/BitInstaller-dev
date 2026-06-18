@@ -85,6 +85,7 @@ internal fun SaveAdvancedInlineTab(
             SaveAdvancedFieldCard(
                 field = field,
                 draftValue = draftValues.valueFor(field),
+                metadata = searchContext.metadataMap[field.id] ?: field.computeMetadata(),
                 onDraftChange = onDraftChange,
             )
         }
