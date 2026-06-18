@@ -39,8 +39,12 @@ internal fun SaveAdvancedInlineTab(
     var query by rememberSaveable(save.path) { mutableStateOf("") }
     var selectedCategory by rememberSaveable(save.path) { mutableStateOf<SaveFieldUiCategory?>(null) }
 
-    val metadataMap = remember(save) { save.advancedFields.associate { it.id to it.computeMetadata() } }
-    val result = rememberAdvancedFieldResult(save, recentFieldIds, metadataMap, query, selectedCategory)
+    val searchContext =
+        remember(save) {
+            val metadataMap = save.advancedFields.associate { it.id to it.computeMetadata() }
+            AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
+        }
+    val result = rememberAdvancedFieldResult(save, recentFieldIds, searchContext, query, selectedCategory)
     val recentLabels = rememberRecentLabels(save = save, recentFieldIds = recentFieldIds)
 
     LazyColumn(
@@ -91,7 +95,7 @@ internal fun SaveAdvancedInlineTab(
 private fun rememberAdvancedFieldResult(
     save: BitLifeSaveSummary,
     recentFieldIds: List<String>,
-    metadataMap: Map<String, FieldMetadata>,
+    searchContext: AdvancedSearchContext,
     query: String,
     selectedCategory: SaveFieldUiCategory?,
 ): State<List<SaveEditableField>> =
@@ -108,7 +112,8 @@ private fun rememberAdvancedFieldResult(
                             sort = AdvancedFieldSort.CATEGORY,
                             categoryFilter = selectedCategory,
                         ),
-                    metadataMap = metadataMap,
+                    metadataMap = searchContext.metadataMap,
+                    searchIndex = searchContext.searchIndex,
                 )
             }
     }

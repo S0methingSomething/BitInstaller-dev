@@ -47,24 +47,34 @@ internal fun List<SaveEditableField>.filteredAndSorted(
     recentFieldIds: List<String>,
     config: FilterConfig,
     metadataMap: Map<String, FieldMetadata> = emptyMap(),
+    searchIndex: FieldSearchIndex? = null,
 ): List<SaveEditableField> {
     val needle = query.trim()
     val recentRank = recentFieldIds.withIndex().associate { (index, fieldId) -> fieldId to index }
-    return mapNotNull { field ->
-        val meta = metadataMap[field.id] ?: field.computeMetadata()
-        if (field.shouldInclude(needle, config, recentFieldIds, meta)) {
-            field to field.searchScore(needle, meta)
+    val candidateFieldIds = searchIndex?.candidateIds(needle)
+    val fieldsById = if (candidateFieldIds != null) associateBy { it.id } else emptyMap()
+    val source =
+        if (candidateFieldIds != null) {
+            candidateFieldIds.mapNotNullTo(mutableListOf()) { fieldsById[it] }
         } else {
-            null
+            this
         }
-    }.sortedWith(
-        compareByDescending<Pair<SaveEditableField, Int>> { it.second }
-            .then(
-                config.sort.comparator(recentRank, metadataMap).let { c ->
-                    Comparator { a, b -> c.compare(a.first, b.first) }
-                },
-            ),
-    ).map { it.first }
+    return source
+        .mapNotNull { field ->
+            val meta = metadataMap[field.id] ?: field.computeMetadata()
+            if (field.shouldInclude(needle, config, recentFieldIds, meta)) {
+                field to field.searchScore(needle, meta)
+            } else {
+                null
+            }
+        }.sortedWith(
+            compareByDescending<Pair<SaveEditableField, Int>> { it.second }
+                .then(
+                    config.sort.comparator(recentRank, metadataMap).let { c ->
+                        Comparator { a, b -> c.compare(a.first, b.first) }
+                    },
+                ),
+        ).map { it.first }
 }
 
 private fun SaveEditableField.shouldInclude(
@@ -79,7 +89,7 @@ private fun SaveEditableField.shouldInclude(
     return matchesQuery && matchesFilter && matchesCategory
 }
 
-private fun SaveEditableField.searchText(meta: FieldMetadata): String =
+internal fun SaveEditableField.searchText(meta: FieldMetadata): String =
     buildString {
         append(memberName)
         append(' ')
@@ -191,3 +201,69 @@ private fun AdvancedFieldSort.comparator(
             }.thenBy { field -> field.path }
         }
     }
+
+private const val TOKEN_FUZZ_MIN_LENGTH = 3
+
+internal data class AdvancedSearchContext(
+    val metadataMap: Map<String, FieldMetadata>,
+    val searchIndex: FieldSearchIndex,
+)
+
+internal class FieldSearchIndex(
+    private val wordToIds: Map<String, Set<String>>,
+    private val allWords: List<String>,
+) {
+    fun candidateIds(query: String): Set<String>? {
+        val matchedSets =
+            query
+                .trim()
+                .split(whitespaceRegex)
+                .filter { it.isNotBlank() }
+                .map { it.lowercase() }
+                .mapNotNull { resolveToken(it) }
+        if (matchedSets.isEmpty()) return null
+        val sorted = matchedSets.sortedBy { it.size }
+        val result = sorted.first().toMutableSet()
+        for (i in 1 until sorted.size) {
+            result.retainAll(sorted[i])
+            if (result.isEmpty()) break
+        }
+        return result
+    }
+
+    private fun resolveToken(token: String): Set<String>? =
+        wordToIds[token]
+            ?: if (token.length < TOKEN_FUZZ_MIN_LENGTH) {
+                null
+            } else {
+                allWords
+                    .filter { it.ratio(token) >= FUZZY_MATCH_CUTOFF }
+                    .takeIf { it.isNotEmpty() }
+                    ?.flatMapTo(mutableSetOf()) { wordToIds[it].orEmpty() }
+            }
+
+    companion object {
+        fun build(
+            fields: List<SaveEditableField>,
+            metadataMap: Map<String, FieldMetadata>,
+        ): FieldSearchIndex {
+            val wordToIds = mutableMapOf<String, MutableSet<String>>()
+            for (field in fields) {
+                val meta = metadataMap[field.id] ?: field.computeMetadata()
+                val words =
+                    field
+                        .searchText(meta)
+                        .split(whitespaceRegex)
+                        .filter { it.isNotBlank() }
+                        .map { it.lowercase() }
+                for (word in words) {
+                    wordToIds.getOrPut(word) { mutableSetOf() }.add(field.id)
+                }
+            }
+            return FieldSearchIndex(
+                wordToIds = wordToIds.mapValues { it.value.toSet() },
+                allWords = wordToIds.keys.toList(),
+            )
+        }
+    }
+}
