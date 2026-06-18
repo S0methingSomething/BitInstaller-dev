@@ -15,8 +15,15 @@ import dev.bitinstaller.app.shizuku.writeLifeSaveFile
 import dev.bitinstaller.app.targets.findTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+
+private const val SCAN_CONCURRENCY = 4
 
 internal fun CoroutineScope.launchSaveScan(
     target: SaveTargetUiState,
@@ -93,15 +100,28 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
             val patchTarget =
                 findTarget(target.packageName)
                     ?: error("Unknown target: ${target.packageName}")
-            repository.listLifeSaveFiles(patchTarget, patchTarget.filesDirectory).map { file ->
-                val cached = cachedSaves[file.path]
-                if (cached != null && cached.sizeBytes.toLong() == file.sizeBytes) return@map cached
-                runCatching {
-                    val bytes = repository.readLifeSaveFile(file)
-                    BitLifeSaveParser.parse(path = file.path, bytes = bytes)
-                }.getOrElse { error ->
-                    BitLifeSaveParser.failure(path = file.path, sizeBytes = file.sizeBytes.toIntSize(), error = error)
-                }
+            val semaphore = Semaphore(SCAN_CONCURRENCY)
+            coroutineScope {
+                repository
+                    .listLifeSaveFiles(patchTarget, patchTarget.filesDirectory)
+                    .map { file ->
+                        async {
+                            val cached = cachedSaves[file.path]
+                            if (cached != null && cached.sizeBytes.toLong() == file.sizeBytes) return@async cached
+                            semaphore.withPermit {
+                                runCatching {
+                                    val bytes = repository.readLifeSaveFile(file)
+                                    BitLifeSaveParser.parse(path = file.path, bytes = bytes)
+                                }.getOrElse { error ->
+                                    BitLifeSaveParser.failure(
+                                        path = file.path,
+                                        sizeBytes = file.sizeBytes.toIntSize(),
+                                        error = error,
+                                    )
+                                }
+                            }
+                        }
+                    }.awaitAll()
             }
         }
     }.onSuccess { summaries ->
