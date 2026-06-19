@@ -157,3 +157,8 @@ internal fun SaveDetailPanel(
         }
     }
 }
+
+internal fun toggleSection(
+    expanded: Set<String>,
+    id: String,
+): Set<String> = if (id in expanded) expanded - id else expanded + id

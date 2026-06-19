@@ -36,6 +36,15 @@ private const val SECTION_STATS = "stats"
 private const val SECTION_FAMILY = "family"
 private const val SECTION_ASSETS = "assets"
 private const val SECTION_FINANCE = "finance"
+private const val SECTION_CAREER = "career"
+private const val SECTION_HEALTH = "health"
+private const val SECTION_SOCIAL = "social"
+private const val SECTION_INVESTMENTS = "investments"
+private const val SECTION_VAMPIRE = "vampire"
+private const val SECTION_RACING = "racing"
+private const val SECTION_CHALLENGES = "challenges"
+private const val SECTION_ZOO = "zoo"
+private const val SECTION_LUXURY = "luxury"
 private const val SECTION_ADVANCED = "advanced"
 
 private const val SEARCH_COUNT_ALPHA = 0.3f
@@ -144,23 +153,33 @@ private fun buildBrowseContent(input: BrowseContentInput): BrowseSectionsContent
         state = input.state,
         actions = input.actions,
         accordion = AccordionState(input.expandedSections, input.onToggle),
-        assetContent =
-            FieldListContent(
-                save.advancedFields.filterByPathPrefixes(ASSET_FIELD_PREFIXES),
-                meta,
-                draftValues,
-                onDraftChange,
-            ),
-        financeContent =
-            FieldListContent(
-                save.advancedFields.filterByPathPrefixes(FINANCE_FIELD_PREFIXES),
-                meta,
-                draftValues,
-                onDraftChange,
-            ),
+        assetContent = save.fieldList(ASSET_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        financeContent = save.fieldList(FINANCE_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        careerContent = save.fieldList(CAREER_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        healthContent = save.fieldList(HEALTH_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        socialContent = save.fieldList(SOCIAL_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        investmentsContent = save.fieldList(INVESTMENTS_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        vampireContent = save.fieldList(VAMPIRE_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        racingContent = save.fieldList(RACING_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        challengesContent = save.fieldList(CHALLENGES_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        zooContent = save.fieldList(ZOO_FIELD_PREFIXES, meta, draftValues, onDraftChange),
+        luxuryContent = save.fieldList(LUXURY_FIELD_PREFIXES, meta, draftValues, onDraftChange),
         advancedContent = FieldListContent(save.advancedFields, meta, draftValues, onDraftChange),
     )
 }
+
+private fun BitLifeSaveSummary.fieldList(
+    prefixes: List<String>,
+    meta: Map<String, FieldMetadata>,
+    draftValues: SnapshotStateMap<String, String>,
+    onDraftChange: (SaveEditableField, String) -> Unit,
+): FieldListContent =
+    FieldListContent(
+        advancedFields.filterByPathPrefixes(prefixes),
+        meta,
+        draftValues,
+        onDraftChange,
+    )
 
 private data class BrowseSectionsContent(
     val state: SaveSlotTabBodyState,
@@ -168,6 +187,15 @@ private data class BrowseSectionsContent(
     val accordion: AccordionState,
     val assetContent: FieldListContent,
     val financeContent: FieldListContent,
+    val careerContent: FieldListContent,
+    val healthContent: FieldListContent,
+    val socialContent: FieldListContent,
+    val investmentsContent: FieldListContent,
+    val vampireContent: FieldListContent,
+    val racingContent: FieldListContent,
+    val challengesContent: FieldListContent,
+    val zooContent: FieldListContent,
+    val luxuryContent: FieldListContent,
     val advancedContent: FieldListContent,
 )
 
@@ -179,30 +207,23 @@ private fun LazyListScope.browseSections(content: BrowseSectionsContent) {
     saveSlotStatusItem(state = state)
     if (state.save.errorMessage != null) return
 
-    accordionSection(
-        section = AccordionSection(SECTION_STATS, "Stats"),
-        accordion = accordion,
-    ) {
+    accordionSection(section = AccordionSection(SECTION_STATS, "Stats"), accordion = accordion) {
         item(contentType = "stats-panel") { SaveStatsTabContent(state = state, actions = actions) }
     }
-    accordionSection(
-        section = AccordionSection(SECTION_FAMILY, "Family"),
-        accordion = accordion,
-    ) {
+    accordionSection(section = AccordionSection(SECTION_FAMILY, "Family"), accordion = accordion) {
         item(contentType = "people-panel") { SavePeopleTabContent(state = state, actions = actions) }
     }
-    accordionSection(
-        section = AccordionSection(SECTION_ASSETS, "Assets", content.assetContent.fields.size),
-        accordion = accordion,
-    ) {
-        groupedFieldItems(content = content.assetContent)
-    }
-    accordionSection(
-        section = AccordionSection(SECTION_FINANCE, "Finance", content.financeContent.fields.size),
-        accordion = accordion,
-    ) {
-        groupedFieldItems(content = content.financeContent)
-    }
+    pathFilterSection(SECTION_ASSETS, "Assets", accordion, content.assetContent)
+    pathFilterSection(SECTION_FINANCE, "Finance", accordion, content.financeContent)
+    pathFilterSection(SECTION_CAREER, "Career", accordion, content.careerContent)
+    pathFilterSection(SECTION_HEALTH, "Health", accordion, content.healthContent)
+    pathFilterSection(SECTION_SOCIAL, "Social & Fame", accordion, content.socialContent)
+    pathFilterSection(SECTION_INVESTMENTS, "Investments", accordion, content.investmentsContent)
+    pathFilterSection(SECTION_VAMPIRE, "Vampire", accordion, content.vampireContent)
+    pathFilterSection(SECTION_RACING, "Racing", accordion, content.racingContent)
+    pathFilterSection(SECTION_CHALLENGES, "Challenges", accordion, content.challengesContent)
+    pathFilterSection(SECTION_ZOO, "Zoo", accordion, content.zooContent)
+    pathFilterSection(SECTION_LUXURY, "Luxury", accordion, content.luxuryContent)
     accordionSection(
         section = AccordionSection(SECTION_ADVANCED, "Advanced", content.advancedContent.fields.size),
         accordion = accordion,
@@ -219,6 +240,18 @@ private fun LazyListScope.browseSections(content: BrowseSectionsContent) {
                 onDraftChange = content.advancedContent.onDraftChange,
             )
         }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun LazyListScope.pathFilterSection(
+    id: String,
+    title: String,
+    accordion: AccordionState,
+    content: FieldListContent,
+) {
+    accordionSection(section = AccordionSection(id, title, content.fields.size), accordion = accordion) {
+        groupedFieldItems(content = content)
     }
 }
 
@@ -279,11 +312,6 @@ private fun rememberSearchResults(
                 }
         }
     }
-
-private fun toggleSection(
-    expanded: Set<String>,
-    id: String,
-): Set<String> = if (id in expanded) expanded - id else expanded + id
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun LazyListScope.accordionSection(
