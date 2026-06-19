@@ -1,18 +1,13 @@
 package dev.bitinstaller.app.home
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -40,14 +35,6 @@ import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 
-internal const val SAVE_DETAIL_TAB_STATS = "stats"
-internal const val SAVE_DETAIL_TAB_PEOPLE = "people"
-internal const val SAVE_DETAIL_TAB_ASSETS = "assets"
-internal const val SAVE_DETAIL_TAB_FINANCE = "finance"
-internal const val SAVE_DETAIL_TAB_ADVANCED = "advanced"
-internal const val SAVE_DETAIL_TAB_ACTIVE_ALPHA = 0.08f
-internal const val SAVE_DETAIL_TAB_INACTIVE_ALPHA = 0.4f
-
 @Composable
 internal fun SaveSlotEditorDetail(
     target: SaveTargetUiState,
@@ -58,7 +45,6 @@ internal fun SaveSlotEditorDetail(
 ) {
     val initial =
         SaveSlotEditorState(
-            selectedTab = SAVE_DETAIL_TAB_STATS,
             showDiscardPrompt = false,
             navigateBack = false,
             editsToSave = null,
@@ -123,16 +109,11 @@ private fun SaveSlotEditorContent(content: SaveSlotEditorContent) {
             dirtyCount = content.dirtyCount,
             transitionState = content.transitionState,
         )
-        SaveSlotCategoryTabs(
-            selectedTab = state.selectedTab,
-            onTabSelected = { content.onReduce(SaveSlotEditorEvent.TabSelected(it)) },
-        )
-        SaveSlotTabBody(
+        SaveAccordionEditor(
             state =
                 SaveSlotTabBodyState(
                     target = target,
                     save = save,
-                    selectedTab = state.selectedTab,
                     draftValues = draftValues,
                     recentFieldIds = target.recentEditFieldIds[save.path] ?: emptyList(),
                 ),
@@ -262,82 +243,6 @@ private fun SaveSlotEditorHeader(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SaveSlotCategoryTabs(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-    ) {
-        SaveSlotTabItem(
-            label = "Stats",
-            tab = SAVE_DETAIL_TAB_STATS,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.widthIn(min = 84.dp),
-        )
-        SaveSlotTabItem(
-            label = "Family",
-            tab = SAVE_DETAIL_TAB_PEOPLE,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.widthIn(min = 84.dp),
-        )
-        SaveSlotTabItem(
-            label = "Assets",
-            tab = SAVE_DETAIL_TAB_ASSETS,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.widthIn(min = 84.dp),
-        )
-        SaveSlotTabItem(
-            label = "Finance",
-            tab = SAVE_DETAIL_TAB_FINANCE,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.widthIn(min = 84.dp),
-        )
-        SaveSlotTabItem(
-            label = "Advanced",
-            tab = SAVE_DETAIL_TAB_ADVANCED,
-            selectedTab = selectedTab,
-            onTabSelected = onTabSelected,
-            modifier = Modifier.widthIn(min = 84.dp),
-        )
-    }
-}
-
-@Composable
-private fun SaveSlotTabItem(
-    label: String,
-    tab: String,
-    selectedTab: String,
-    onTabSelected: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val active = selectedTab == tab
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-            modifier
-                .background(
-                    color = if (active) Color.White.copy(alpha = SAVE_DETAIL_TAB_ACTIVE_ALPHA) else Color.Transparent,
-                    shape = SaveEditorControlShape,
-                ).padding(vertical = 10.dp),
-    ) {
-        TextButton(onClick = { onTabSelected(tab) }, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = label,
-                color = Color.White.copy(alpha = if (active) 1f else SAVE_DETAIL_TAB_INACTIVE_ALPHA),
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-            )
         }
     }
 }

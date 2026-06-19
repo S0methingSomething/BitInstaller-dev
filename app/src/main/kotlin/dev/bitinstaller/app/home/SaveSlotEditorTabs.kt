@@ -1,20 +1,21 @@
 package dev.bitinstaller.app.home
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -26,75 +27,17 @@ import dev.bitinstaller.app.save.SaveEditableField
 internal fun SnapshotStateMap<String, String>.valueFor(field: SaveEditableField): String = this[field.id] ?: field.value
 
 private const val SAVE_DETAIL_SECTION_LETTER_SPACING_SP = 1f
-
-@Composable
-internal fun SaveSlotTabBody(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-    modifier: Modifier = Modifier,
-) {
-    val statsActive = state.selectedTab == SAVE_DETAIL_TAB_STATS
-    val peopleActive = state.selectedTab == SAVE_DETAIL_TAB_PEOPLE
-    val assetsActive = state.selectedTab == SAVE_DETAIL_TAB_ASSETS
-    val financeActive = state.selectedTab == SAVE_DETAIL_TAB_FINANCE
-    val advancedActive = state.selectedTab == SAVE_DETAIL_TAB_ADVANCED
-
-    Box(modifier = modifier.fillMaxSize()) {
-        if (statsActive) {
-            SlotDetailLazyColumn {
-                saveSlotStatusItem(state = state)
-                statsTabItem(state = state, actions = actions)
-            }
-        }
-
-        if (peopleActive) {
-            SlotDetailLazyColumn {
-                saveSlotStatusItem(state = state)
-                peopleTabItem(state = state, actions = actions)
-            }
-        }
-
-        if (assetsActive && state.save.errorMessage == null) {
-            SaveAssetsTabContent(
-                state = state,
-                actions = actions,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        if (financeActive && state.save.errorMessage == null) {
-            SaveFinanceTabContent(
-                state = state,
-                actions = actions,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        if (advancedActive && state.save.errorMessage == null) {
-            SaveAdvancedInlineTab(
-                save = state.save,
-                draftValues = state.draftValues,
-                recentFieldIds = state.recentFieldIds,
-                onDraftChange = actions.onDraftChange,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-    }
-}
-
-@Composable
-private fun SlotDetailLazyColumn(content: LazyListScope.() -> Unit) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-        modifier = Modifier.fillMaxSize(),
-        content = content,
-    )
-}
+private const val SAVE_DETAIL_PANEL_TITLE_ALPHA = 0.4f
+private const val SECTION_HEADER_ALPHA = 0.08f
+private const val SECTION_TITLE_ALPHA = 0.9f
+private const val SECTION_COUNT_ALPHA = 0.4f
+private const val SECTION_CHEVRON_ALPHA = 0.5f
+private const val SUBGROUP_ALPHA = 0.25f
+private val AccordionSectionShape = RoundedCornerShape(10.dp)
 
 internal data class SaveSlotTabBodyState(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
-    val selectedTab: String,
     val draftValues: SnapshotStateMap<String, String>,
     val recentFieldIds: List<String>,
 )
@@ -104,38 +47,71 @@ internal data class SaveSlotTabBodyActions(
     val onDraftChange: (SaveEditableField, String) -> Unit,
 )
 
-private fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
+internal fun LazyListScope.saveSlotStatusItem(state: SaveSlotTabBodyState) {
     if (state.target.editingSavePath == state.save.path) return
     val statusText = state.target.editErrors[state.save.path] ?: state.save.errorMessage
     if (statusText != null) {
-        item(
-            contentType = "status",
-        ) { SaveSlotStatus(text = statusText, isError = true) }
-    }
-}
-
-private fun LazyListScope.statsTabItem(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-) {
-    if (state.save.errorMessage != null) return
-    item(contentType = "stats-panel") {
-        SaveStatsTabContent(state = state, actions = actions)
-    }
-}
-
-private fun LazyListScope.peopleTabItem(
-    state: SaveSlotTabBodyState,
-    actions: SaveSlotTabBodyActions,
-) {
-    if (state.save.errorMessage != null) return
-    item(contentType = "people-characters") {
-        SavePeopleTabContent(state = state, actions = actions)
+        item(contentType = "status") { SaveSlotStatus(text = statusText, isError = true) }
     }
 }
 
 @Composable
-private fun SaveStatsTabContent(
+internal fun AccordionSectionHeader(
+    title: String,
+    fieldCount: Int?,
+    expanded: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(Color.White.copy(alpha = SECTION_HEADER_ALPHA), shape = AccordionSectionShape)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = if (expanded) "▼" else "▶",
+            color = Color.White.copy(alpha = SECTION_CHEVRON_ALPHA),
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White.copy(alpha = SECTION_TITLE_ALPHA),
+            fontWeight = FontWeight.Black,
+            letterSpacing = SAVE_DETAIL_SECTION_LETTER_SPACING_SP.sp,
+            modifier = Modifier.weight(1f),
+        )
+        if (fieldCount != null) {
+            Text(
+                text = fieldCount.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = SECTION_COUNT_ALPHA),
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun AccordionSubGroupHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelSmall,
+        color = Color.White.copy(alpha = SUBGROUP_ALPHA),
+        fontWeight = FontWeight.Bold,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+    )
+}
+
+@Composable
+internal fun SaveStatsTabContent(
     state: SaveSlotTabBodyState,
     actions: SaveSlotTabBodyActions,
 ) {
@@ -150,7 +126,7 @@ private fun SaveStatsTabContent(
 }
 
 @Composable
-private fun SavePeopleTabContent(
+internal fun SavePeopleTabContent(
     state: SaveSlotTabBodyState,
     actions: SaveSlotTabBodyActions,
 ) {
@@ -164,7 +140,7 @@ private fun SavePeopleTabContent(
 }
 
 @Composable
-private fun SaveDetailPanel(
+internal fun SaveDetailPanel(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -173,7 +149,7 @@ private fun SaveDetailPanel(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelMedium,
-                color = Color.White.copy(alpha = SAVE_DETAIL_TAB_INACTIVE_ALPHA),
+                color = Color.White.copy(alpha = SAVE_DETAIL_PANEL_TITLE_ALPHA),
                 fontWeight = FontWeight.Bold,
                 letterSpacing = SAVE_DETAIL_SECTION_LETTER_SPACING_SP.sp,
             )

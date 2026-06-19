@@ -6,17 +6,12 @@ import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 
 internal data class SaveSlotEditorState(
-    val selectedTab: String,
     val showDiscardPrompt: Boolean,
     val navigateBack: Boolean,
     val editsToSave: List<SaveFieldEdit>?,
 )
 
 internal sealed interface SaveSlotEditorEvent {
-    data class TabSelected(
-        val tab: String,
-    ) : SaveSlotEditorEvent
-
     data class SaveRequested(
         val edits: List<SaveFieldEdit>,
     ) : SaveSlotEditorEvent
@@ -37,10 +32,6 @@ internal fun saveSlotEditorReduce(
     event: SaveSlotEditorEvent,
 ): SaveSlotEditorState =
     when (event) {
-        is SaveSlotEditorEvent.TabSelected -> {
-            state.copy(selectedTab = event.tab)
-        }
-
         SaveSlotEditorEvent.DiscardRequested -> {
             state.copy(showDiscardPrompt = true)
         }
