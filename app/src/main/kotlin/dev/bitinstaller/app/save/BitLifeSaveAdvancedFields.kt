@@ -88,7 +88,7 @@ private fun NrbfDocument.visitArrayRefs(
     depth: Int,
     visit: (ObjectNode, List<String>, Int) -> Unit,
 ) {
-    member.derefObjectRefsOrNull().forEachIndexed { index, objectId ->
+    member.derefObjectRefsOrNull()?.forEachIndexed { index, objectId ->
         objectNodeOrNull(objectId)?.let { child ->
             visit(child, memberPath + "${label.singularize()} ${index + 1}", depth + 1)
         }
@@ -97,10 +97,10 @@ private fun NrbfDocument.visitArrayRefs(
 
 private fun MemberNode.derefObjectOrNull(): ObjectNode? = runCatching { derefObject() }.getOrNull()
 
-private fun MemberNode.derefObjectRefsOrNull(): List<Int> =
-    runCatching { derefArray().objectRefs() }.getOrDefault(emptyList())
-
-private fun NrbfDocument.objectNodeOrNull(objectId: Int): ObjectNode? = runCatching { objectNode(objectId) }.getOrNull()
+internal fun NrbfDocument.objectNodeOrNull(objectId: Int): ObjectNode? =
+    runCatching {
+        objectNode(objectId)
+    }.getOrNull()
 
 private fun String.singularize(): String =
     if (endsWith("ss") || endsWith("us") || endsWith("is")) this else removeSuffix("s")

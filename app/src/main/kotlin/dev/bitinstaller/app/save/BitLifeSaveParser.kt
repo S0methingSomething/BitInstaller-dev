@@ -142,6 +142,8 @@ internal object BitLifeSaveParser {
             life?.logicalCharacterList(this@characterSummaries, "_ChildArray", "Child")?.let(::addAll)
             life?.logicalCharacterList(this@characterSummaries, "_SiblingArray", "Sibling")?.let(::addAll)
             life?.logicalCharacterList(this@characterSummaries, "_FriendArray", "Friend")?.let(::addAll)
+            life?.logicalPetList(this@characterSummaries, "_PetArray", "Pet")?.let(::addAll)
+            life?.logicalAncestorList(this@characterSummaries, "_AncestorArray", "Ancestor")?.let(::addAll)
         }.distinctBy { character -> character.role to character.name }
 
     private fun String.slotName(): String =

@@ -32,21 +32,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
-private const val SECTION_STATS = "stats"
-private const val SECTION_FAMILY = "family"
-private const val SECTION_ASSETS = "assets"
-private const val SECTION_FINANCE = "finance"
-private const val SECTION_CAREER = "career"
-private const val SECTION_HEALTH = "health"
-private const val SECTION_SOCIAL = "social"
-private const val SECTION_INVESTMENTS = "investments"
-private const val SECTION_VAMPIRE = "vampire"
-private const val SECTION_RACING = "racing"
-private const val SECTION_CHALLENGES = "challenges"
-private const val SECTION_ZOO = "zoo"
-private const val SECTION_LUXURY = "luxury"
-private const val SECTION_ADVANCED = "advanced"
-
 private const val SEARCH_COUNT_ALPHA = 0.3f
 
 private data class AccordionSection(
@@ -63,17 +48,6 @@ private data class AccordionState(
 private data class FieldListContent(
     val fields: List<SaveEditableField>,
     val metadataMap: Map<String, FieldMetadata>,
-    val draftValues: SnapshotStateMap<String, String>,
-    val onDraftChange: (SaveEditableField, String) -> Unit,
-)
-
-private data class BrowseContentInput(
-    val state: SaveSlotTabBodyState,
-    val actions: SaveSlotTabBodyActions,
-    val expandedSections: Set<String>,
-    val onToggle: (String) -> Unit,
-    val save: BitLifeSaveSummary,
-    val searchContext: AdvancedSearchContext,
     val draftValues: SnapshotStateMap<String, String>,
     val onDraftChange: (SaveEditableField, String) -> Unit,
 )
@@ -96,6 +70,7 @@ internal fun SaveAccordionEditor(
 
     val searchContext = rememberSearchContext(save)
     val searchResults = rememberSearchResults(query, save, state.recentFieldIds, searchContext)
+    val pathSectionContent = rememberPathSectionContent(save, draftValues, onDraftChange, searchContext)
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -116,19 +91,20 @@ internal fun SaveAccordionEditor(
 
         if (query.isBlank() || save.errorMessage != null) {
             browseSections(
-                content =
-                    buildBrowseContent(
-                        input =
-                            BrowseContentInput(
-                                state = state,
-                                actions = actions,
-                                expandedSections = expandedSections,
-                                onToggle = { id -> expandedSections = toggleSection(expandedSections, id) },
-                                save = save,
-                                searchContext = searchContext,
-                                draftValues = draftValues,
-                                onDraftChange = onDraftChange,
-                            ),
+                state = state,
+                actions = actions,
+                accordion =
+                    AccordionState(
+                        expandedSections = expandedSections,
+                        onToggle = { id -> expandedSections = toggleSection(expandedSections, id) },
+                    ),
+                pathSectionContent = pathSectionContent,
+                advancedContent =
+                    FieldListContent(
+                        fields = save.advancedFields,
+                        metadataMap = searchContext.metadataMap,
+                        draftValues = draftValues,
+                        onDraftChange = onDraftChange,
                     ),
             )
         } else {
@@ -144,66 +120,33 @@ private fun rememberSearchContext(save: BitLifeSaveSummary): AdvancedSearchConte
         AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
     }
 
-private fun buildBrowseContent(input: BrowseContentInput): BrowseSectionsContent {
-    val meta = input.searchContext.metadataMap
-    val save = input.save
-    val draftValues = input.draftValues
-    val onDraftChange = input.onDraftChange
-    return BrowseSectionsContent(
-        state = input.state,
-        actions = input.actions,
-        accordion = AccordionState(input.expandedSections, input.onToggle),
-        assetContent = save.fieldList(ASSET_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        financeContent = save.fieldList(FINANCE_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        careerContent = save.fieldList(CAREER_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        healthContent = save.fieldList(HEALTH_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        socialContent = save.fieldList(SOCIAL_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        investmentsContent = save.fieldList(INVESTMENTS_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        vampireContent = save.fieldList(VAMPIRE_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        racingContent = save.fieldList(RACING_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        challengesContent = save.fieldList(CHALLENGES_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        zooContent = save.fieldList(ZOO_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        luxuryContent = save.fieldList(LUXURY_FIELD_PREFIXES, meta, draftValues, onDraftChange),
-        advancedContent = FieldListContent(save.advancedFields, meta, draftValues, onDraftChange),
-    )
-}
-
-private fun BitLifeSaveSummary.fieldList(
-    prefixes: List<String>,
-    meta: Map<String, FieldMetadata>,
+@Composable
+private fun rememberPathSectionContent(
+    save: BitLifeSaveSummary,
     draftValues: SnapshotStateMap<String, String>,
     onDraftChange: (SaveEditableField, String) -> Unit,
-): FieldListContent =
-    FieldListContent(
-        advancedFields.filterByPathPrefixes(prefixes),
-        meta,
-        draftValues,
-        onDraftChange,
-    )
-
-private data class BrowseSectionsContent(
-    val state: SaveSlotTabBodyState,
-    val actions: SaveSlotTabBodyActions,
-    val accordion: AccordionState,
-    val assetContent: FieldListContent,
-    val financeContent: FieldListContent,
-    val careerContent: FieldListContent,
-    val healthContent: FieldListContent,
-    val socialContent: FieldListContent,
-    val investmentsContent: FieldListContent,
-    val vampireContent: FieldListContent,
-    val racingContent: FieldListContent,
-    val challengesContent: FieldListContent,
-    val zooContent: FieldListContent,
-    val luxuryContent: FieldListContent,
-    val advancedContent: FieldListContent,
-)
+    searchContext: AdvancedSearchContext,
+): Map<String, FieldListContent> =
+    remember(save, draftValues, onDraftChange, searchContext) {
+        ACCORDION_PATH_SECTIONS.associate { def ->
+            def.id to
+                FieldListContent(
+                    fields = save.advancedFields.filterByPathPrefixes(def.prefixes),
+                    metadataMap = searchContext.metadataMap,
+                    draftValues = draftValues,
+                    onDraftChange = onDraftChange,
+                )
+        }
+    }
 
 @OptIn(ExperimentalFoundationApi::class)
-private fun LazyListScope.browseSections(content: BrowseSectionsContent) {
-    val state = content.state
-    val actions = content.actions
-    val accordion = content.accordion
+private fun LazyListScope.browseSections(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+    accordion: AccordionState,
+    pathSectionContent: Map<String, FieldListContent>,
+    advancedContent: FieldListContent,
+) {
     saveSlotStatusItem(state = state)
     if (state.save.errorMessage != null) return
 
@@ -213,31 +156,23 @@ private fun LazyListScope.browseSections(content: BrowseSectionsContent) {
     accordionSection(section = AccordionSection(SECTION_FAMILY, "Family"), accordion = accordion) {
         item(contentType = "people-panel") { SavePeopleTabContent(state = state, actions = actions) }
     }
-    pathFilterSection(SECTION_ASSETS, "Assets", accordion, content.assetContent)
-    pathFilterSection(SECTION_FINANCE, "Finance", accordion, content.financeContent)
-    pathFilterSection(SECTION_CAREER, "Career", accordion, content.careerContent)
-    pathFilterSection(SECTION_HEALTH, "Health", accordion, content.healthContent)
-    pathFilterSection(SECTION_SOCIAL, "Social & Fame", accordion, content.socialContent)
-    pathFilterSection(SECTION_INVESTMENTS, "Investments", accordion, content.investmentsContent)
-    pathFilterSection(SECTION_VAMPIRE, "Vampire", accordion, content.vampireContent)
-    pathFilterSection(SECTION_RACING, "Racing", accordion, content.racingContent)
-    pathFilterSection(SECTION_CHALLENGES, "Challenges", accordion, content.challengesContent)
-    pathFilterSection(SECTION_ZOO, "Zoo", accordion, content.zooContent)
-    pathFilterSection(SECTION_LUXURY, "Luxury", accordion, content.luxuryContent)
+    for (def in ACCORDION_PATH_SECTIONS) {
+        pathFilterSection(def, accordion, pathSectionContent[def.id]!!)
+    }
     accordionSection(
-        section = AccordionSection(SECTION_ADVANCED, "Advanced", content.advancedContent.fields.size),
+        section = AccordionSection(SECTION_ADVANCED, "Advanced", advancedContent.fields.size),
         accordion = accordion,
     ) {
         items(
-            items = content.advancedContent.fields,
+            items = advancedContent.fields,
             key = { field: SaveEditableField -> field.id },
             contentType = { field: SaveEditableField -> field.valueKind },
         ) { field: SaveEditableField ->
             SaveAdvancedFieldCard(
                 field = field,
-                draftValue = content.advancedContent.draftValues.valueFor(field),
-                metadata = content.advancedContent.metadataMap[field.id] ?: field.computeMetadata(),
-                onDraftChange = content.advancedContent.onDraftChange,
+                draftValue = advancedContent.draftValues.valueFor(field),
+                metadata = advancedContent.metadataMap[field.id] ?: field.computeMetadata(),
+                onDraftChange = advancedContent.onDraftChange,
             )
         }
     }
@@ -245,12 +180,11 @@ private fun LazyListScope.browseSections(content: BrowseSectionsContent) {
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun LazyListScope.pathFilterSection(
-    id: String,
-    title: String,
+    def: AccordionSectionDef,
     accordion: AccordionState,
     content: FieldListContent,
 ) {
-    accordionSection(section = AccordionSection(id, title, content.fields.size), accordion = accordion) {
+    accordionSection(section = AccordionSection(def.id, def.title, content.fields.size), accordion = accordion) {
         groupedFieldItems(content = content)
     }
 }

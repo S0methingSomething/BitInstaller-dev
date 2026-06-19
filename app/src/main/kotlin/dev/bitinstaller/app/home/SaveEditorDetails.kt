@@ -100,17 +100,19 @@ internal fun SaveCharacterRows(
 ) {
     if (characters.isEmpty()) return
 
-    val immediateFamily = listOf("FATHER", "MOTHER", "BROTHER", "SISTER")
-    val partners = listOf("PARTNER", "HUSBAND", "WIFE", "BOYFRIEND", "GIRLFRIEND")
-    val children = listOf("SON", "DAUGHTER", "CHILD")
+    val immediateFamily = listOf("father", "mother", "brother", "sister")
+    val partners = listOf("partner", "husband", "wife", "boyfriend", "girlfriend")
+    val children = listOf("son", "daughter", "child")
 
     val partitioned = linkedMapOf<String, List<SaveCharacterSummary>>()
-    val immed = characters.filter { it.role in immediateFamily }
-    val prt = characters.filter { it.role in partners }
-    val chld = characters.filter { it.role in children }
+    val immed = characters.filter { it.role.lowercase() in immediateFamily }
+    val prt = characters.filter { it.role.lowercase() in partners }
+    val chld = characters.filter { it.role.lowercase() in children }
     val other =
         characters.filter {
-            it.role !in immediateFamily && it.role !in partners && it.role !in children
+            it.role.lowercase() !in immediateFamily &&
+                it.role.lowercase() !in partners &&
+                it.role.lowercase() !in children
         }
 
     if (immed.isNotEmpty()) partitioned["IMMEDIATE FAMILY"] = immed

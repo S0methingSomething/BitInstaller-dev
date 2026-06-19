@@ -3,7 +3,7 @@ package dev.bitinstaller.app.save
 private const val BOOLEAN_TRUE = "true"
 private const val BOOLEAN_FALSE = "false"
 
-private val backingFieldRegex = Regex("<([^>]+)>k__BackingField")
+internal val backingFieldRegex = Regex("<([^>]+)>k__BackingField")
 private val camelCaseBoundaryRegex = Regex("(?<=[a-z])(?=[A-Z])")
 private val whitespaceCollapseRegex = Regex("\\s+")
 

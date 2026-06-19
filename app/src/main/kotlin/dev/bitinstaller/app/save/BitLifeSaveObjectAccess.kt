@@ -3,18 +3,6 @@ package dev.bitinstaller.app.save
 import dev.nrbf4j.MemberNode
 import dev.nrbf4j.ObjectNode
 
-private val CoreAttributeFields =
-    listOf(
-        "Att_happiness" to "Happiness",
-        "Att_health" to "Health",
-        "Att_intelligence" to "Smarts",
-        "Att_appearance" to "Looks",
-        "Att_karma" to "Karma",
-        "Att_athleticism" to "Athleticism",
-        "Att_fertility" to "Fertility",
-        "Att_fame" to "Fame",
-    )
-
 internal fun ObjectNode?.attributes(): List<SaveAttributeSummary> {
     val node = this ?: return emptyList()
     return CoreAttributeFields.mapNotNull { (field, label) ->

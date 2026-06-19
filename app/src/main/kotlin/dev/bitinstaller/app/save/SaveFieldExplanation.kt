@@ -5,8 +5,6 @@ internal data class SaveFieldExplanation(
     val description: String,
 )
 
-private val backingFieldRegex = Regex("<([^>]+)>k__BackingField")
-
 internal fun SaveEditableField.explanation(): SaveFieldExplanation? {
     val name =
         memberName
