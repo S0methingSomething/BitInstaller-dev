@@ -167,7 +167,7 @@ private fun DestinationPane(
             .padding(horizontal = 16.dp)
 
     Column(modifier = paneModifier) {
-        HomeHeader(state = state, motionEnabled = paneState.backgroundMotionEnabled)
+        HomeHeader(state = state)
         Spacer(modifier = Modifier.height(12.dp))
         DashboardSection(
             status = state.backendStatus,
@@ -193,10 +193,7 @@ private data class HomePaneState(
 )
 
 @Composable
-private fun HomeHeader(
-    state: HomeUiState,
-    motionEnabled: Boolean,
-) {
+private fun HomeHeader(state: HomeUiState) {
     Row(
         modifier =
             Modifier
@@ -219,11 +216,6 @@ private fun HomeHeader(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 3.sp,
             )
-        }
-        if (motionEnabled) {
-            HomeBeacon(modifier = Modifier.size(36.dp))
-        } else {
-            StaticHomeBeacon(modifier = Modifier.size(36.dp))
         }
     }
 }
