@@ -38,11 +38,11 @@ internal fun SimplifiedEditor(
     onBooleanChanged: (String, Boolean) -> Unit,
     onTextChanged: (String, String) -> Unit,
 ) {
-    LazyColumn(
+    Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.sizeIn(maxHeight = 350.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        items(originalData.entries.toList(), key = { it.key }) { entry ->
+        originalData.entries.forEach { entry ->
             SimplifiedEditorRow(
                 keyName = entry.key,
                 value = entry.value,

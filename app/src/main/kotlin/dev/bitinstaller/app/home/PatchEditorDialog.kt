@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
@@ -30,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.crypto.MonetizationCodec
 import dev.bitinstaller.app.crypto.MonetizationData
@@ -138,6 +141,19 @@ private fun PatchEditorContent(
     actions: PatchEditorActions,
     modifier: Modifier = Modifier,
 ) {
+    val windowInfo = LocalWindowInfo.current
+    val density = LocalDensity.current
+    val maxScreenHeight =
+        remember(windowInfo.containerSize.height, density) {
+            with(density) {
+                (windowInfo.containerSize.height * PATCH_EDITOR_HEIGHT_FRACTION).toDp()
+            }
+        }
+    val maxHeight =
+        remember(maxScreenHeight) {
+            if (maxScreenHeight > 760.dp) 760.dp else maxScreenHeight
+        }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier =
@@ -153,13 +169,12 @@ private fun PatchEditorContent(
             modifier =
                 modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(PATCH_EDITOR_HEIGHT_FRACTION)
-                    .sizeIn(maxHeight = 760.dp),
+                    .heightIn(max = maxHeight),
         ) {
             Column(
                 modifier =
                     Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -167,7 +182,7 @@ private fun PatchEditorContent(
                 PatchEditorBodySection(
                     uiState = uiState,
                     actions = actions,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 PatchEditorFooter(
                     isSaving = uiState.isSaving,
