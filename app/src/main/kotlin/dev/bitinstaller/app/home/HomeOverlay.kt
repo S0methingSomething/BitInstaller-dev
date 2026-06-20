@@ -6,13 +6,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,15 +19,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 
 private val PATCH_EDITOR_BACKGROUND_BLUR = 18.dp
-private const val SLIDE_IN_OFFSET_DIVISOR = 4
-private const val SLIDE_OUT_OFFSET_DIVISOR = 2
 private const val PATCH_EDITOR_SCRIM_ALPHA = 0.65f
-private const val PATCH_EDITOR_ENTER_MS = 120
-private const val PATCH_EDITOR_EXIT_MS = 90
+private const val PATCH_EDITOR_ENTER_MS = 220
+private const val PATCH_EDITOR_EXIT_MS = 180
 
 @Composable
 internal fun HomeBackground(
@@ -71,18 +65,12 @@ internal fun PatchEditorOverlay(
     sharedTransitionScope: SharedTransitionScope? = null,
 ) {
     val enterFloatSpec = tween<Float>(PATCH_EDITOR_ENTER_MS, easing = LinearOutSlowInEasing)
-    val enterIntSpec = tween<IntOffset>(PATCH_EDITOR_ENTER_MS, easing = FastOutSlowInEasing)
     val exitFloatSpec = tween<Float>(PATCH_EDITOR_EXIT_MS)
-    val exitIntSpec = tween<IntOffset>(PATCH_EDITOR_EXIT_MS)
 
     AnimatedVisibility(
         visible = activeSession != null,
-        enter =
-            fadeIn(animationSpec = enterFloatSpec) +
-                slideInVertically(animationSpec = enterIntSpec) { it / SLIDE_IN_OFFSET_DIVISOR },
-        exit =
-            fadeOut(animationSpec = exitFloatSpec) +
-                slideOutVertically(animationSpec = exitIntSpec) { it / SLIDE_OUT_OFFSET_DIVISOR },
+        enter = fadeIn(animationSpec = enterFloatSpec),
+        exit = fadeOut(animationSpec = exitFloatSpec),
     ) {
         activeSession?.let { session ->
             PatchEditorScrim(
