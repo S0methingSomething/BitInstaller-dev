@@ -110,7 +110,7 @@ private fun RelationshipMetaLine(character: SaveCharacterSummary) {
     )
 }
 
-private fun SaveCharacterSummary.relationshipMeta(): String =
+internal fun SaveCharacterSummary.relationshipMeta(): String =
     listOfNotNull(
         age?.let { "Age $it" },
         relationship?.let { String.format(Locale.US, "%.0f%%", it) },

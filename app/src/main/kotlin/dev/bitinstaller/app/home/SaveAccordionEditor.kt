@@ -14,10 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -27,10 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveCharacterSummary
 import dev.bitinstaller.app.save.SaveEditableField
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 
 private const val SEARCH_COUNT_ALPHA = 0.3f
 
@@ -38,6 +34,8 @@ private data class AccordionSection(
     val id: String,
     val title: String,
     val fieldCount: Int? = null,
+    val icon: String = "",
+    val isPrimary: Boolean = false,
 )
 
 private data class AccordionState(
@@ -52,6 +50,13 @@ private data class FieldListContent(
     val onDraftChange: (SaveEditableField, String) -> Unit,
 )
 
+private data class ChipState(
+    val activeChips: Map<String, String>,
+    val onChipSet: (String, String?) -> Unit,
+    val expandedPersons: Set<String>,
+    val onTogglePerson: (String) -> Unit,
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun SaveAccordionEditor(
@@ -64,9 +69,8 @@ internal fun SaveAccordionEditor(
     val onDraftChange = actions.onDraftChange
 
     var query by rememberSaveable(save.path) { mutableStateOf("") }
-    var expandedSections by rememberSaveable(save.path) {
-        mutableStateOf(setOf(SECTION_STATS, SECTION_FAMILY))
-    }
+    val accordion = rememberAccordionState(save.path)
+    val chipState = rememberChipState(save.path)
 
     val searchContext = rememberSearchContext(save)
     val searchResults = rememberSearchResults(query, save, state.recentFieldIds, searchContext)
@@ -93,18 +97,18 @@ internal fun SaveAccordionEditor(
             browseSections(
                 state = state,
                 actions = actions,
-                accordion =
-                    AccordionState(
-                        expandedSections = expandedSections,
-                        onToggle = { id -> expandedSections = toggleSection(expandedSections, id) },
-                    ),
-                pathSectionContent = pathSectionContent,
-                advancedContent =
-                    FieldListContent(
-                        fields = save.advancedFields,
-                        metadataMap = searchContext.metadataMap,
-                        draftValues = draftValues,
-                        onDraftChange = onDraftChange,
+                content =
+                    BrowseContent(
+                        accordion = accordion,
+                        pathSectionContent = pathSectionContent,
+                        advancedContent =
+                            FieldListContent(
+                                fields = save.advancedFields,
+                                metadataMap = searchContext.metadataMap,
+                                draftValues = draftValues,
+                                onDraftChange = onDraftChange,
+                            ),
+                        chipState = chipState,
                     ),
             )
         } else {
@@ -114,11 +118,29 @@ internal fun SaveAccordionEditor(
 }
 
 @Composable
-private fun rememberSearchContext(save: BitLifeSaveSummary): AdvancedSearchContext =
-    remember(save) {
-        val metadataMap = save.advancedFields.associate { it.id to it.computeMetadata() }
-        AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
-    }
+private fun rememberAccordionState(savePath: String): AccordionState {
+    var expandedSections by rememberSaveable(savePath) { mutableStateOf(setOf(SECTION_STATS, SECTION_FAMILY)) }
+    return AccordionState(
+        expandedSections = expandedSections,
+        onToggle = { id -> expandedSections = toggleSection(expandedSections, id) },
+    )
+}
+
+@Composable
+private fun rememberChipState(savePath: String): ChipState {
+    var activeChips by remember(savePath) { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var expandedPersons by remember(savePath) { mutableStateOf<Set<String>>(emptySet()) }
+    return ChipState(
+        activeChips = activeChips,
+        onChipSet = { sectionId, chipLabel ->
+            activeChips = if (chipLabel == null) activeChips - sectionId else activeChips + (sectionId to chipLabel)
+        },
+        expandedPersons = expandedPersons,
+        onTogglePerson = { key ->
+            expandedPersons = if (key in expandedPersons) expandedPersons - key else expandedPersons + key
+        },
+    )
+}
 
 @Composable
 private fun rememberPathSectionContent(
@@ -139,41 +161,120 @@ private fun rememberPathSectionContent(
         }
     }
 
+private data class BrowseContent(
+    val accordion: AccordionState,
+    val pathSectionContent: Map<String, FieldListContent>,
+    val advancedContent: FieldListContent,
+    val chipState: ChipState,
+)
+
 @OptIn(ExperimentalFoundationApi::class)
 private fun LazyListScope.browseSections(
     state: SaveSlotTabBodyState,
     actions: SaveSlotTabBodyActions,
-    accordion: AccordionState,
-    pathSectionContent: Map<String, FieldListContent>,
-    advancedContent: FieldListContent,
+    content: BrowseContent,
 ) {
     saveSlotStatusItem(state = state)
     if (state.save.errorMessage != null) return
 
-    accordionSection(section = AccordionSection(SECTION_STATS, "Stats"), accordion = accordion) {
+    accordionSection(
+        section = AccordionSection(SECTION_STATS, "Stats", icon = "\uD83D\uDCCA", isPrimary = true),
+        accordion = content.accordion,
+    ) {
         item(contentType = "stats-panel") { SaveStatsTabContent(state = state, actions = actions) }
     }
-    accordionSection(section = AccordionSection(SECTION_FAMILY, "Family"), accordion = accordion) {
-        item(contentType = "people-panel") { SavePeopleTabContent(state = state, actions = actions) }
+    accordionSection(
+        section = AccordionSection(SECTION_FAMILY, "Family", icon = "\uD83D\uDC65", isPrimary = true),
+        accordion = content.accordion,
+    ) {
+        familyItems(state = state, actions = actions, chipState = content.chipState)
     }
-    for (def in ACCORDION_PATH_SECTIONS) {
-        pathFilterSection(def, accordion, pathSectionContent[def.id]!!)
+    item(contentType = "primary-divider") { PrimarySectionDivider() }
+    val visibleSections =
+        ACCORDION_PATH_SECTIONS.filter { def ->
+            val sectionContent = content.pathSectionContent[def.id]
+            sectionContent != null && sectionContent.fields.isNotEmpty()
+        }
+    for (def in visibleSections) {
+        pathFilterSection(def, content.accordion, content.pathSectionContent[def.id]!!, content.chipState)
     }
     accordionSection(
-        section = AccordionSection(SECTION_ADVANCED, "Advanced", advancedContent.fields.size),
-        accordion = accordion,
+        section =
+            AccordionSection(
+                SECTION_ADVANCED,
+                "Advanced",
+                content.advancedContent.fields.size,
+                icon = "\u2699\uFE0F",
+            ),
+        accordion = content.accordion,
     ) {
         items(
-            items = advancedContent.fields,
+            items = content.advancedContent.fields,
             key = { field: SaveEditableField -> field.id },
             contentType = { field: SaveEditableField -> field.valueKind },
         ) { field: SaveEditableField ->
             SaveAdvancedFieldCard(
                 field = field,
-                draftValue = advancedContent.draftValues.valueFor(field),
-                metadata = advancedContent.metadataMap[field.id] ?: field.computeMetadata(),
-                onDraftChange = advancedContent.onDraftChange,
+                draftValue = content.advancedContent.draftValues.valueFor(field),
+                metadata = content.advancedContent.metadataMap[field.id] ?: field.computeMetadata(),
+                onDraftChange = content.advancedContent.onDraftChange,
             )
+        }
+    }
+}
+
+private fun LazyListScope.familyItems(
+    state: SaveSlotTabBodyState,
+    actions: SaveSlotTabBodyActions,
+    chipState: ChipState,
+) {
+    val characters = state.save.characters
+    if (characters.isEmpty()) {
+        item(contentType = "empty-family") { NotionEmptyMessage(text = "No characters in this save.") }
+        return
+    }
+    characters.forEachIndexed { index, character ->
+        val personKey = "${character.role}-$index"
+        val isExpanded = personKey in chipState.expandedPersons
+        item(key = "person-$personKey", contentType = "person-card") {
+            PersonCard(
+                character = character,
+                isExpanded = isExpanded,
+                onToggle = { chipState.onTogglePerson(personKey) },
+                draftValues = state.draftValues,
+                onDraftChange = actions.onDraftChange,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PersonCard(
+    character: SaveCharacterSummary,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    draftValues: SnapshotStateMap<String, String>,
+    onDraftChange: (SaveEditableField, String) -> Unit,
+) {
+    NotionExpandableCard(
+        content =
+            ExpandableCardContent(
+                title = character.name.ifBlank { character.role },
+                subtitle = character.relationshipMeta(),
+                leadingContent = { NotionAvatar(initials = character.name.ifBlank { character.role }) },
+            ),
+        isExpanded = isExpanded,
+        onToggle = onToggle,
+    ) {
+        val identityFields = character.fields.filter { it.group != "Attributes" }
+        val attributeFields = character.fields.filter { it.group == "Attributes" }
+        if (identityFields.isNotEmpty()) {
+            NotionSubGroupHeader(title = "Identity", count = identityFields.size)
+            NotionFieldColumn(fields = identityFields, draftValues = draftValues, onDraftChange = onDraftChange)
+        }
+        if (attributeFields.isNotEmpty()) {
+            NotionSubGroupHeader(title = "Attributes", count = attributeFields.size)
+            NotionFieldColumn(fields = attributeFields, draftValues = draftValues, onDraftChange = onDraftChange)
         }
     }
 }
@@ -183,9 +284,39 @@ private fun LazyListScope.pathFilterSection(
     def: AccordionSectionDef,
     accordion: AccordionState,
     content: FieldListContent,
+    chipState: ChipState,
 ) {
-    accordionSection(section = AccordionSection(def.id, def.title, content.fields.size), accordion = accordion) {
-        groupedFieldItems(content = content)
+    val expanded = def.id in accordion.expandedSections
+    stickyHeader(contentType = "section-${def.id}") {
+        AccordionSectionHeader(
+            content = SectionHeaderContent(title = def.title, fieldCount = content.fields.size, icon = def.icon),
+            expanded = expanded,
+            onClick = { accordion.onToggle(def.id) },
+        )
+    }
+    if (expanded) {
+        if (def.chips.isNotEmpty()) {
+            item(contentType = "chips-${def.id}") {
+                NotionFilterChips(
+                    chips = def.chips.map { it.label },
+                    selected = chipState.activeChips[def.id],
+                    onSelect = { chipLabel -> chipState.onChipSet(def.id, chipLabel) },
+                )
+            }
+        }
+        val selectedChip = chipState.activeChips[def.id]
+        val filteredFields =
+            if (selectedChip != null) {
+                val chipDef = def.chips.find { it.label == selectedChip }
+                if (chipDef != null) content.fields.filterByPathPrefixes(chipDef.prefixes) else content.fields
+            } else {
+                content.fields
+            }
+        notionGroupedFieldItems(
+            fields = filteredFields,
+            draftValues = content.draftValues,
+            onDraftChange = content.onDraftChange,
+        )
     }
 }
 
@@ -218,35 +349,6 @@ private fun LazyListScope.searchResultItems(
     }
 }
 
-@Composable
-private fun rememberSearchResults(
-    query: String,
-    save: BitLifeSaveSummary,
-    recentFieldIds: List<String>,
-    searchContext: AdvancedSearchContext,
-): State<List<SaveEditableField>> =
-    produceState(initialValue = emptyList<SaveEditableField>(), query) {
-        if (query.isBlank()) {
-            value = emptyList()
-        } else {
-            delay(ADVANCED_DEBOUNCE_MS)
-            value =
-                withContext(Dispatchers.Default) {
-                    save.editableFields().filteredAndSorted(
-                        query = query,
-                        recentFieldIds = recentFieldIds,
-                        config =
-                            FilterConfig(
-                                filter = AdvancedFieldFilter.ALL,
-                                sort = AdvancedFieldSort.CATEGORY,
-                            ),
-                        metadataMap = searchContext.metadataMap,
-                        searchIndex = searchContext.searchIndex,
-                    )
-                }
-        }
-    }
-
 @OptIn(ExperimentalFoundationApi::class)
 private fun LazyListScope.accordionSection(
     section: AccordionSection,
@@ -256,46 +358,18 @@ private fun LazyListScope.accordionSection(
     val expanded = section.id in accordion.expandedSections
     stickyHeader(contentType = "section-${section.id}") {
         AccordionSectionHeader(
-            title = section.title,
-            fieldCount = section.fieldCount,
+            content =
+                SectionHeaderContent(
+                    title = section.title,
+                    fieldCount = section.fieldCount,
+                    icon = section.icon,
+                    isPrimary = section.isPrimary,
+                ),
             expanded = expanded,
             onClick = { accordion.onToggle(section.id) },
         )
     }
     if (expanded) {
         content()
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-private fun LazyListScope.groupedFieldItems(content: FieldListContent) {
-    if (content.fields.isEmpty()) {
-        item(contentType = "empty") {
-            Text(
-                text = "No fields found.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.4f),
-                modifier = Modifier.padding(16.dp),
-            )
-        }
-        return
-    }
-    val grouped = content.fields.groupBy { it.group }.toSortedMap()
-    grouped.forEach { (groupName, groupFields) ->
-        item(contentType = "subgroup-$groupName") {
-            AccordionSubGroupHeader(title = groupName)
-        }
-        items(
-            items = groupFields,
-            key = { field: SaveEditableField -> field.id },
-            contentType = { field: SaveEditableField -> field.valueKind },
-        ) { field: SaveEditableField ->
-            SaveAdvancedFieldCard(
-                field = field,
-                draftValue = content.draftValues.valueFor(field),
-                metadata = content.metadataMap[field.id] ?: field.computeMetadata(),
-                onDraftChange = content.onDraftChange,
-            )
-        }
     }
 }
