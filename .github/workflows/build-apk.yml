@@ -72,7 +72,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
-      - name: Validate release signing secrets
+      - name: Decode release keystore
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_RELEASE_KEYSTORE_BASE64 }}
           RELEASE_STORE_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_STORE_PASSWORD }}
@@ -81,19 +81,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if { [ -n "$RELEASE_KEYSTORE_BASE64" ] || [ -n "$RELEASE_STORE_PASSWORD" ] || [ -n "$RELEASE_KEY_ALIAS" ] || [ -n "$RELEASE_KEY_PASSWORD" ]; } && \
-             { [ -z "$RELEASE_KEYSTORE_BASE64" ] || [ -z "$RELEASE_STORE_PASSWORD" ] || [ -z "$RELEASE_KEY_ALIAS" ] || [ -z "$RELEASE_KEY_PASSWORD" ]; }; then
-            printf '%s\n' 'Release signing secrets must be configured all together or omitted entirely.' >&2
-            exit 1
-          fi
-
-      - name: Decode release keystore
-        env:
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_RELEASE_KEYSTORE_BASE64 }}
-        run: |
-          set -euo pipefail
-
-          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_STORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
             KEYSTORE_PATH="$RUNNER_TEMP/bitinstaller-release.jks"
             printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
             chmod 600 "$KEYSTORE_PATH"
@@ -102,7 +90,6 @@ jobs:
 
       - name: Build release APK
         id: build-release
-        if: env.BITINSTALLER_RELEASE_STORE_FILE != ''
         env:
           BITINSTALLER_RELEASE_STORE_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_STORE_PASSWORD }}
           BITINSTALLER_RELEASE_KEY_ALIAS: ${{ secrets.BITINSTALLER_RELEASE_KEY_ALIAS }}

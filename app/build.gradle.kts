@@ -60,13 +60,11 @@ android {
     }
 
     signingConfigs {
-        if (hasDebugSigning) {
-            getByName("debug") {
-                storeFile = file(debugStoreFile.get())
-                storePassword = debugStorePassword.get()
-                keyAlias = debugKeyAlias.get()
-                keyPassword = debugKeyPassword.get()
-            }
+        getByName("debug") {
+            storeFile = file(if (hasDebugSigning) debugStoreFile.get() else "debug.keystore")
+            storePassword = if (hasDebugSigning) debugStorePassword.get() else "android"
+            keyAlias = if (hasDebugSigning) debugKeyAlias.get() else "androiddebugkey"
+            keyPassword = if (hasDebugSigning) debugKeyPassword.get() else "android"
         }
 
         if (hasReleaseSigning) {
@@ -82,9 +80,7 @@ android {
     buildTypes {
         debug {
             isPseudoLocalesEnabled = true
-            if (hasDebugSigning) {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
 
         release {
@@ -93,6 +89,8 @@ android {
             isShrinkResources = true
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
