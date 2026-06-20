@@ -97,8 +97,8 @@ private fun NotionToggleRow(
                     .heightIn(min = TOGGLE_MIN_HEIGHT.dp)
                     .background(Color.White.copy(alpha = if (checked) 0.14f else CHIP_ALPHA), shape = ChipShape),
         ) {
-            ToggleOption("ON", checked) { onValueChange("True") }
-            ToggleOption("OFF", !checked) { onValueChange("False") }
+            ToggleOption("True", checked) { onValueChange("True") }
+            ToggleOption("False", !checked) { onValueChange("False") }
         }
     }
 }

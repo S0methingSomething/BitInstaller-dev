@@ -11,8 +11,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -24,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,15 +34,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
-private const val AUTO_DISMISS_DELAY_MS = 2000L
-private const val TOAST_BACKGROUND_ARGB = 0xF9000000
-private const val TOAST_BORDER_ARGB = 0x2BFFFFFF
-private const val TOAST_SHAPE_RADIUS_DP = 9999
-private const val TOAST_ENTER_OFFSET_Y = 40
-private const val TOAST_EXIT_OFFSET_Y = 30
-private const val TOAST_ENTER_SCALE = 0.90f
-private const val TOAST_EXIT_SCALE = 0.95f
-private const val TOAST_LETTER_SPACING_SP = 2f
+private const val AUTO_DISMISS_DELAY_MS = 2400L
+private const val TOAST_BG_ALPHA = 0.92f
+private const val TOAST_BORDER_ALPHA = 0.18f
+private const val TOAST_ACCENT_ALPHA = 0.85f
+private const val TOAST_TEXT_ALPHA = 0.95f
+private const val TOAST_ACCENT_START = 0xFF34D399
+private const val TOAST_ACCENT_END = 0xFF10B981
+private const val TOAST_ACCENT_RADIUS_DP = 50
+private const val TOAST_ENTER_OFFSET_Y = 24
+private const val TOAST_EXIT_OFFSET_Y = 16
+private const val TOAST_ENTER_SCALE = 0.96f
+private const val TOAST_EXIT_SCALE = 0.98f
 
 internal data class SaveSuccessPopup(
     val path: String,
@@ -91,33 +97,58 @@ internal fun SaveEditorSuccessPopup(
 @Composable
 private fun SaveEditorToast(message: String) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             Modifier
-                .background(Color(TOAST_BACKGROUND_ARGB), shape = RoundedCornerShape(TOAST_SHAPE_RADIUS_DP.dp))
-                .border(
+                .fillMaxWidth()
+                .sizeIn(maxWidth = 360.dp)
+                .background(
+                    color = Color.Black.copy(alpha = TOAST_BG_ALPHA),
+                    shape = ToastShape,
+                ).border(
                     width = 1.dp,
-                    color = Color(TOAST_BORDER_ARGB),
-                    shape = RoundedCornerShape(TOAST_SHAPE_RADIUS_DP.dp),
-                ).padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = Color.White.copy(alpha = TOAST_BORDER_ALPHA),
+                    shape = ToastShape,
+                ).padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
-        Icon(
-            imageVector = Icons.Default.Check,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(16.dp),
-        )
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier
+                    .size(22.dp)
+                    .background(
+                        brush =
+                            Brush.linearGradient(
+                                colors =
+                                    listOf(
+                                        Color(TOAST_ACCENT_START).copy(alpha = TOAST_ACCENT_ALPHA),
+                                        Color(TOAST_ACCENT_END).copy(alpha = TOAST_ACCENT_ALPHA),
+                                    ),
+                            ),
+                        shape = RoundedCornerShape(TOAST_ACCENT_RADIUS_DP),
+                    ),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(14.dp),
+            )
+        }
         Text(
-            text = message.uppercase(),
-            color = Color.White,
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = TOAST_LETTER_SPACING_SP.sp,
+            text = message,
+            color = Color.White.copy(alpha = TOAST_TEXT_ALPHA),
+            style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.2.sp,
+            maxLines = 2,
         )
     }
 }
+
+private val ToastShape = RoundedCornerShape(12.dp)
 
 internal fun SaveTargetUiState.saveSuccessPopup(dismissedTokens: Map<String, Int>): SaveSuccessPopup? =
     editMessages

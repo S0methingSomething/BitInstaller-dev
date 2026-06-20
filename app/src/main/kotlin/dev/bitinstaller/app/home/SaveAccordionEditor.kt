@@ -5,14 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,11 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveCharacterSummary
 import dev.bitinstaller.app.save.SaveEditableField
+import dev.bitinstaller.app.save.SaveEditableValueKind
 
 private const val SEARCH_COUNT_ALPHA = 0.3f
 
@@ -312,6 +317,17 @@ private fun LazyListScope.pathFilterSection(
             } else {
                 content.fields
             }
+        val booleanFields = filteredFields.filter { it.valueKind == SaveEditableValueKind.BOOLEAN }
+        if (booleanFields.isNotEmpty()) {
+            item(contentType = "bulk-${def.id}") {
+                NotionBulkActions(
+                    booleanCount = booleanFields.size,
+                    onAllTrue = { booleanFields.forEach { content.onDraftChange(it, "True") } },
+                    onAllFalse = { booleanFields.forEach { content.onDraftChange(it, "False") } },
+                    onReset = { filteredFields.forEach { content.onDraftChange(it, it.value) } },
+                )
+            }
+        }
         notionGroupedFieldItems(
             fields = filteredFields,
             draftValues = content.draftValues,
@@ -373,3 +389,40 @@ private fun LazyListScope.accordionSection(
         content()
     }
 }
+
+@Composable
+private fun NotionBulkActions(
+    booleanCount: Int,
+    onAllTrue: () -> Unit,
+    onAllFalse: () -> Unit,
+    onReset: () -> Unit,
+) {
+    if (booleanCount == 0) return
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+    ) {
+        for ((label, onClick) in listOf("All True" to onAllTrue, "All False" to onAllFalse, "Reset" to onReset)) {
+            TextButton(
+                onClick = onClick,
+                shape = BulkActionShape,
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .background(color = Color.White.copy(alpha = BULK_ACTION_ALPHA), shape = BulkActionShape),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                    color = Color.White.copy(alpha = BULK_ACTION_LABEL_ALPHA),
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+        }
+    }
+}
+
+private val BulkActionShape = RoundedCornerShape(8.dp)
+private const val BULK_ACTION_ALPHA = 0.06f
+private const val BULK_ACTION_LABEL_ALPHA = 0.50f
