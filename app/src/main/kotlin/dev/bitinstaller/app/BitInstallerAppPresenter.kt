@@ -29,6 +29,7 @@ import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import dev.bitinstaller.app.targets.ALL_TARGETS
 import dev.bitinstaller.app.targets.InstalledAppInfo
+import dev.bitinstaller.app.targets.PATCH_TARGETS
 import dev.bitinstaller.app.targets.PatchTarget
 import dev.bitinstaller.app.targets.resolveAllAppInfo
 import kotlinx.coroutines.Dispatchers
@@ -80,7 +81,7 @@ internal class BitInstallerAppPresenter(
         if (appState.snapshot.status != ShizukuAccessStatus.READY) return
         if (appState.patchPresences.isNotEmpty()) return
         val installed =
-            ALL_TARGETS.filter {
+            PATCH_TARGETS.filter {
                 appInfoMap[it.packageName]?.isInstalled == true
             }
         appState.patchPresences = manifestStore.recoverPresences(installed)
@@ -101,7 +102,7 @@ internal class BitInstallerAppPresenter(
                         ShizukuAccessStatus.READY -> BackendStatus.Ready
                     },
                 patchTargets =
-                    ALL_TARGETS
+                    PATCH_TARGETS
                         .map { target ->
                             val info = appInfoMap[target.packageName]
                             buildTargetUiState(target, info, isReady)
@@ -168,7 +169,7 @@ internal class BitInstallerAppPresenter(
         val installed = info?.isInstalled == true
         val targetId = target.packageName
         val isLoading = appState.isLoading && appState.loadingTargetId == targetId
-        val loadError = if (appState.loadingTargetId == targetId) appState.loadError else null
+        val loadError = appState.patchLoadErrors[targetId]
         val presence = appState.patchPresences[targetId]
 
         return PatchTargetUiState(
@@ -261,12 +262,34 @@ private fun saveStatusLabelFor(
     saves: List<BitLifeSaveSummary>?,
 ): String =
     when {
-        !isReady -> "Connect Shizuku first"
-        isLoading -> "Scanning current savedLife.data slots"
-        error != null -> error
-        saves == null -> "Open to scan save slots"
-        saves.isEmpty() -> "No savedLife.data files found"
-        else -> "${saves.size} ${"save".pluralize(saves.size)} processed"
+        !isReady -> {
+            "Connect Shizuku first"
+        }
+
+        isLoading -> {
+            "Scanning current savedLife.data slots"
+        }
+
+        error != null -> {
+            error
+        }
+
+        saves == null -> {
+            "Open to scan save slots"
+        }
+
+        saves.isEmpty() -> {
+            "No savedLife.data files found"
+        }
+
+        else -> {
+            val failed = saves.count { it.errorMessage != null }
+            if (failed == 0) {
+                "${saves.size} ${"save".pluralize(saves.size)} processed"
+            } else {
+                "${saves.size - failed} ${"save".pluralize(saves.size - failed)} processed, $failed unreadable"
+            }
+        }
     }
 
 private fun saveActionLabelFor(

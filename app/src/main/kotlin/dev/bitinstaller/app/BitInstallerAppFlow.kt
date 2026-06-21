@@ -41,7 +41,7 @@ internal class BitInstallerAppState(
     var activeSession by mutableStateOf<PatchEditorSession?>(null)
     var isLoading by mutableStateOf(false)
     var loadingTargetId by mutableStateOf<String?>(null)
-    var loadError by mutableStateOf<String?>(null)
+    var patchLoadErrors by mutableStateOf(mapOf<String, String>())
     var patchPresences by mutableStateOf(mapOf<String, PatchManifestPresence>())
     var pendingLiveDictionaryTarget by mutableStateOf<PatchTargetUiState?>(null)
     var liveDictionaryPrompt by mutableStateOf<LiveDictionaryPromptUiState?>(null)
@@ -125,12 +125,15 @@ private fun handleDashboardAction(
         ShizukuAccessStatus.UNAVAILABLE,
         ShizukuAccessStatus.READY,
         -> {
-            openShizukuApp(context = context, onError = { error -> appState.loadError = error })
+            openShizukuApp(
+                context = context,
+                onError = { error -> appState.showBusyNotice(error ?: "Could not open Shizuku") },
+            )
         }
 
         ShizukuAccessStatus.PERMISSION_REQUIRED -> {
             requestShizukuPermission(
-                onError = { error -> appState.loadError = error },
+                onError = { error -> appState.showBusyNotice(error ?: "Could not request Shizuku permission") },
             )
         }
     }
@@ -181,7 +184,7 @@ private fun CoroutineScope.launchLiveDictionaryFix(
         try {
             appState.isLoading = true
             appState.loadingTargetId = target.packageName
-            appState.loadError = null
+            appState.patchLoadErrors = appState.patchLoadErrors - target.packageName
             appState.liveDictionaryPrompt = null
             runCatching {
                 val patchTarget =
@@ -193,7 +196,10 @@ private fun CoroutineScope.launchLiveDictionaryFix(
                     repository = repository,
                     manifestStore = manifestStore,
                 )
-            }.onFailure { error -> appState.loadError = error.message }
+            }.onFailure { error ->
+                appState.patchLoadErrors =
+                    appState.patchLoadErrors + (target.packageName to (error.message ?: "Unknown error"))
+            }
             appState.pendingLiveDictionaryTarget = null
             appState.isLoading = false
             appState.loadingTargetId = null
@@ -210,7 +216,7 @@ private suspend fun BitInstallerAppState.loadSession(
 ) {
     isLoading = true
     loadingTargetId = target.packageName
-    loadError = null
+    patchLoadErrors = patchLoadErrors - target.packageName
     runCatching {
         loadPatchSession(
             target = target,
@@ -225,7 +231,9 @@ private suspend fun BitInstallerAppState.loadSession(
             },
         )
     }.onSuccess { session -> activeSession = session }
-        .onFailure { error -> loadError = error.message }
+        .onFailure { error ->
+            patchLoadErrors = patchLoadErrors + (target.packageName to (error.message ?: "Unknown error"))
+        }
     isLoading = false
     loadingTargetId = null
 }

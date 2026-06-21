@@ -79,7 +79,7 @@ private fun listLifeSaveFilesCommand(filesDirectory: String): String =
         append("size=$(wc -c < \"\$file\" 2>/dev/null) || continue; ")
         append("printf '%s\\t%s\\n' \"\$size\" \"\$file\"; ")
         append("done; ")
-        append("fi")
+        append("else echo \"Files directory not found: \$dir\" >&2; exit 1; fi")
     }
 
 private fun writeLifeSaveFileCommand(
