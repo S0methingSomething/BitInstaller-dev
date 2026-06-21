@@ -4,19 +4,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import dev.bitinstaller.app.debug.DebugMenu
+import dev.bitinstaller.app.debug.DebugScenarioRunner
+import dev.bitinstaller.app.debug.DebugState
 import dev.bitinstaller.app.home.HomeRoute
 import dev.bitinstaller.app.home.previewHomeUiState
+import dev.bitinstaller.app.save.SaveScanCache
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
 import dev.bitinstaller.app.shizuku.ShizukuSnapshot
 import dev.bitinstaller.app.ui.theme.BitInstallerTheme
@@ -26,6 +32,8 @@ import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
+    private val presenter: BitInstallerAppPresenter by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,7 +43,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    BitInstallerApp()
+                    BitInstallerApp(presenter = presenter)
                 }
             }
         }
@@ -43,17 +51,16 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun BitInstallerApp() {
+private fun BitInstallerApp(presenter: BitInstallerAppPresenter) {
     val context = LocalContext.current
-    val presenter = remember { BitInstallerAppPresenter() }
+    val saveCache = remember(context) { SaveScanCache(context) }
     val coroutineScope = rememberCoroutineScope()
+    val debug = remember { DebugState() }
+    val scenarioRunner = remember(debug, coroutineScope) { DebugScenarioRunner(debug, coroutineScope) }
 
-    LaunchedEffect(Unit) { presenter.initialize(context) }
-
-    // Recover patch presences when Shizuku transitions to READY (e.g. after
-    // permission grant), which the one-shot LaunchedEffect(Unit) may miss.
-    LaunchedEffect(presenter.appState.snapshot.status) {
-        presenter.recoverPresencesIfReady()
+    LaunchedEffect(saveCache) {
+        presenter.initialize()
+        presenter.warmSaveScanCache(saveCache)
     }
 
     BindShizukuListeners(
@@ -61,23 +68,28 @@ private fun BitInstallerApp() {
         onSnapshotChanged = { presenter.appState.snapshot = it },
     )
 
-    HomeRoute(
-        state = presenter.buildHomeUiState(),
-        activeSession = presenter.appState.activeSession,
-        liveDictionaryPrompt = presenter.appState.liveDictionaryPrompt,
-        callbacks =
-            buildHomeRouteCallbacks(
-                context = context,
-                deps =
-                    AppFlowDeps(
-                        repository = presenter.repository,
-                        manifestStore = presenter.manifestStore,
-                        operationLock = presenter.operationLock,
-                        coroutineScope = coroutineScope,
-                        appState = presenter.appState,
-                    ),
-            ),
-    )
+    val callbacks =
+        buildHomeRouteCallbacks(
+            context = context,
+            deps =
+                AppFlowDeps(
+                    repository = presenter.repository,
+                    manifestStore = presenter.manifestStore,
+                    operationLock = presenter.operationLock,
+                    coroutineScope = coroutineScope,
+                    appState = presenter.appState,
+                    saveCache = saveCache,
+                ),
+        )
+
+    DebugMenu(debug = debug, scenarioRunner = scenarioRunner) {
+        HomeRoute(
+            state = presenter.homeUiState.value,
+            activeSession = presenter.appState.activeSession,
+            liveDictionaryPrompt = presenter.appState.liveDictionaryPrompt,
+            callbacks = callbacks,
+        )
+    }
 }
 
 @Composable
@@ -123,7 +135,7 @@ private fun BindShizukuListeners(
 
 @Preview(showBackground = true)
 @Composable
-fun BitInstallerPreview() {
+internal fun BitInstallerPreview() {
     BitInstallerTheme {
         HomeRoute(state = previewHomeUiState())
     }

@@ -1,9 +1,7 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,25 +10,36 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val DashboardShape = RoundedCornerShape(12.dp)
-private val DashboardActionShape = RoundedCornerShape(6.dp)
-private val DashboardButtonInset = 124.dp
-private val DashboardMinHeight = 154.dp
+private val DashboardShape = RoundedCornerShape(24.dp)
+private val DashboardActionShape = RoundedCornerShape(12.dp)
+private const val DASHBOARD_CONTAINER_COLOR_ARGB = 0x0EFFFFFF
+private const val DASHBOARD_QUIET_ACTION_COLOR_ARGB = 0x08FFFFFF
+private const val DASHBOARD_EYEBROW_ALPHA = 0.42f
+private const val DASHBOARD_BODY_ALPHA = 0.52f
+private const val DASHBOARD_MARK_CONTAINER_ALPHA = 0.08f
+private const val DASHBOARD_MARK_ACCENT_ALPHA = 0.16f
+private val DashboardContainerColor = Color(DASHBOARD_CONTAINER_COLOR_ARGB)
+private val DashboardQuietActionColor = Color(DASHBOARD_QUIET_ACTION_COLOR_ARGB)
 
 @Composable
 internal fun DashboardSection(
@@ -41,8 +50,7 @@ internal fun DashboardSection(
 
     Surface(
         shape = DashboardShape,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        color = DashboardContainerColor,
         shadowElevation = 0.dp,
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -55,20 +63,17 @@ private fun DashboardCardBody(
     card: DashboardCardState,
     onActionClick: () -> Unit,
 ) {
-    Box(
+    Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = DashboardMinHeight)
-                .padding(horizontal = 18.dp, vertical = 18.dp),
+                .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.Top,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(end = DashboardButtonInset),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             ShizukuMark(accent = card.accent)
             DashboardTextBlock(card = card)
@@ -79,31 +84,24 @@ private fun DashboardCardBody(
 }
 
 @Composable
-private fun BoxScope.DashboardActionButton(
+private fun DashboardActionButton(
     card: DashboardCardState,
     onActionClick: () -> Unit,
 ) {
-    if (card.isQuietAction) {
-        OutlinedButton(
-            onClick = onActionClick,
-            shape = DashboardActionShape,
-            modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
-        ) {
-            Text(text = card.action)
-        }
-    } else {
-        Button(
-            onClick = onActionClick,
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            shape = DashboardActionShape,
-            modifier = Modifier.align(Alignment.BottomEnd).heightIn(min = 44.dp),
-        ) {
-            Text(text = card.action)
-        }
+    val isSolid = !card.isQuietAction
+
+    Button(
+        onClick = onActionClick,
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = if (isSolid) Color.White else DashboardQuietActionColor,
+                contentColor = if (isSolid) Color.Black else Color.White,
+            ),
+        shape = DashboardActionShape,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+    ) {
+        Icon(imageVector = card.icon, contentDescription = card.action)
+        Text(text = card.action)
     }
 }
 
@@ -120,17 +118,18 @@ private fun DashboardTextBlock(card: DashboardCardState) {
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = 1.2.sp,
                 ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = DASHBOARD_EYEBROW_ALPHA),
         )
         Text(
             text = card.headline,
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            fontWeight = FontWeight.Black,
         )
         Text(
             text = card.description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = DASHBOARD_BODY_ALPHA),
         )
         StatusLine(label = card.supporting, accent = card.accent)
     }
@@ -140,13 +139,12 @@ private fun DashboardTextBlock(card: DashboardCardState) {
 private fun ShizukuMark(accent: Color) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(52.dp)) {
         Surface(
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.025f),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)),
+            color = Color.White.copy(alpha = DASHBOARD_MARK_CONTAINER_ALPHA),
+            shape = RoundedCornerShape(14.dp),
             modifier = Modifier.size(52.dp),
         ) {}
         Surface(
-            color = accent.copy(alpha = 0.16f),
+            color = accent.copy(alpha = DASHBOARD_MARK_ACCENT_ALPHA),
             shape = RoundedCornerShape(7.dp),
             modifier = Modifier.size(30.dp),
         ) {}
@@ -165,6 +163,7 @@ private data class DashboardCardState(
     val supporting: String,
     val action: String,
     val accent: Color,
+    val icon: ImageVector,
     val isQuietAction: Boolean = false,
 )
 
@@ -179,6 +178,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Not connected",
                 action = "Open Shizuku",
                 accent = MaterialTheme.colorScheme.secondary,
+                icon = Icons.Outlined.Key,
             )
         }
 
@@ -190,6 +190,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Needs approval",
                 action = "Allow",
                 accent = MaterialTheme.colorScheme.primary,
+                icon = Icons.Outlined.Shield,
             )
         }
 
@@ -201,6 +202,7 @@ private fun dashboardCardState(status: BackendStatus): DashboardCardState =
                 supporting = "Connected",
                 action = "Manage",
                 accent = MaterialTheme.colorScheme.primary,
+                icon = Icons.Outlined.Settings,
                 isQuietAction = true,
             )
         }
@@ -223,7 +225,7 @@ private fun StatusLine(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = DASHBOARD_BODY_ALPHA),
         )
     }
 }

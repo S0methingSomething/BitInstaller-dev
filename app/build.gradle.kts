@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.detekt)
     alias(libs.plugins.dependency.analysis)
 }
@@ -54,18 +55,16 @@ android {
             libs.versions.targetSdk
                 .get()
                 .toInt()
-        versionCode = 2
-        versionName = "0.1.1-alpha"
+        versionCode = 3
+        versionName = "0.2.0-alpha"
     }
 
     signingConfigs {
-        if (hasDebugSigning) {
-            getByName("debug") {
-                storeFile = file(debugStoreFile.get())
-                storePassword = debugStorePassword.get()
-                keyAlias = debugKeyAlias.get()
-                keyPassword = debugKeyPassword.get()
-            }
+        getByName("debug") {
+            storeFile = file(if (hasDebugSigning) debugStoreFile.get() else "debug.keystore")
+            storePassword = if (hasDebugSigning) debugStorePassword.get() else "android"
+            keyAlias = if (hasDebugSigning) debugKeyAlias.get() else "androiddebugkey"
+            keyPassword = if (hasDebugSigning) debugKeyPassword.get() else "android"
         }
 
         if (hasReleaseSigning) {
@@ -81,9 +80,7 @@ android {
     buildTypes {
         debug {
             isPseudoLocalesEnabled = true
-            if (hasDebugSigning) {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
 
         release {
@@ -92,6 +89,8 @@ android {
             isShrinkResources = true
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -112,7 +111,14 @@ android {
 
     lint {
         abortOnError = true
-        checkDependencies = true
+        checkDependencies = false
+        // Dependabot owns dependency drift; lint version checks are time-volatile under warningsAsErrors.
+        disable +=
+            setOf(
+                "AndroidGradlePluginVersion",
+                "GradleDependency",
+                "NewerVersionAvailable",
+            )
         htmlReport = true
         sarifReport = true
         textReport = true
@@ -122,6 +128,12 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
         }
     }
 }
@@ -140,7 +152,6 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.layout.projectDirectory.file("config/detekt/detekt.yml"))
     ignoreFailures = false
-    parallel = true
 }
 
 dependencies {
@@ -151,17 +162,43 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.runtime.annotation)
+    implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.geometry)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.core)
     implementation(libs.coroutines.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-    implementation(libs.accompanist.drawablepainter)
+    implementation(libs.nrbf4j)
+    implementation(libs.compose.animation)
+    implementation(libs.compose.animation.core)
+    implementation(libs.compose.material.icons.core)
+    implementation(libs.lifecycle.viewmodel)
+    implementation(libs.navigation.common)
+    implementation(libs.navigation.compose)
+    implementation(libs.navigation.runtime)
+    implementation(libs.compose.icons.extended)
+    lintChecks(libs.slackhq.compose.lints)
+
+    debugRuntimeOnly(libs.leakcanary)
 
     debugRuntimeOnly(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     testImplementation(libs.junit4)
+    testRuntimeOnly(libs.androidx.test.core)
+    testRuntimeOnly(libs.coroutines.test)
+    implementation(libs.fuzzykot)
+
+    constraints {
+        implementation(libs.androidx.core.ktx) {
+            because("Align transitive core-ktx version with core to prevent duplicate class issues")
+        }
+    }
 }

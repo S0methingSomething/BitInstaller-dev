@@ -1,7 +1,20 @@
 package dev.bitinstaller.app.home
 
 import android.graphics.drawable.Drawable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import dev.bitinstaller.app.save.BitLifeSaveSummary
 
+@Immutable
+enum class BitInstallerDestination(
+    val label: String,
+    val route: String,
+) {
+    MonetizationVars(label = "MonetizationVars", route = "patches"),
+    SaveEditor(label = "Save Editor", route = "saves"),
+}
+
+@Immutable
 sealed interface BackendStatus {
     data object ShizukuUnavailable : BackendStatus
 
@@ -10,12 +23,14 @@ sealed interface BackendStatus {
     data object Ready : BackendStatus
 }
 
+@Immutable
 enum class PatchSupportState {
     READY,
     BACKEND_REQUIRED,
     UNSUPPORTED,
 }
 
+@Immutable
 enum class PatchPresenceState {
     NOT_PATCHED,
     PATCHED,
@@ -26,6 +41,7 @@ internal const val PATCH_PRESENCE_PATCHED_LABEL: String = "Patched"
 internal const val PATCH_PRESENCE_NOT_PATCHED_LABEL: String = "No patch"
 
 /** Icon representation for a target app — real drawable or fallback monogram. */
+@Stable
 class TargetIcon(
     val monogram: String,
     val drawable: Drawable? = null,
@@ -40,6 +56,7 @@ class TargetIcon(
 }
 
 /** Derived presentation state for a target's patch action and status display. */
+@Immutable
 data class TargetPatchState(
     val supportState: PatchSupportState,
     val presenceState: PatchPresenceState,
@@ -56,6 +73,7 @@ data class TargetPatchState(
  * [Drawable] with no value-equality — including it in generated
  * equals/hashCode would break Compose recomposition skipping and list diffing.
  */
+@Stable
 class PatchTargetUiState(
     val name: String,
     val packageName: String,
@@ -102,11 +120,45 @@ class PatchTargetUiState(
     }
 }
 
+@Immutable
+data class SaveEditorUiState(
+    val targets: List<SaveTargetUiState>,
+    val selectedTarget: SaveTargetUiState?,
+)
+
+@Immutable
+data class SaveTargetUiState(
+    val name: String,
+    val packageName: String,
+    val icon: TargetIcon,
+    val versionLabel: String,
+    val isLoading: Boolean,
+    val statusLabel: String,
+    val actionLabel: String,
+    val actionEnabled: Boolean,
+    val saves: List<BitLifeSaveSummary>? = null,
+    val editingSavePath: String? = null,
+    val editErrors: Map<String, String> = emptyMap(),
+    val editMessages: Map<String, String> = emptyMap(),
+    val editMessageTokens: Map<String, Int> = emptyMap(),
+    val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
+)
+
+@Immutable
+data class HomeNoticeUiState(
+    val token: Int,
+    val message: String,
+)
+
+@Immutable
 data class HomeUiState(
     val title: String,
     val summary: String,
     val backendStatus: BackendStatus,
     val patchTargets: List<PatchTargetUiState>,
+    val selectedDestination: BitInstallerDestination,
+    val saveEditor: SaveEditorUiState,
+    val notice: HomeNoticeUiState? = null,
 )
 
 fun previewHomeUiState(): HomeUiState =
@@ -114,6 +166,7 @@ fun previewHomeUiState(): HomeUiState =
         title = "BitInstaller",
         summary = "MonetizationVars editor",
         backendStatus = BackendStatus.PermissionRequired,
+        selectedDestination = BitInstallerDestination.MonetizationVars,
         patchTargets =
             listOf(
                 PatchTargetUiState(
@@ -131,5 +184,23 @@ fun previewHomeUiState(): HomeUiState =
                             actionEnabled = true,
                         ),
                 ),
+            ),
+        saveEditor =
+            SaveEditorUiState(
+                selectedTarget = null,
+                targets =
+                    listOf(
+                        SaveTargetUiState(
+                            name = "BitLife",
+                            packageName = "com.candywriter.bitlife",
+                            icon = TargetIcon(monogram = "BL"),
+                            versionLabel = "3.27.7",
+                            isLoading = false,
+                            statusLabel = "Tap to scan save slots",
+                            actionLabel = "Scan",
+                            actionEnabled = true,
+                            saves = null,
+                        ),
+                    ),
             ),
     )

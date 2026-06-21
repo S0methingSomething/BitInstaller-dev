@@ -1,23 +1,27 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,11 +38,11 @@ internal fun SimplifiedEditor(
     onBooleanChanged: (String, Boolean) -> Unit,
     onTextChanged: (String, String) -> Unit,
 ) {
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.sizeIn(maxHeight = 350.dp),
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        items(originalData.entries.toList(), key = { it.key }) { entry ->
+        originalData.entries.forEach { entry ->
             SimplifiedEditorRow(
                 keyName = entry.key,
                 value = entry.value,
@@ -60,13 +64,12 @@ private fun SimplifiedEditorRow(
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = EDITOR_ROW_ALPHA),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         when (value) {
             is Boolean -> {
-                BooleanEditorRow(
+                BooleanRow(
                     keyName = keyName,
                     value = value,
                     onBooleanChanged = onBooleanChanged,
@@ -74,7 +77,7 @@ private fun SimplifiedEditorRow(
             }
 
             else -> {
-                ValueEditorRow(
+                ValueRow(
                     keyName = keyName,
                     value = value,
                     draftValue = draftValue,
@@ -86,50 +89,79 @@ private fun SimplifiedEditorRow(
 }
 
 @Composable
-private fun BooleanEditorRow(
+private fun BooleanRow(
     keyName: String,
     value: Boolean,
     onBooleanChanged: (String, Boolean) -> Unit,
 ) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         SimplifiedKeyText(
             keyName = keyName,
             supportingText = if (value) "Enabled" else "Disabled",
-            modifier =
-                Modifier
-                    .weight(1f)
-                    .padding(end = 12.dp),
+            modifier = Modifier.weight(1f).padding(end = 8.dp),
         )
         Switch(
             checked = value,
-            onCheckedChange = { checked -> onBooleanChanged(keyName, checked) },
+            onCheckedChange = { onBooleanChanged(keyName, it) },
         )
     }
 }
 
 @Composable
-private fun ValueEditorRow(
+private fun ValueRow(
     keyName: String,
     value: MonetizationValue,
     draftValue: String,
     onTextChanged: (String, String) -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         SimplifiedKeyText(keyName = keyName, supportingText = if (value is Int) "Int32" else "Base64 payload")
-        OutlinedTextField(
+        BasicTextField(
             value = draftValue,
-            onValueChange = { updated -> onTextChanged(keyName, updated) },
+            onValueChange = { onTextChanged(keyName, it) },
+            textStyle =
+                TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                ),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             singleLine = true,
+            decorationBox = { innerTextField ->
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+                                shape = RoundedCornerShape(6.dp),
+                            ).padding(horizontal = 10.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (draftValue.isEmpty()) {
+                        Text(
+                            text = "Enter value...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        )
+                    }
+                    innerTextField()
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -141,24 +173,25 @@ private fun SimplifiedKeyText(
     supportingText: String,
     modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
+    Column(verticalArrangement = Arrangement.spacedBy(1.dp), modifier = modifier) {
         Text(
             text = monetizationDisplayName(keyName),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Medium,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = keyName,
-            style = MaterialTheme.typography.labelMedium.copy(fontFamily = FontFamily.Monospace),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = supportingText,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

@@ -1,72 +1,80 @@
 package dev.bitinstaller.app.home
 
-import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.PredictiveBackHandler
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun HomeRoute(
+internal fun HomeRoute(
     state: HomeUiState,
     modifier: Modifier = Modifier,
     activeSession: PatchEditorSession? = null,
     liveDictionaryPrompt: LiveDictionaryPromptUiState? = null,
     callbacks: HomeRouteCallbacks = HomeRouteCallbacks(),
 ) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-    ) {
-        HomeContent(
-            state = state,
-            onDashboardActionClick = callbacks.onDashboardActionClick,
-            onPatchClick = callbacks.onPatchClick,
-        )
+    PredictiveBackHandler(enabled = activeSession != null) { progress ->
+        progress.collect { /* allow system animation */ }
+        callbacks.onDismissSession()
+    }
 
-        activeSession?.let { session ->
-            Box(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.52f)),
-            ) {
-                PatchEditorScene(
-                    target = session.target,
-                    contentAlpha = 1f,
-                    onDismissRequest = callbacks.onDismissSession,
-                    config =
-                        PatchEditorSceneConfig(
-                            initialData = session.initialData,
-                            saveData = { data -> callbacks.onSaveSession(session, data) },
-                        ),
+    SharedTransitionLayout(modifier = modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            HomeBackground(
+                activeSession = activeSession,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = this@SharedTransitionLayout,
+            )
+            PatchEditorOverlay(
+                activeSession = activeSession,
+                callbacks = callbacks,
+                sharedTransitionScope = this@SharedTransitionLayout,
+            )
+
+            liveDictionaryPrompt?.let { prompt ->
+                LiveDictionaryPrompt(
+                    prompt = prompt,
+                    onDismissRequest = callbacks.onDismissLiveDictionaryPrompt,
+                    onConfirm = callbacks.onConfirmLiveDictionaryFix,
                 )
             }
-        }
 
-        liveDictionaryPrompt?.let { prompt ->
-            LiveDictionaryPrompt(
-                prompt = prompt,
-                onDismissRequest = callbacks.onDismissLiveDictionaryPrompt,
-                onConfirm = callbacks.onConfirmLiveDictionaryFix,
+            HomeNoticePopup(
+                notice = state.notice,
+                onDismiss = callbacks.onDismissNotice,
+                modifier =
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 28.dp),
             )
         }
     }
@@ -83,63 +91,131 @@ private fun LiveDictionaryPrompt(
         title = { Text(text = prompt.title) },
         text = { Text(text = prompt.message) },
         confirmButton = {
-            Button(onClick = onConfirm) {
-                Text(text = prompt.confirmLabel)
-            }
+            Button(onClick = onConfirm) { Text(text = prompt.confirmLabel) }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = "Cancel")
-            }
+            TextButton(onClick = onDismissRequest) { Text(text = "Cancel") }
         },
     )
 }
 
 @Composable
-private fun HomeContent(
+internal fun HomeContent(
     state: HomeUiState,
-    onDashboardActionClick: () -> Unit,
-    onPatchClick: (PatchTargetUiState) -> Unit,
+    callbacks: HomeRouteCallbacks,
+    sharedTransitionScope: SharedTransitionScope? = null,
+    backgroundMotionEnabled: Boolean = true,
 ) {
-    LazyColumn(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-    ) {
-        item { HeroSection(state = state) }
-        item { DashboardSection(status = state.backendStatus, onActionClick = onDashboardActionClick) }
-        item {
-            PatchTargetsSection(
-                targets = state.patchTargets,
-                onPatchClick = onPatchClick,
+    val navigationManager = rememberHomeNavigationManager(state.selectedDestination)
+    val isSaveEditorRoute = navigationManager.selectedDestination == BitInstallerDestination.SaveEditor
+    val hideNavBar = isSaveEditorRoute && state.saveEditor.selectedTarget != null
+    BackHandler(enabled = isSaveEditorRoute && state.saveEditor.selectedTarget == null) {
+        navigationManager.navigateTo(BitInstallerDestination.MonetizationVars, callbacks.onDestinationSelected)
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isSaveEditorRoute) {
+            HomeDestinationHost(
+                navigationManager = navigationManager,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = sharedTransitionScope,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            if (backgroundMotionEnabled) {
+                HomeAmbientGlow()
+            }
+            DestinationPane(
+                paneState =
+                    HomePaneState(
+                        navigationManager = navigationManager,
+                        backgroundMotionEnabled = backgroundMotionEnabled,
+                        sharedTransitionScope = sharedTransitionScope,
+                    ),
+                state = state,
+                callbacks = callbacks,
+            )
+        }
+
+        if (!hideNavBar) {
+            HomeBottomNavigation(
+                selectedDestination = navigationManager.selectedDestination,
+                onDestinationSelected = { destination ->
+                    navigationManager.navigateTo(destination, callbacks.onDestinationSelected)
+                },
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp),
             )
         }
     }
 }
 
 @Composable
-private fun HeroSection(state: HomeUiState) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.padding(top = 28.dp, bottom = 12.dp),
+private fun DestinationPane(
+    paneState: HomePaneState,
+    state: HomeUiState,
+    callbacks: HomeRouteCallbacks,
+) {
+    val paneModifier =
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp)
+
+    Column(modifier = paneModifier) {
+        HomeHeader(state = state)
+        Spacer(modifier = Modifier.height(12.dp))
+        DashboardSection(
+            status = state.backendStatus,
+            onActionClick = callbacks.onDashboardActionClick,
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(modifier = Modifier.weight(1f)) {
+            HomeDestinationHost(
+                navigationManager = paneState.navigationManager,
+                state = state,
+                callbacks = callbacks,
+                sharedTransitionScope = paneState.sharedTransitionScope,
+            )
+        }
+    }
+}
+
+private data class HomePaneState(
+    val navigationManager: HomeNavigationManager,
+    val backgroundMotionEnabled: Boolean,
+    val sharedTransitionScope: SharedTransitionScope?,
+)
+
+@Composable
+private fun HomeHeader(state: HomeUiState) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 18.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = state.title,
-            style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = state.summary,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Column {
+            Text(
+                text = state.title,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Start,
+            )
+            Text(
+                text = state.summary.uppercase(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 3.sp,
+            )
+        }
     }
 }

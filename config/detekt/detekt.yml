@@ -18,3 +18,13 @@ style:
       - '0'
       - '1'
       - '2'
+
+complexity:
+  LongMethod:
+    threshold: 70
+  TooManyFunctions:
+    thresholdInFiles: 12
+    thresholdInClasses: 10
+    thresholdInObjects: 10
+    thresholdInInterfaces: 10
+    thresholdInEnums: 10

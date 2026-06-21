@@ -3,8 +3,6 @@ name: Build APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -73,3 +71,50 @@ jobs:
           name: BitInstaller-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Decode release keystore
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.BITINSTALLER_RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_STORE_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.BITINSTALLER_RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ] && [ -n "$RELEASE_STORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
+            KEYSTORE_PATH="$RUNNER_TEMP/bitinstaller-release.jks"
+            printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            chmod 600 "$KEYSTORE_PATH"
+            printf 'BITINSTALLER_RELEASE_STORE_FILE=%s\n' "$KEYSTORE_PATH" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build release APK
+        id: build-release
+        env:
+          BITINSTALLER_RELEASE_STORE_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_STORE_PASSWORD }}
+          BITINSTALLER_RELEASE_KEY_ALIAS: ${{ secrets.BITINSTALLER_RELEASE_KEY_ALIAS }}
+          BITINSTALLER_RELEASE_KEY_PASSWORD: ${{ secrets.BITINSTALLER_RELEASE_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --build-cache --stacktrace
+
+      - name: Delete release keystore
+        if: always()
+        run: |
+          if [ -n "${BITINSTALLER_RELEASE_STORE_FILE:-}" ]; then
+            rm -f "$BITINSTALLER_RELEASE_STORE_FILE"
+          fi
+
+      - name: Upload release APK
+        if: always() && steps.build-release.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BitInstaller-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload compiler metrics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compiler-metrics
+          path: build/reports/kotlin-build/
+          if-no-files-found: ignore

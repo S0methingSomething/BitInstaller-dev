@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 fun RawEditor(
     rawJson: String,
     onRawJsonChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val syntaxColors =
         JsonSyntaxColors(
@@ -36,7 +37,7 @@ fun RawEditor(
                 fontStyle = FontStyle.Normal,
             ),
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .sizeIn(minHeight = 240.dp, maxHeight = 350.dp),
     )
