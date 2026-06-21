@@ -154,7 +154,7 @@ private fun rememberPathSectionContent(
     onDraftChange: (SaveEditableField, String) -> Unit,
     searchContext: AdvancedSearchContext,
 ): Map<String, FieldListContent> =
-    remember(save, draftValues, onDraftChange, searchContext) {
+    remember(save.advancedFields, searchContext) {
         ACCORDION_PATH_SECTIONS.associate { def ->
             def.id to
                 FieldListContent(

@@ -15,7 +15,7 @@ internal const val ADVANCED_DEBOUNCE_MS = 120L
 
 @Composable
 internal fun rememberSearchContext(save: BitLifeSaveSummary): AdvancedSearchContext =
-    remember(save) {
+    remember(save.advancedFields) {
         val metadataMap = save.advancedFields.associate { it.id to it.computeMetadata() }
         AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
     }

@@ -12,6 +12,7 @@ enum class EditorMode {
 
 data class PatchEditorUiState(
     val currentData: MonetizationData,
+    val savedData: MonetizationData,
     val draftValues: Map<String, String>,
     val rawJson: String,
     val editorMode: EditorMode,
@@ -41,6 +42,7 @@ fun interface PatchEditorSaveHandler {
 
 data class PatchEditorStateMutations(
     val onCurrentDataChanged: (MonetizationData) -> Unit,
+    val onSavedDataChanged: (MonetizationData) -> Unit,
     val onDraftValuesChanged: (Map<String, String>) -> Unit,
     val onRawJsonChanged: (String) -> Unit,
     val onEditorModeChanged: (EditorMode) -> Unit,
@@ -89,13 +91,17 @@ fun buildPatchEditorActions(
                 uiState.draftValues.updated(key = key, value = value.toString()),
             )
             mutations.onRawJsonChanged(MonetizationCodec.toPrettyJson(updatedData))
+            mutations.onStatusMessageChanged(null)
             mutations.onErrorMessageChanged(null)
         },
         onTextChanged = { key, value ->
             mutations.onDraftValuesChanged(uiState.draftValues.updated(key = key, value = value))
+            mutations.onStatusMessageChanged(null)
+            mutations.onErrorMessageChanged(null)
         },
         onRawJsonChanged = { updatedJson ->
             mutations.onRawJsonChanged(updatedJson)
+            mutations.onStatusMessageChanged(null)
             mutations.onErrorMessageChanged(null)
         },
         onExportRawJson = {
@@ -145,6 +151,7 @@ private fun handleSaveSuccess(
     mutations: PatchEditorStateMutations,
 ) {
     mutations.onCurrentDataChanged(data)
+    mutations.onSavedDataChanged(data)
     mutations.onDraftValuesChanged(data.toDraftValues())
     mutations.onRawJsonChanged(MonetizationCodec.toPrettyJson(data))
     mutations.onStatusMessageChanged(statusMessage)

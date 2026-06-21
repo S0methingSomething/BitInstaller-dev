@@ -6,8 +6,11 @@ import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.save.BitLifeSaveEditor
 import dev.bitinstaller.app.save.BitLifeSaveParser
 import dev.bitinstaller.app.save.BitLifeSaveSummary
+import dev.bitinstaller.app.save.SaveEditableField
 import dev.bitinstaller.app.save.SaveFieldEdit
 import dev.bitinstaller.app.save.SaveScanCache
+import dev.bitinstaller.app.save.parseRawValue
+import dev.bitinstaller.app.save.toEditableDisplayValue
 import dev.bitinstaller.app.shizuku.LifeSaveFile
 import dev.bitinstaller.app.shizuku.OperationLock
 import dev.bitinstaller.app.shizuku.ShizukuMonetizationRepository
@@ -100,9 +103,18 @@ private suspend fun SaveFieldEditBatchRequest.applyBatchEdit(
         val edited = BitLifeSaveEditor.applyEdits(bytes = original, edits = edits, outputFile = tempFile)
         val writeResult = repository.writeLifeSaveFile(path = save.path, bytes = edited)
         val parsed = BitLifeSaveParser.parse(path = save.path, bytes = edited, collectAdvancedFields = false)
-        parsed.copy(advancedFields = save.advancedFields) to writeResult.backupPath
+        parsed.copy(advancedFields = save.advancedFields.withAppliedEdits(edits)) to writeResult.backupPath
     } finally {
         tempFile.delete()
+    }
+}
+
+private fun List<SaveEditableField>.withAppliedEdits(edits: List<SaveFieldEdit>): List<SaveEditableField> {
+    val editsByFieldId = edits.associateBy { edit -> edit.field.id }
+    if (none { field -> field.id in editsByFieldId }) return this
+    return map { field ->
+        val edit = editsByFieldId[field.id] ?: return@map field
+        field.copy(value = field.parseRawValue(edit.rawValue).toEditableDisplayValue())
     }
 }
 

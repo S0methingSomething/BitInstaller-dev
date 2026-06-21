@@ -3,11 +3,9 @@ package dev.bitinstaller.app.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,7 +39,10 @@ import kotlinx.coroutines.withContext
 
 private const val PATCH_EDITOR_CONTAINER_COLOR_ARGB = 0xF5050505
 private const val PATCH_EDITOR_HEIGHT_FRACTION = 0.88f
+private const val PATCH_STATUS_ALPHA = 0.08f
+private const val PATCH_STATUS_ERROR_ALPHA = 0.14f
 private val PatchEditorShape = RoundedCornerShape(24.dp)
+private val PatchStatusShape = RoundedCornerShape(12.dp)
 
 data class PatchEditorSceneConfig(
     val initialData: MonetizationData = buildPreviewData(),
@@ -62,6 +62,9 @@ fun PatchEditorScene(
     var currentData by remember(target.packageName, config.initialData) {
         mutableStateOf(config.initialData)
     }
+    var savedData by remember(target.packageName, config.initialData) {
+        mutableStateOf(config.initialData)
+    }
     var draftValues by remember(target.packageName, config.initialData) {
         mutableStateOf(currentData.toDraftValues())
     }
@@ -76,6 +79,7 @@ fun PatchEditorScene(
     val uiState =
         PatchEditorUiState(
             currentData = currentData,
+            savedData = savedData,
             draftValues = draftValues,
             rawJson = rawJson,
             editorMode = editorMode,
@@ -86,6 +90,7 @@ fun PatchEditorScene(
     val mutations =
         PatchEditorStateMutations(
             onCurrentDataChanged = { currentData = it },
+            onSavedDataChanged = { savedData = it },
             onDraftValuesChanged = { draftValues = it },
             onRawJsonChanged = { rawJson = it },
             onEditorModeChanged = { editorMode = it },
@@ -179,6 +184,7 @@ private fun PatchEditorContent(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 PatchEditorHeaderSection(uiState = uiState, actions = actions)
+                PatchEditorStatus(uiState = uiState)
                 PatchEditorBodySection(
                     uiState = uiState,
                     actions = actions,
@@ -217,7 +223,6 @@ private fun PatchEditorBodySection(
     ) {
         if (uiState.editorMode == EditorMode.SIMPLIFIED) {
             EditorContentLabel()
-            Spacer(modifier = Modifier.height(8.dp))
         }
 
         if (uiState.editorMode == EditorMode.SIMPLIFIED) {
@@ -230,34 +235,35 @@ private fun PatchEditorBodySection(
         } else {
             RawEditor(rawJson = uiState.rawJson, onRawJsonChanged = actions.onRawJsonChanged)
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(12.dp))
-        PatchEditorStatus(errorMessage = uiState.errorMessage, statusMessage = uiState.statusMessage)
     }
 }
 
 @Composable
-private fun PatchEditorStatus(
-    errorMessage: String?,
-    statusMessage: String?,
-) {
-    if (errorMessage != null) {
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-    }
+private fun PatchEditorStatus(uiState: PatchEditorUiState) {
+    val errorMessage = uiState.errorMessage
+    val statusMessage = uiState.statusMessage
+    val unsaved = uiState.hasUnsavedChanges()
+    val message = errorMessage ?: statusMessage ?: "Unsaved changes - save to write MonetizationVars."
+    if (errorMessage == null && statusMessage == null && !unsaved) return
 
-    if (statusMessage != null) {
+    val color = if (errorMessage != null) MaterialTheme.colorScheme.error else Color.White
+    val backgroundAlpha = if (errorMessage != null) PATCH_STATUS_ERROR_ALPHA else PATCH_STATUS_ALPHA
+    Surface(
+        color = color.copy(alpha = backgroundAlpha),
+        shape = PatchStatusShape,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Text(
-            text = statusMessage,
+            text = message,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = color.copy(alpha = 0.88f),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         )
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
+
+private fun PatchEditorUiState.hasUnsavedChanges(): Boolean =
+    when (editorMode) {
+        EditorMode.SIMPLIFIED -> draftValues != savedData.toDraftValues()
+        EditorMode.RAW -> rawJson.trim() != MonetizationCodec.toPrettyJson(savedData).trim()
+    }
