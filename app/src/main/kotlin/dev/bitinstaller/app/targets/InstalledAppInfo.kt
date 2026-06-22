@@ -50,11 +50,10 @@ suspend fun resolveAppInfo(
 ): InstalledAppInfo =
     withContext(Dispatchers.IO) {
         val pm = context.packageManager
+        @Suppress("DEPRECATION")
         runCatching {
-            val flags = PackageManager.ApplicationInfoFlags.of(0)
-            val appInfo = pm.getApplicationInfo(target.packageName, flags)
-            val pkgFlags = PackageManager.PackageInfoFlags.of(0)
-            val packageInfo = pm.getPackageInfo(target.packageName, pkgFlags)
+            val appInfo = pm.getApplicationInfo(target.packageName, 0)
+            val packageInfo = pm.getPackageInfo(target.packageName, 0)
             InstalledAppInfo(
                 packageName = target.packageName,
                 appName = pm.getApplicationLabel(appInfo).toString(),
