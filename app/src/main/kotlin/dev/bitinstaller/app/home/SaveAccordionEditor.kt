@@ -103,7 +103,7 @@ internal fun SaveAccordionEditor(
             }
         }
 
-        if (searchContext == null && save.advancedFields.isNotEmpty()) {
+        if (searchContext == null && save.errorMessage == null) {
             item(contentType = "search-loading") {
                 Box(
                     contentAlignment = Alignment.Center,

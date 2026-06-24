@@ -16,7 +16,14 @@ internal const val ADVANCED_DEBOUNCE_MS = 120L
 internal fun rememberSearchContext(save: BitLifeSaveSummary): State<AdvancedSearchContext?> =
     produceState<AdvancedSearchContext?>(initialValue = null, save.advancedFields, save.advancedFieldsParsed) {
         if (save.advancedFields.isEmpty()) {
-            value = AdvancedSearchContext(emptyMap(), FieldSearchIndex(emptyMap(), emptyList()))
+            // If parsing already happened (advancedFieldsParsed=true) and there really are no
+            // advanced fields, emit an empty context so the editor treats the save as empty rather
+            // than pending. If parsing hasn't happened yet (advancedFieldsParsed=false) stay null
+            // so the editor shows the "Loading fields…" state until the lazy-load path upserts a
+            // parsed summary (which restarts this produceState with the new keys).
+            if (save.advancedFieldsParsed) {
+                value = AdvancedSearchContext(emptyMap(), FieldSearchIndex(emptyMap(), emptyList()))
+            }
         } else {
             value =
                 withContext(Dispatchers.Default) {
