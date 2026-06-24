@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -77,9 +78,13 @@ internal fun SaveAccordionEditor(
     val accordion = rememberAccordionState(save.path)
     val chipState = rememberChipState(save.path)
 
-    val searchContext = rememberSearchContext(save)
-    val searchResults = rememberSearchResults(query, save, state.recentFieldIds, searchContext)
-    val pathSectionContent = rememberPathSectionContent(save, draftValues, onDraftChange, searchContext)
+    val searchContextState = rememberSearchContext(save)
+    val searchContext = searchContextState.value
+    val searchResults = rememberSearchResults(query, save, state.recentFieldIds, searchContext ?: EMPTY_SEARCH_CONTEXT)
+    val pathSectionContent =
+        searchContext?.let { ctx ->
+            rememberPathSectionContent(save, draftValues, onDraftChange, ctx)
+        }
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -98,18 +103,31 @@ internal fun SaveAccordionEditor(
             }
         }
 
-        if (query.isBlank() || save.errorMessage != null) {
+        if (searchContext == null && save.errorMessage == null) {
+            item(contentType = "search-loading") {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize().padding(vertical = 40.dp),
+                ) {
+                    Text(
+                        text = "Loading fields…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = BULK_ACTION_LABEL_ALPHA),
+                    )
+                }
+            }
+        } else if (query.isBlank() || save.errorMessage != null) {
             browseSections(
                 state = state,
                 actions = actions,
                 content =
                     BrowseContent(
                         accordion = accordion,
-                        pathSectionContent = pathSectionContent,
+                        pathSectionContent = pathSectionContent ?: emptyMap(),
                         advancedContent =
                             FieldListContent(
                                 fields = save.advancedFields,
-                                metadataMap = searchContext.metadataMap,
+                                metadataMap = searchContext?.metadataMap ?: emptyMap(),
                                 draftValues = draftValues,
                                 onDraftChange = onDraftChange,
                             ),
@@ -117,7 +135,7 @@ internal fun SaveAccordionEditor(
                     ),
             )
         } else {
-            searchResultItems(searchResults.value, searchContext.metadataMap, draftValues, onDraftChange)
+            searchResultItems(searchResults.value, searchContext?.metadataMap ?: emptyMap(), draftValues, onDraftChange)
         }
     }
 }
@@ -426,3 +444,5 @@ private fun NotionBulkActions(
 private val BulkActionShape = RoundedCornerShape(8.dp)
 private const val BULK_ACTION_ALPHA = 0.06f
 private const val BULK_ACTION_LABEL_ALPHA = 0.50f
+
+private val EMPTY_SEARCH_CONTEXT = AdvancedSearchContext(emptyMap(), FieldSearchIndex(emptyMap(), emptyList()))

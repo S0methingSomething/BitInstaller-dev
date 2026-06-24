@@ -99,7 +99,11 @@ internal fun SaveTargetDetail(
         )
         when {
             target.isLoading -> {
-                SaveLoadingStateView(message = "Analyzing save files...", modifier = Modifier.weight(1f))
+                SaveLoadingStateView(
+                    message = "Analyzing save files...",
+                    progress = target.scanProgress,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             target.saves == null -> {

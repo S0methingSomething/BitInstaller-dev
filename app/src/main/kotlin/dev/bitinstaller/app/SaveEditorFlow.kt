@@ -15,15 +15,8 @@ import dev.bitinstaller.app.shizuku.writeLifeSaveFile
 import dev.bitinstaller.app.targets.findTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-
-private const val SCAN_CONCURRENCY = 4
 
 internal fun CoroutineScope.launchSaveScan(
     target: SaveTargetUiState,
@@ -69,6 +62,39 @@ internal fun CoroutineScope.launchSaveRevert(
     }
 }
 
+internal fun CoroutineScope.launchLoadAdvancedFields(
+    targetPackageName: String,
+    save: BitLifeSaveSummary,
+    repository: ShizukuMonetizationRepository,
+    appState: BitInstallerAppState,
+    saveCache: SaveScanCache,
+) {
+    if (save.advancedFieldsParsed) return
+    launch {
+        runCatching {
+            withContext(Dispatchers.IO) {
+                val patchTarget = findTarget(targetPackageName) ?: error("Unknown target: $targetPackageName")
+                val file = LifeSaveFile(path = save.path, sizeBytes = save.sizeBytes.toLong())
+                val bytes = repository.readLifeSaveFile(file)
+                BitLifeSaveParser.parse(
+                    path = save.path,
+                    bytes = bytes,
+                    lightweight = false,
+                    collectAdvancedFields = true,
+                )
+            }
+        }.onSuccess { parsed ->
+            val currentSaves = appState.saveScanResults[targetPackageName].orEmpty()
+            val updatedSaves = currentSaves.replaceSave(parsed)
+            Snapshot.withMutableSnapshot {
+                appState.saveScanResults =
+                    appState.saveScanResults + (targetPackageName to updatedSaves)
+            }
+            saveCache.write(targetPackageName, updatedSaves)
+        }
+    }
+}
+
 internal data class SaveRevertRequest(
     val target: SaveTargetUiState,
     val save: BitLifeSaveSummary,
@@ -100,41 +126,98 @@ private suspend fun BitInstallerAppState.scanSaveFiles(
             ?: error("Unknown target: ${target.packageName}")
     runCatching {
         withContext(Dispatchers.IO) {
-            val semaphore = Semaphore(SCAN_CONCURRENCY)
-            coroutineScope {
-                repository
-                    .listLifeSaveFiles(patchTarget, patchTarget.filesDirectory)
-                    .map { file ->
-                        async {
-                            val cached = cachedSaves[file.path]
-                            if (cached != null && cached.sizeBytes.toLong() == file.sizeBytes) return@async cached
-                            semaphore.withPermit {
-                                runCatching {
-                                    val bytes = repository.readLifeSaveFile(file)
-                                    BitLifeSaveParser.parse(path = file.path, bytes = bytes)
-                                }.getOrElse { error ->
-                                    BitLifeSaveParser.failure(
-                                        path = file.path,
-                                        sizeBytes = file.sizeBytes.toIntSize(),
-                                        error = error,
-                                    )
-                                }
-                            }
-                        }
-                    }.awaitAll()
+            val allFiles = repository.listLifeSaveFiles(patchTarget, patchTarget.filesDirectory)
+            val results = mutableListOf<BitLifeSaveSummary>()
+            allFiles.forEachIndexed { index, file ->
+                publishScanProgress(target.packageName, index, allFiles.size, file)
+                val summary = loadSaveSummary(file, cachedSaves, repository)
+                results.add(summary)
+                upsertScanResult(target.packageName, summary)
             }
+            results
         }
-    }.onSuccess { summaries ->
+    }.onSuccess {
         Snapshot.withMutableSnapshot {
-            saveScanResults = saveScanResults + (target.packageName to summaries)
             saveScanTargetId = null
+            saveScanProgress = null
         }
-        saveCache.write(target.packageName, summaries)
+        saveCache.write(target.packageName, saveScanResults[target.packageName].orEmpty())
     }.onFailure { error ->
         Snapshot.withMutableSnapshot {
             saveScanErrors = saveScanErrors + (target.packageName to (error.message ?: "Could not scan saves"))
             saveScanTargetId = null
+            saveScanProgress = null
         }
+    }
+}
+
+private fun BitInstallerAppState.publishScanProgress(
+    targetId: String,
+    index: Int,
+    total: Int,
+    file: LifeSaveFile,
+) {
+    val slotName = file.path.substringBeforeLast('/').substringAfterLast('/', "Save slot")
+    Snapshot.withMutableSnapshot {
+        saveScanProgress =
+            SaveScanProgress(
+                targetId = targetId,
+                completed = index,
+                total = total,
+                currentSlotName = slotName,
+            )
+    }
+}
+
+private suspend fun loadSaveSummary(
+    file: LifeSaveFile,
+    cachedSaves: Map<String, BitLifeSaveSummary>,
+    repository: ShizukuMonetizationRepository,
+): BitLifeSaveSummary {
+    val cached = cachedSaves[file.path]
+    return if (cached != null && cached.sizeBytes.toLong() == file.sizeBytes) {
+        cached
+    } else {
+        runCatching {
+            val bytes = repository.readLifeSaveFile(file)
+            BitLifeSaveParser.parse(
+                path = file.path,
+                bytes = bytes,
+                lightweight = true,
+                collectAdvancedFields = false,
+            )
+        }.getOrElse { error ->
+            BitLifeSaveParser.failure(
+                path = file.path,
+                sizeBytes = file.sizeBytes.toIntSize(),
+                error = error,
+            )
+        }
+    }
+}
+
+private fun BitInstallerAppState.upsertScanResult(
+    targetId: String,
+    summary: BitLifeSaveSummary,
+) {
+    val slotName = summary.path.substringBeforeLast('/').substringAfterLast('/', "Save slot")
+    Snapshot.withMutableSnapshot {
+        val currentSaves = saveScanResults[targetId].orEmpty()
+        val updated =
+            currentSaves
+                .toMutableList()
+                .apply {
+                    val idx = indexOfFirst { saved -> saved.path == summary.path }
+                    if (idx >= 0) set(idx, summary) else add(summary)
+                }.sortedBy { save -> save.slotName }
+        saveScanResults = saveScanResults + (targetId to updated)
+        saveScanProgress =
+            SaveScanProgress(
+                targetId = targetId,
+                completed = (saveScanProgress?.completed ?: 0) + 1,
+                total = saveScanProgress?.total ?: 0,
+                currentSlotName = slotName,
+            )
     }
 }
 

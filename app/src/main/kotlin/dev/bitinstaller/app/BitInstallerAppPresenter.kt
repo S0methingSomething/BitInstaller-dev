@@ -18,6 +18,7 @@ import dev.bitinstaller.app.home.PatchPresenceState
 import dev.bitinstaller.app.home.PatchSupportState
 import dev.bitinstaller.app.home.PatchTargetUiState
 import dev.bitinstaller.app.home.SaveEditorUiState
+import dev.bitinstaller.app.home.SaveScanProgressUi
 import dev.bitinstaller.app.home.SaveTargetUiState
 import dev.bitinstaller.app.home.TargetIcon
 import dev.bitinstaller.app.home.TargetPatchState
@@ -158,6 +159,14 @@ internal class BitInstallerAppPresenter(
             editMessages = appState.saveEditMessages,
             editMessageTokens = appState.saveEditMessageTokens,
             recentEditFieldIds = appState.saveRecentEditFieldIds,
+            scanProgress =
+                appState.saveScanProgress?.let { progress ->
+                    SaveScanProgressUi(
+                        completed = progress.completed,
+                        total = progress.total,
+                        currentSlotName = progress.currentSlotName,
+                    )
+                },
         )
     }
 
