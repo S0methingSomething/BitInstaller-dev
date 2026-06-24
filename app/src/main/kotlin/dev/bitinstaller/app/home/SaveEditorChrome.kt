@@ -36,6 +36,7 @@ internal fun SaveScanPrompt() {
 internal fun SaveLoadingStateView(
     message: String,
     modifier: Modifier = Modifier,
+    progress: SaveScanProgressUi? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize(),
@@ -48,7 +49,12 @@ internal fun SaveLoadingStateView(
         )
         Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = message,
+            text =
+                if (progress != null) {
+                    "Scanning slot ${progress.currentSlotName}... (${progress.completed}/${progress.total})"
+                } else {
+                    message
+                },
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             fontWeight = FontWeight.Medium,

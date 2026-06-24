@@ -57,7 +57,15 @@ internal class BitInstallerAppState(
     var saveScanResults by mutableStateOf(mapOf<String, List<BitLifeSaveSummary>>())
     var noticeMessage by mutableStateOf<String?>(null)
     var noticeToken by mutableIntStateOf(0)
+    var saveScanProgress by mutableStateOf<SaveScanProgress?>(null)
 }
+
+internal data class SaveScanProgress(
+    val targetId: String,
+    val completed: Int,
+    val total: Int,
+    val currentSlotName: String,
+)
 
 internal class AppFlowDeps(
     val repository: ShizukuMonetizationRepository,
@@ -102,6 +110,15 @@ internal fun buildHomeRouteCallbacks(
                 )
             },
             onSaveEditorBack = { appState.selectedSaveTargetId = null },
+            onLoadAdvancedFields = { targetPackageName, save ->
+                coroutineScope.launchLoadAdvancedFields(
+                    targetPackageName = targetPackageName,
+                    save = save,
+                    repository = repository,
+                    appState = appState,
+                    saveCache = saveCache,
+                )
+            },
             onDismissSession = { appState.activeSession = null },
             onDismissNotice = { appState.noticeMessage = null },
             onDismissLiveDictionaryPrompt = {

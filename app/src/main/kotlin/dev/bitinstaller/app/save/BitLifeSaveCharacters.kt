@@ -7,27 +7,32 @@ import dev.nrbf4j.ObjectNode
 internal fun ObjectNode.logicalCharacter(
     logicalName: String,
     role: String,
-): SaveCharacterSummary? = logicalObject(logicalName)?.toCharacterSummary(role)
+    lightweight: Boolean,
+): SaveCharacterSummary? = logicalObject(logicalName)?.toCharacterSummary(role, lightweight)
 
 internal fun ObjectNode.logicalCharacterList(
     document: NrbfDocument,
     logicalName: String,
     role: String,
+    lightweight: Boolean,
 ): List<SaveCharacterSummary>? =
-    summaryList(document, logicalName, role) { node, label -> node.toCharacterSummary(label) }
+    summaryList(document, logicalName, role) { node, label -> node.toCharacterSummary(label, lightweight) }
 
 internal fun ObjectNode.logicalPetList(
     document: NrbfDocument,
     logicalName: String,
     role: String,
-): List<SaveCharacterSummary>? = summaryList(document, logicalName, role) { node, label -> node.toPetSummary(label) }
+    lightweight: Boolean,
+): List<SaveCharacterSummary>? =
+    summaryList(document, logicalName, role) { node, label -> node.toPetSummary(label, lightweight) }
 
 internal fun ObjectNode.logicalAncestorList(
     document: NrbfDocument,
     logicalName: String,
     role: String,
+    lightweight: Boolean,
 ): List<SaveCharacterSummary>? =
-    summaryList(document, logicalName, role) { node, label -> node.toAncestorSummary(label) }
+    summaryList(document, logicalName, role) { node, label -> node.toAncestorSummary(label, lightweight) }
 
 private fun ObjectNode.summaryList(
     document: NrbfDocument,
@@ -48,20 +53,27 @@ private fun ObjectNode.summaryList(
 
 internal fun MemberNode.derefObjectRefsOrNull(): List<Int>? = runCatching { derefArray().objectRefs() }.getOrNull()
 
-private fun ObjectNode.toCharacterSummary(role: String): SaveCharacterSummary {
+private fun ObjectNode.toCharacterSummary(
+    role: String,
+    lightweight: Boolean,
+): SaveCharacterSummary {
     val name = logicalObject("Name")
     val fields =
-        buildList {
-            name
-                ?.logicalMember("FirstName")
-                ?.toEditableField("First name", "Characters / $role / First name", role)
-                ?.let(::add)
-            name
-                ?.logicalMember("LastName")
-                ?.toEditableField("Last name", "Characters / $role / Last name", role)
-                ?.let(::add)
-            addAll(schemaFields(HeroCharacterFields, role))
-            addAll(schemaFields(CoreAttributeFields, role, group = "Attributes"))
+        if (lightweight) {
+            emptyList()
+        } else {
+            buildList {
+                name
+                    ?.logicalMember("FirstName")
+                    ?.toEditableField("First name", "Characters / $role / First name", role)
+                    ?.let(::add)
+                name
+                    ?.logicalMember("LastName")
+                    ?.toEditableField("Last name", "Characters / $role / Last name", role)
+                    ?.let(::add)
+                addAll(schemaFields(HeroCharacterFields, role))
+                addAll(schemaFields(CoreAttributeFields, role, group = "Attributes"))
+            }
         }
     return SaveCharacterSummary(
         role = role,
@@ -79,11 +91,18 @@ private fun ObjectNode.toCharacterSummary(role: String): SaveCharacterSummary {
     )
 }
 
-private fun ObjectNode.toPetSummary(role: String): SaveCharacterSummary {
+private fun ObjectNode.toPetSummary(
+    role: String,
+    lightweight: Boolean,
+): SaveCharacterSummary {
     val fields =
-        buildList {
-            addAll(schemaFields(PetFields, role))
-            addAll(schemaFields(PetAttributeFields, role, group = "Attributes"))
+        if (lightweight) {
+            emptyList()
+        } else {
+            buildList {
+                addAll(schemaFields(PetFields, role))
+                addAll(schemaFields(PetAttributeFields, role, group = "Attributes"))
+            }
         }
     return SaveCharacterSummary(
         role = role,
@@ -95,8 +114,11 @@ private fun ObjectNode.toPetSummary(role: String): SaveCharacterSummary {
     )
 }
 
-private fun ObjectNode.toAncestorSummary(role: String): SaveCharacterSummary {
-    val fields = schemaFields(AncestorFields, role)
+private fun ObjectNode.toAncestorSummary(
+    role: String,
+    lightweight: Boolean,
+): SaveCharacterSummary {
+    val fields = if (lightweight) emptyList() else schemaFields(AncestorFields, role)
     return SaveCharacterSummary(
         role = role,
         name = logicalString("FullName").orEmpty(),

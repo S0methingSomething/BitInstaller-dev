@@ -12,6 +12,7 @@ internal data class HomeRouteCallbacks(
     val onSaveTargetClick: (SaveTargetUiState) -> Unit = {},
     val onSaveFieldEdits: (SaveTargetUiState, BitLifeSaveSummary, List<SaveFieldEdit>) -> Unit = { _, _, _ -> },
     val onSaveRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit = { _, _ -> },
+    val onLoadAdvancedFields: (String, BitLifeSaveSummary) -> Unit = { _, _ -> },
     val onSaveEditorBack: () -> Unit = {},
     val onDismissSession: () -> Unit = {},
     val onDismissNotice: () -> Unit = {},

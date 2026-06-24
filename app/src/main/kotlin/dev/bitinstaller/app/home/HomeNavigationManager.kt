@@ -76,6 +76,7 @@ internal fun HomeDestinationHost(
                         onTargetClick = callbacks.onSaveTargetClick,
                         onFieldEdits = callbacks.onSaveFieldEdits,
                         onSaveRevert = callbacks.onSaveRevert,
+                        onLoadAdvancedFields = callbacks.onLoadAdvancedFields,
                         onBackClick = callbacks.onSaveEditorBack,
                     ),
             )

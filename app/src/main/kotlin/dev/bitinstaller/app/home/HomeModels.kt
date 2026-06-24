@@ -142,6 +142,14 @@ data class SaveTargetUiState(
     val editMessages: Map<String, String> = emptyMap(),
     val editMessageTokens: Map<String, Int> = emptyMap(),
     val recentEditFieldIds: Map<String, List<String>> = emptyMap(),
+    val scanProgress: SaveScanProgressUi? = null,
+)
+
+@Immutable
+data class SaveScanProgressUi(
+    val completed: Int,
+    val total: Int,
+    val currentSlotName: String,
 )
 
 @Immutable

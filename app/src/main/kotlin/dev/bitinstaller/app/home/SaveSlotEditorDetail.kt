@@ -57,6 +57,11 @@ internal fun SaveSlotEditorDetail(
         draftValues.clear()
         state = state.copy(editsToSave = null)
     }
+    LaunchedEffect(save.path, save.advancedFieldsParsed) {
+        if (!save.advancedFieldsParsed && save.errorMessage == null) {
+            actions.onLoadAdvancedFields()
+        }
+    }
     SaveSlotEditorSideEffects(
         state = state,
         actions = actions,
@@ -193,6 +198,7 @@ internal data class SaveSlotEditorDetailActions(
     val onBackClick: () -> Unit,
     val onSaveChanges: (List<SaveFieldEdit>) -> Unit,
     val onSaveRevert: () -> Unit,
+    val onLoadAdvancedFields: () -> Unit,
 )
 
 @Composable

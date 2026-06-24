@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import dev.bitinstaller.app.save.BitLifeSaveSummary
 import dev.bitinstaller.app.save.SaveEditableField
 import kotlinx.coroutines.Dispatchers
@@ -14,10 +13,17 @@ import kotlinx.coroutines.withContext
 internal const val ADVANCED_DEBOUNCE_MS = 120L
 
 @Composable
-internal fun rememberSearchContext(save: BitLifeSaveSummary): AdvancedSearchContext =
-    remember(save.advancedFields) {
-        val metadataMap = save.advancedFields.associate { it.id to it.computeMetadata() }
-        AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
+internal fun rememberSearchContext(save: BitLifeSaveSummary): State<AdvancedSearchContext?> =
+    produceState<AdvancedSearchContext?>(initialValue = null, save.advancedFields, save.advancedFieldsParsed) {
+        if (save.advancedFields.isEmpty()) {
+            value = AdvancedSearchContext(emptyMap(), FieldSearchIndex(emptyMap(), emptyList()))
+        } else {
+            value =
+                withContext(Dispatchers.Default) {
+                    val metadataMap = save.advancedFields.associate { it.id to it.computeMetadata() }
+                    AdvancedSearchContext(metadataMap, FieldSearchIndex.build(save.advancedFields, metadataMap))
+                }
+        }
     }
 
 @Composable

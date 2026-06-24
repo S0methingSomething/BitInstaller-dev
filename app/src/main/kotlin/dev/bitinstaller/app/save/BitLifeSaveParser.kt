@@ -19,6 +19,7 @@ data class BitLifeSaveSummary(
     val facts: List<SaveFactSummary>,
     val characters: List<SaveCharacterSummary>,
     val advancedFields: List<SaveEditableField>,
+    val advancedFieldsParsed: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -71,13 +72,27 @@ data class SaveCharacterSummary(
 )
 
 internal object BitLifeSaveParser {
+    /**
+     * @param lightweight when true, skips per-character field extraction, facts, and the
+     *   bankBalanceField. Only summary-level data needed by the scan cards is built:
+     *   heroName, age, gender, bankBalance (Double), attribute values, character count
+     *   and basic character identity (role/name/age/relationship/isAlive). The editor
+     *   triggers a full re-parse via [launchLoadAdvancedFields] when opened.
+     */
     fun parse(
         path: String,
         bytes: ByteArray,
+        lightweight: Boolean = false,
         collectAdvancedFields: Boolean = true,
     ): BitLifeSaveSummary =
-        runCatching { parseTrusted(path = path, bytes = bytes, collectAdvancedFields = collectAdvancedFields) }
-            .getOrElse { error -> failure(path = path, sizeBytes = bytes.size, error = error) }
+        runCatching {
+            parseTrusted(
+                path = path,
+                bytes = bytes,
+                lightweight = lightweight,
+                collectAdvancedFields = collectAdvancedFields,
+            )
+        }.getOrElse { error -> failure(path = path, sizeBytes = bytes.size, error = error) }
 
     fun failure(
         path: String,
@@ -98,25 +113,28 @@ internal object BitLifeSaveParser {
             facts = emptyList(),
             characters = emptyList(),
             advancedFields = emptyList(),
+            advancedFieldsParsed = false,
             errorMessage = error.message ?: error::class.java.simpleName,
         )
 
     private fun parseTrusted(
         path: String,
         bytes: ByteArray,
+        lightweight: Boolean,
         collectAdvancedFields: Boolean,
     ): BitLifeSaveSummary =
         NrbfDocument.open(bytes).use { doc ->
-            val objects = doc.resolveCoreObjects()
+            val objects = doc.resolveCoreObjects(lightweight = lightweight)
             objects.toSummary(
                 path = path,
                 sizeBytes = bytes.size,
                 doc = doc,
+                lightweight = lightweight,
                 collectAdvancedFields = collectAdvancedFields,
             )
         }
 
-    private fun NrbfDocument.resolveCoreObjects(): SaveCoreObjects {
+    private fun NrbfDocument.resolveCoreObjects(lightweight: Boolean): SaveCoreObjects {
         val life = lifeObjectOrNull()
         val hero = life?.logicalObject("Hero") ?: objectByClassOrNull("SimHero")
         val occupation = life?.logicalObject("Occupation")
@@ -127,23 +145,24 @@ internal object BitLifeSaveParser {
             occupation = occupation,
             job = occupation?.logicalObject("Job"),
             name = hero?.logicalObject("Name"),
-            characters = characterSummaries(life),
+            characters = characterSummaries(life = life, lightweight = lightweight),
         )
     }
 
     private fun NrbfDocument.characterSummaries(
         life: ObjectNode? = objectByClassOrNull("Life"),
+        lightweight: Boolean,
     ): List<SaveCharacterSummary> =
         buildList {
-            life?.logicalCharacter("Hero", "Hero")?.let(::add)
-            life?.logicalCharacter("Father", "Father")?.let(::add)
-            life?.logicalCharacter("Mother", "Mother")?.let(::add)
-            life?.logicalCharacter("Lover", "Partner")?.let(::add)
-            life?.logicalCharacterList(this@characterSummaries, "_ChildArray", "Child")?.let(::addAll)
-            life?.logicalCharacterList(this@characterSummaries, "_SiblingArray", "Sibling")?.let(::addAll)
-            life?.logicalCharacterList(this@characterSummaries, "_FriendArray", "Friend")?.let(::addAll)
-            life?.logicalPetList(this@characterSummaries, "_PetArray", "Pet")?.let(::addAll)
-            life?.logicalAncestorList(this@characterSummaries, "_AncestorArray", "Ancestor")?.let(::addAll)
+            life?.logicalCharacter("Hero", "Hero", lightweight)?.let(::add)
+            life?.logicalCharacter("Father", "Father", lightweight)?.let(::add)
+            life?.logicalCharacter("Mother", "Mother", lightweight)?.let(::add)
+            life?.logicalCharacter("Lover", "Partner", lightweight)?.let(::add)
+            life?.logicalCharacterList(this@characterSummaries, "_ChildArray", "Child", lightweight)?.let(::addAll)
+            life?.logicalCharacterList(this@characterSummaries, "_SiblingArray", "Sibling", lightweight)?.let(::addAll)
+            life?.logicalCharacterList(this@characterSummaries, "_FriendArray", "Friend", lightweight)?.let(::addAll)
+            life?.logicalPetList(this@characterSummaries, "_PetArray", "Pet", lightweight)?.let(::addAll)
+            life?.logicalAncestorList(this@characterSummaries, "_AncestorArray", "Ancestor", lightweight)?.let(::addAll)
         }.distinctBy { character -> character.role to character.name }
 
     private fun String.slotName(): String =
@@ -162,6 +181,7 @@ internal object BitLifeSaveParser {
             path: String,
             sizeBytes: Int,
             doc: NrbfDocument,
+            lightweight: Boolean,
             collectAdvancedFields: Boolean,
         ): BitLifeSaveSummary {
             val bankBalanceMember = finances?.logicalMember("BankBalance")
@@ -184,11 +204,12 @@ internal object BitLifeSaveParser {
                 age = hero?.logicalInt("Age"),
                 gender = hero?.logicalInt("Gender")?.toGenderLabel(),
                 bankBalance = finances?.logicalDouble("BankBalance"),
-                bankBalanceField = bankBalanceMember.toBankField(),
+                bankBalanceField = if (lightweight) null else bankBalanceMember.toBankField(),
                 attributes = hero.attributes(),
-                facts = buildFacts(),
+                facts = if (lightweight) emptyList() else buildFacts(),
                 characters = characters,
                 advancedFields = if (collectAdvancedFields) doc.collectAdvancedFields(life = life) else emptyList(),
+                advancedFieldsParsed = collectAdvancedFields,
             )
         }
 

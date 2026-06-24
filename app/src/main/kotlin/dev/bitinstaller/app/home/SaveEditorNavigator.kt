@@ -206,6 +206,7 @@ private fun SaveEditorSlotRoute(
                 onBackClick = onBackClick,
                 onSaveChanges = { edits -> actions.onFieldEdits(selectedTarget, selectedSave, edits) },
                 onSaveRevert = { callbacks.onSaveRevert(selectedSave) },
+                onLoadAdvancedFields = { actions.onLoadAdvancedFields(selectedTarget.packageName, selectedSave) },
             ),
         modifier = Modifier.fillMaxSize(),
     )
@@ -223,6 +224,7 @@ internal data class SaveEditorSectionActions(
     val onTargetClick: (SaveTargetUiState) -> Unit,
     val onFieldEdits: (SaveTargetUiState, BitLifeSaveSummary, List<SaveFieldEdit>) -> Unit,
     val onSaveRevert: (SaveTargetUiState, BitLifeSaveSummary) -> Unit,
+    val onLoadAdvancedFields: (String, BitLifeSaveSummary) -> Unit,
     val onBackClick: () -> Unit,
 )
 
